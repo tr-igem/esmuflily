@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-03-26
+%% Latest revision: 2024-03-29
 %%
 
 \version "2.24.0"
@@ -2040,7 +2040,24 @@ ekmStem =
 
 %% Fingering symbols mapped onto definition key:
 %%  ("definition" . cp)
+%% Note: p i m a x used by StrokeFinger
 #(define ekm-finger-map '(
+  ;; italic glyphs
+  ("0" . #xED80)
+  ("1" . #xED81)
+  ("2" . #xED82)
+  ("3" . #xED83)
+  ("4" . #xED84)
+  ("5" . #xED85)
+  ("6" . #xED86)
+  ("7" . #xED87)
+  ("8" . #xED88)
+  ("9" . #xED89)
+  ("(" . #xED8A)
+  (")" . #xED8B)
+  ("[" . #xED8C)
+  ("]" . #xED8D)
+  ;; non-italic glyphs
   ("0" . #xED10)
   ("1" . #xED11)
   ("2" . #xED12)
@@ -2053,7 +2070,7 @@ ekmStem =
   ("9" . #xED27)
   ("th" . #xE624)
   ("ht" . #xE625)
-  ("p" . #xED17) ; p i m a x used by StrokeFinger
+  ("p" . #xED17)
   ("i" . #xED19)
   ("m" . #xED1A)
   ("a" . #xED1B)
@@ -2076,61 +2093,28 @@ ekmStem =
   ("~" . #xED21)
   ("-" . #xED22)
   ("M" . #xED23)
+  ("RE" . #xE66F)
+  ("R" . #xE66E)
+  ("LE" . #xE671)
+  ("L" . #xE670)
 ))
 
-#(define ekm-finger-italic-map '(
-  ("0" . #xED80)
-  ("1" . #xED81)
-  ("2" . #xED82)
-  ("3" . #xED83)
-  ("4" . #xED84)
-  ("5" . #xED85)
-  ("6" . #xED86)
-  ("7" . #xED87)
-  ("8" . #xED88)
-  ("9" . #xED89)
-  ("th" . #xE624)
-  ("ht" . #xE625)
-  ("p" . #xED17)
-  ("i" . #xED19)
-  ("m" . #xED1A)
-  ("a" . #xED1B)
-  ("x" . #xED1D)
-  ("T" . #xED16)
-  ("t" . #xED18)
-  ("c" . #xED1C)
-  ("e" . #xED1E)
-  ("o" . #xED1F)
-  ("q" . #xED8E)
-  ("s" . #xED8F)
-  ("(" . #xED8A)
-  (")" . #xED8B)
-  ("[" . #xED8C)
-  ("]" . #xED8D)
-  ("." . #xED2C)
-  ("," . #xED2D)
-  ("/" . #xED2E)
-  ("~~" . #xED20)
-  ("~" . #xED21)
-  ("-" . #xED22)
-  ("M" . #xED23)
-))
+#(define ekm-finger-normal-map (list-tail ekm-finger-map 14))
 
 #(define-markup-command (ekm-finger layout props def)
   (string?)
   (let ((it (eqv? #\* (string-ref def 0))))
     (interpret-markup layout props
-      (make-fontsize-markup 5
-        (make-ekm-def-markup
-          (if it ekm-finger-italic-map ekm-finger-map)
-          (if it (string-drop def 1) def))))))
+      (make-ekm-def-markup
+        (if it ekm-finger-map ekm-finger-normal-map)
+        (if it (string-drop def 1) def)))))
 
 #(define ((ekm-fingering size) grob)
   (let ((def (ly:grob-property grob 'text))
         (shp (ly:grob-property grob 'font-shape)))
     (if (string? def)
       (grob-interpret-markup grob
-        (make-fontsize-markup size
+        (make-fontsize-markup (+ size 5)
           (make-ekm-finger-markup
             (if (eq? 'italic shp) (string-append "*" def) def))))
       (ly:text-interface::print grob))))
