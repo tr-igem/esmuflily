@@ -1,0 +1,289 @@
+ChangeLog for Esmuflily
+=======================
+
+17 December 2020:
+- Initial release
+
+January 2021 - May 2021:
+- Added command "\tremolo" replacing "\setTremolo" and "\unsetTremolo".
+- Added command "\stem" replacing "\setStem" and "\unsetStem".
+- Removed additional commands for tremolos and symbols on stem ("\buzzroll" etc.)
+- Renamed ottava style "bassa" to "ordinals-bassa" and "bassa-ba" to "numbers-ba".
+- Added ottava style "ordinals-ba".
+- Renamed ottava style "default" to "ordinals-b".
+  New default style is "numbers".
+- Added command "\brass".
+- Added command "\makeScriptSmall".
+- Added command "\ekm-text" replacing "\ekm-text-char".
+- Added notehead styles "altdefault" and "baroque".
+- Extended "\makeBreathe", "\tremolo", and "\stem" to accept a code point,
+  a list of code points, or any markup.
+- Added fingering.
+- Added figured bass.
+- Added rest style "z".
+- Added note values 256, 512, 1024 for rests and flags.
+- Fixed timing of "\compoundMeter" with single list or pair.
+- Fixed "\upbow" and "\downbow" symbol below to be equal above (not turned).
+- Added clefs "neomensural-c*" replacing "*squareC".
+- Added clef "accordion".
+
+7 June 2021:
+- Added clef support for "TabStaff" and the clefs "talltab" and "seriftab".
+- Added 4-string variants of the tab clefs "4string*tab".
+- Added notehead style "parenthesised".
+
+23 June 2021:
+- Added command "\flagStyle" and the styles "straight" and "short".
+- Added command "\ekm-varchar".
+- Extended "\makeScript" and "\makeScriptSmall" to accept a code point,
+  a list of code points, or any markup.
+
+26 June 2021:
+- Added "\ekm-chf" for font features, replacing "\ekm-varchar".
+- Extended "\ekm-text", "\makeScript", and "\makeScriptSmall" to accept
+  a list with a code point and font features.
+- Extended "\ekm-line" to accept text elements like "\ekm-text".
+
+22 July 2021:
+- Added notehead style "withx-black".
+
+15 August 2021:
+- Added and renamed arrow and arrowhead styles for "\ekm-arrow".
+- Added note name noteheads with Do,Re,Mi,...
+
+5 September 2021:
+- Added sustain/sostenuto pedal symbols "1/2Ped" and "|1/4", "|1/2", "|3/4", "|1".
+- Renamed pedal key strings "+" to "o" and "_^_" to "H".
+- Extended "\ekm-definition" to accept text elements like "\ekm-text".
+
+8 September 2021:
+- Extended "\ekm-definition" to accept #f for no text.
+  For an unknown key, the text so far is drawn.
+- Changed "\ekm-harp-pedal" using "\ekm-definition".
+- Extended "\ekm-note-by-number" and "\ekm-rest-by-number" to support styles.
+- Added commands "\extrashortfermata" and "\extralongfermata".
+- Added styles "extrashort" and "extralong" for "\ekm-fermata".
+- Removed markup command "\fermata" (no redefining of LilyPond markup commands).
+- Extended "\ekm-eyeglasses" to accept a direction.
+
+10 September 2021:
+- Added "\ekm-accordion" as a standalone music event.
+- Added support for clef modifiers (any transposition and style) and change clefs.
+
+13 September 2021:
+- Fixed wrong size of change clefs.
+- Removed use of precomposed clef glyphs for clef modifiers.
+
+17 September 2021:
+- Renamed "\ekm-definition" to "\ekm-def".
+- Added note name noteheads with Do,..,Si.
+- Renamed "\nameHeads[Minor]" to "\nameHeadsTi[Minor]" for Do,..,Ti.
+
+24 September 2021:
+- Changed trill span and "\laissezVibrer" to be independent of Ekmelos font metrics.
+- Fixed trill span position after line break.
+- Added "\ekmStartTrillSpan" for different line styles.
+- Changed "\ekm-text" to accept TEXT only (no CENTER argument).
+- Removed "\ekm-center".
+
+26 September 2021:
+- Added una corda pedal and pedal key strings "una corda", "tre corde",
+  "u.c.", "t.c.", and "sos."
+- Changed "\ekm-def" to draw a key string as normal text italic if the value is 1.
+
+2 October 2021:
+- Added trill pitch with variable parenthesis and notehead styles.
+- Fixed "\ekmStartTrillSpan" to work with "\pitchedTrill", "\afterGrace", etc.
+- Changed "\parensDyn" and "\parensHairpin" to support several parenthesis styles.
+- Removed "(ekm-compound-dynamic)" (is now part of "\parensDyn").
+- Added stem symbols "stringNoise", "rimShot", "turnRight", "turnLeft", and "turnRightLeft".
+- Changed stem symbols "vibratoPulse" to "vibrato" and "pluckedDamp" to "damp".
+- Changed "\brass" to accept a symbol for style.
+- Fixed stem attachment of notehead styles "triangle-up", "triangle-down",
+  "arrow-up", and "arrow-down".
+- Unified access to internal tables of noteheads, note clusters, flags,
+  rests, scripts, ottava, and brass.
+
+7 October 2021:
+- Added "\breatheUpbow", "\breatheSalzedo", and "\heel".
+- Added "\ekm-fader" amd "\ekm-midi".
+- Changed position of ORIENT argument in "\ekm-arrow".
+- Added "\ekm-beater".
+
+10 October 2021:
+- Added "\ekmSlashSeparator".
+- Added "\ekm-analytics".
+- Added use of "\ekm-tied-lyric" in lyric input mode.
+
+17 October 2021:
+- Fixed "\ekm-tied-lyric" to recognize UTF-8 encoded single characters between "~".
+- Added name "hand" to "\ekm-beater".
+
+22 October 2021:
+- Added support for "short" stem down flags.
+- Added segno bar lines with small and large serpent glyphs ("s", "$").
+- Changed some piano pedal keys to use special glyphs instead of normal text.
+
+23 October 2021:
+- Extended "\ekm-midi" to draw any level (instead of the nearest precomposed glyph).
+
+8 November 2021:
+- Changed "\ekm-fader" and "\ekm-midi" to allow non-integral percent values in the label.
+
+26 November 2021:
+- Changed "\ekm-midi" to use the moved Ekmelos glyphs.
+- Added support for brace and angle brackets in trill pitches.
+- Added support for bilateral orientations (used by "\ekm-arrow").
+- Added styles "simple" and "double" for "\ekm-arrow".
+- Added key "Sos." to piano pedals.
+
+28 February 2022:
+- Added dynamic scripts "\sfffz" and "\sffffz".
+
+18 June 2022:
+- Added styles to "\ekm-arrow" for Unicode arrows "triple",
+  "dashed", "triangle-dashed", "opposite", "triangle-opposite",
+  "paired", "triangle-paired", "two-headed", "bent-tip", "long-bent-tip".
+- Added bilateral diagonal arrows for "\ekm-arrow" style "simple".
+
+3 July 2022:
+- Changed first argument of "\ekm-beater" from string to symbol
+  (consistent with "\ekm-arrow").
+
+25 August 2022:
+- Completely revised version.
+- Added switches to turn on/off SMuFL support for individual types of grobs:
+  "\ekmSmuflOn", "\ekmSmuflOff".
+- Renamed several commands (new - old):
+  "\ekmCadenzaOn" - "\cadenzaStyle",
+  "\ekmStaffDivider" - "\staffDivider",
+  "\ekmNameHeads" - "\nameHeads",
+  "\ekmNameHeadsMinor" - "\nameHeadsMinor",
+  "\ekmNameHeadsTi" - "\nameHeadsTi",
+  "\ekmNameHeadsTiMinor" - "\nameHeadsTiMinor",
+  "\ekmMakeClusters" - "\cluster",
+  "\ekmFlag" - "\flagStyle",
+  "\ekmParensDyn" - "\parensDyn",
+  "\ekmParensHairpin" - "\parensHairpin",
+  "\ekmScript" - "\makeScript",
+  "\ekmScriptSmall" - "\makeScriptSmall",
+  "\ekmBreathing" - "\makeBreathe",
+  "\ekmTremolo" - "\tremolo",
+  "\ekmStem" - "\stem",
+  "\ekmAccordion" - "\ekm-accordion",
+  "\ekmRicochet" - "\ricochet",
+  "\ekmStemRicochet" - "\ricochetStem",
+  "\ekmBendAfter" - "\brass".
+- Removed redefinitions of LilyPond commands:
+  "\clef", "\ottava", "\breathe".
+- Removed some commands since they are defined in LilyPond as of 2.22:
+  "\slashturn", "\haydnturn",
+  "\veryshortfermata", "\henzeshortfermata", "\henzelongfermata",
+  "\n".
+- Moved some commands to the file "usesmufl.ily",
+  since they are just supplements making use of Esmuflily commands:
+  "\pf", "\fz", "\sfpp", "\sfzp", "\sffz", "\sfffz", "\sffffz", "\rf",
+  "\overpressureupbow", "\overpressuredownbow",
+  "\heel", "\halfopenvertical",
+  "\extrashortfermata", "\extralongfermata",
+  "\DC", "\DCcoda", "\DCfine", "\DS", "\DScoda", "\DSfine",
+  "\breathe", "\breatheWedge", "\breatheTick", "\breatheUpbow",
+  "\breatheSalzedo",
+  "\caesura", "\caesuraThick", "\caesuraShort", "\caesuraCurved".
+- Added lists of ottavation texts instead of "\ottavaStyle",
+  each supporting the octave numbers 1 - 4:
+  "ekm-ottavation-numbers", "ekm-ottavation-ordinals",
+  "ekm-ottavation-simple-ordinals", "ekm-ottavation-ordinals-b",
+  "ekm-ottavation-ordinals-bassa", "ekm-ottavation-ordinals-ba",
+  "ekm-ottavation-numbers-ba".
+- Added tuplet formatting functions for non-default numbers
+  and for numbers with notes:
+  "ekm-tuplet-number::non-default-tuplet-denominator-text",
+  "ekm-tuplet-number::non-default-tuplet-fraction-text",
+  "ekm-tuplet-number::append-note-wrapper",
+  "ekm-tuplet-number::non-default-fraction-with-notes",
+  "ekm-tuplet-number::fraction-with-notes".
+
+6 September 2022:
+- Fixed vertical alignment of accordion registers with "\ekm-accordion".
+- Added command "\ekm-ottavation".
+- Added support for space characters in "\ekm-def" and for
+  dynamics, ottavation, fingering, piano pedals, and analytics.
+- "\ekm-def": Removed support for value 1 to draw the key as normal text.
+
+21 September 2022:
+- Added command "\ekm-finger".
+- Added support for italic fingering glyphs.
+- Added command "\ekm-piano-pedal".
+- Fixed stem attachment of Funk and Walker re noteheads.
+
+29 June 2023:
+- Added event function "\ekmLaissezVibrer".
+- Added command "\ekm-brace" supporting size variants.
+
+1 July 2023:
+- "\ekm-def": Enabled overriding of common keys (space, `_` etc.)
+- Renamed table of common keys `ekm-def-map` to `ekm-common-map`.
+- Added function `ekm-assd`.
+
+25 July 2023:
+- Esmuflily now requires LilyPond version 2.24.0 or higher.
+- Added arrow styles "quadruple" and "curving" in "\ekm-arrow".
+- Changed first argument of "\ekmScript" and "\ekmScriptSmall"
+  from string to symbol.
+- Extended tables "ekm-notehead-map" and "ekm-cluster-map" to provide
+  different stem attachments for up and down.
+- Changed UTF8-support in "\ekm-tied-lyric" due to Guile 2.2
+  Removed "ekm-utf8-next" and "ekm-utf8-size".
+- Changed parenthesis support in trill pitches and "\ekmPitchedTrill".
+
+2023-08-10:
+- Added styles for geometric shapes in "\ekm-arrow":
+  "black-triangle", "white-triangle",
+  "black-small-triangle", "white-small-triangle",
+  "half-circle", "circle-half-black",
+  "square-half-black", "diamond-half-black",
+  "circle-quarters".
+
+2023-08-24:
+- Added command "\ekm-theory" for function theory symbols.
+- Added command "\ekm-combine".
+- Changed argument of "\ekmStartTrillSpan" from symbol to integer.
+- Changed "\ekm-finger" to draw italic glyphs with a leading `*`
+  instead of `\`.
+
+2023-08-31:
+- Extended table "ekm-brace-map" with glyphs for scalings
+  14000, 16000, 18000.
+- Changed table "ekm-theory-map" using single glyph for "/D".
+- Changed "\ekm-fret-diagram-terse" for centered fretboard symbols.
+
+2023-09-08:
+- Changed name of command "\ekm-theory" to "\ekm-func".
+- Changed properties of "\ekm-func" and extended syntax
+  of definition strings.
+- Added music functions "\ekmFunc" and "\ekmFuncList"
+  for use in lyrics context.
+- Extended table "ekm-ottavation-map" with glyphs for "8^vb" ,
+  "15^mb", "22^mb", "29^mb".
+
+2023-10-25:
+- Added SMuFL support for string numbers with symbol `stringnumber`
+  and command "\ekm-string-number".
+- Extended fingering to support right-hand fingering.
+  Changed "ekm-fingering" for variable size and italic shape.
+
+2023-10-31:
+- Added SMuFL support for repeat bar colons with symbol `colon`.
+
+2023-11-11:
+- Added command "\ekm-metronome" and music function "\ekmMetronome"
+  to draw metronome strokes.
+
+2024-03-29:
+- Added fingering keys R RE L LE for keyboardPlayWith... symbols.
+- Changed table "ekm-finger-map" including italic symbols instead of
+  separate italic table.
+
+2024-03-30:
+- Added command "\ekmPlayWith".
