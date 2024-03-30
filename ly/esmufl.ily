@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-03-29
+%% Latest revision: 2024-03-30
 %%
 
 \version "2.24.0"
@@ -345,7 +345,7 @@
 
 
 %% Clefs
-%% partly derived from scm\parser-clef.scm
+%% see scm\parser-clef.scm
 
 %% Add new clefs to LilyPond
 %% Each has clp = trp = c0p = 0
@@ -423,7 +423,7 @@
 
 
 %% Time signatures
-%% partly derived from scm\time-signature-settings.scm
+%% see scm\time-signature-settings.scm
 
 #(define (ekm-time-subnum num)
   (case num
@@ -591,7 +591,7 @@ ekmCadenzaOn =
 
 
 %% Staff dividers and separators
-%% derived from lsr.di.unimi.it/LSR/Item?id=650
+%% after lsr.di.unimi.it/LSR/Item?id=650
 
 ekmStaffDivider =
 #(define-music-function (dir)
@@ -1052,7 +1052,7 @@ ekmSlashSeparator =
 #(define (ekm-notehead grob)
   (grob-interpret-markup grob (ekm-note grob #f UP)))
 
-%% derived from property-init.ly
+%% see property-init.ly
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
 ekmNameHeadsMinor =
@@ -1065,8 +1065,7 @@ ekmNameHeadsTiMinor =
 
 
 %% Note clusters
-%% derived from lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html
-%% by Thomas Morley
+%% after lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html
 
 %% Cluster noteheads mapped onto style and duration log:
 %%  (style cluster-entry ...)
@@ -1442,7 +1441,7 @@ ekmParensDyn =
         #:hspace 0.3
         #:normal-text #:italic (cdr p))))))
 
-%% derived from lsr.di.unimi.it/LSR/Item?id=771
+%% after lsr.di.unimi.it/LSR/Item?id=771
 ekmParensHairpin =
 #(define-music-function (style)
   (symbol?)
@@ -1653,7 +1652,7 @@ ekmBreathing =
 
 
 %% Segno bar lines
-%% derived from (make-segno-bar-line) in scm/bar-line.scm
+%% see scm/bar-line.scm
 
 %% Segno serpent for type index:
 %%  (kern-scale text)
@@ -1719,7 +1718,7 @@ ekmBreathing =
           (grob-interpret-markup grob
             (make-ekm-chars-markup (make-list cnt #xE504)))
           1.3)))
-    ((3) ;; percent (derived from (measure-counter-stencil) in output-lib.scm)
+    ((3) ;; percent (see measure-counter-stencil in output-lib.scm)
       (let* ((lb (ly:spanner-bound grob LEFT))
              (rb (ly:spanner-bound grob RIGHT))
              (refp (ly:grob-common-refpoint lb rb X))
@@ -1976,7 +1975,7 @@ ekmStem =
 
 
 %% Tuplet numbers
-%% derived from output-lib.scm
+%% see output-lib.scm
 
 #(define (ekm-tuplet-list num grob prop)
   (ekm-number->list '() #xE880
@@ -2099,14 +2098,12 @@ ekmStem =
   ("L" . #xE670)
 ))
 
-#(define ekm-finger-normal-map (list-tail ekm-finger-map 14))
-
 #(define-markup-command (ekm-finger layout props def)
   (string?)
   (let ((it (eqv? #\* (string-ref def 0))))
     (interpret-markup layout props
       (make-ekm-def-markup
-        (if it ekm-finger-map ekm-finger-normal-map)
+        (if it ekm-finger-map (list-tail ekm-finger-map 14))
         (if it (string-drop def 1) def)))))
 
 #(define ((ekm-fingering size) grob)
@@ -2118,6 +2115,31 @@ ekmStem =
           (make-ekm-finger-markup
             (if (eq? 'italic shp) (string-append "*" def) def))))
       (ly:text-interface::print grob))))
+
+ekmPlayWith =
+#(define-music-function (hand start music)
+  (ly:dir? boolean? ly:music?)
+  #{
+    \set fingeringOrientations = #(if start '(left) '(right))
+    \override Fingering.padding = #0.2
+    #(music-map
+      (lambda (m)
+        (if (music-is-of-type? m 'note-event)
+          (begin
+            (ly:music-set-property! m 'articulations
+              (cons
+                (make-music 'FingeringEvent 'text
+                  (if (= LEFT hand)
+                    (if start "L" "LE")
+                    (if start "R" "RE")))
+                (ly:music-property m 'articulations)))
+            (make-music 'EventChord
+              'elements (list m)))
+          m))
+      music)
+    \revert Fingering.padding
+    \unset fingeringOrientations
+  #})
 
 
 
@@ -2795,8 +2817,7 @@ ekmBendAfter =
     (cons `((font-size . ,size)) props)
     (make-ekm-func-markup def)))
 
-%% derived from lsr.di.unimi.it/LSR/Item?id=967
-%% by Klaus Blum
+%% after lsr.di.unimi.it/LSR/Item?id=967
 ekmFunc =
 #(define-music-function (def)
   (string?)
@@ -3217,24 +3238,26 @@ ekmMetronome =
                     (* (ly:moment-main-numerator mom)
                        (/ 4 (ly:moment-main-denominator mom))))))
         (if (music-is-of-type? m 'multi-measure-rest)
-          (begin (ly:music-set-property!
-            m 'articulations
-            (cons
-              (make-music
-                'MultiMeasureTextEvent
-                'direction UP
-                'text (markup #:ekm-metronome cnt))
-              (ly:music-property m 'articulations)))
+          (begin
+            (ly:music-set-property!
+              m 'articulations
+              (cons
+                (make-music
+                  'MultiMeasureTextEvent
+                  'direction UP
+                  'text (markup #:ekm-metronome cnt))
+                (ly:music-property m 'articulations)))
             #t)
         (if (or (music-is-of-type? m 'note-event)
                 (music-is-of-type? m 'rest-event)
                 (music-is-of-type? m 'event-chord))
-          (begin (set! m #{
-            #m - \tweak parent-alignment-X #CENTER
-               - \tweak extra-spacing-width #'(-0.8 . 0.8)
-               % - \tweak extra-spacing-height #'(-inf.0 . +inf.0)
-               ^ \markup \ekm-metronome #cnt
-            #})
+          (begin
+            (set! m #{
+              #m - \tweak parent-alignment-X #CENTER
+                 - \tweak extra-spacing-width #'(-0.8 . 0.8)
+                 % - \tweak extra-spacing-height #'(-inf.0 . +inf.0)
+                 ^ \markup \ekm-metronome #cnt
+              #})
             #t)
         #f))))
     music)
