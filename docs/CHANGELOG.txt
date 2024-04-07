@@ -7,7 +7,7 @@ ChangeLog for Esmuflily
 January 2021 - May 2021:
 - Added command "\tremolo" replacing "\setTremolo" and "\unsetTremolo".
 - Added command "\stem" replacing "\setStem" and "\unsetStem".
-- Removed additional commands for tremolos and symbols on stem ("\buzzroll" etc.)
+- Removed additional commands for tremolos and symbols on stem ("\buzzroll" etc.)
 - Renamed ottava style "bassa" to "ordinals-bassa" and "bassa-ba" to "numbers-ba".
 - Added ottava style "ordinals-ba".
 - Renamed ottava style "default" to "ordinals-b".
@@ -287,3 +287,8 @@ January 2021 - May 2021:
 
 2024-03-30:
 - Added command "\ekmPlayWith".
+
+2024-04-06:
+- Added support to draw paths instead of font glyphs.
+  Changed "\ekm-char", "\ekm-chars", and "\ekm-charf" for paths.
+- New variable "ekmFont" and option "ekmfont" to select a font.
