@@ -12,10 +12,12 @@
 
 \version "2.24.0"
 
-% ekmelicFont = "Bravura"
+% ekmFont = "Bravura"
 
 \include "ekmel-24.ily"
 \include "esmufl.ily"
+
+\pointAndClickOff
 
 
 \markup \column {
