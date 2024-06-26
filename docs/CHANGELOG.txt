@@ -292,3 +292,16 @@ January 2021 - May 2021:
 - Added support to draw paths instead of font glyphs.
   Changed "\ekm-char", "\ekm-chars", and "\ekm-charf" for paths.
 - New variable "ekmFont" and option "ekmfont" to select a font.
+
+2024-06-26:
+- Added SMuFL support for multi-measure rests and multi-measure rest
+  numbers with symbol `rest`.
+- Added commands "\ekm-multi-measure-rest-by-number" and "\ekm-rest",
+  and the auxiliary command "\ekm-mmr".
+- Changed command "\ekm-rest-by-number" using the properties
+  "style" and "ledgers".
+- Changed command "\ekm-metronome" using property "word-space"
+  instead of "stroke-space".
+- Changed calculation of stem lengths for flags.
+  Changed "ekm-stemlength-map" and added "(ekm-stemlength)".
+- Changed "(ekm-assld)" for more flexible table access.
