@@ -1,4 +1,4 @@
-%% Esmuflily - Support for Ekmelos/SMuFL
+%% Esmuflily - Support for SMuFL/Ekmelos
 %% Copyright (c) 2020-2024 Thomas Richter
 %%
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-04-06
+%% Latest revision: 2024-06-26
 %%
 
 \version "2.24.0"
@@ -147,6 +147,8 @@
       word-space
       (if (= LEFT text-direction) (reverse sil) sil))))
 
+#(define (ekm:char layout props cp)
+  (interpret-markup layout props (make-ekm-char-markup cp)))
 
 #(define (ekm-center center sil)
   (let ((s (if (logtest center 1) (ly:stencil-aligned-to sil X CENTER) sil)))
@@ -154,9 +156,7 @@
 
 #(define-markup-command (ekm-cchar layout props center cp)
   (integer? ekm-cp?)
-  (ekm-center center
-    (interpret-markup layout props
-      (make-ekm-char-markup cp))))
+  (ekm-center center (ekm:char layout props cp)))
 
 #(define (ekm-cchar grob center cp)
   (ekm-center center
@@ -266,12 +266,17 @@
         (cdr val)))))
 
 #(define (ekm-assld tab grob log dir)
-  (let* ((g (ly:grob? grob))
-         (st (if g (ly:grob-property grob 'style) grob)))
-    (ekm-asst tab
-      (if (symbol? st) st 'default)
-      (if g (ly:grob-property grob 'duration-log) log)
-      (if g (ly:grob-property (ly:grob-object grob 'stem) 'direction) dir))))
+  (ekm-asst tab
+    (if (ly:grob? grob) (ly:grob-property grob 'style) grob)
+    (or log (ly:grob-property grob 'duration-log))
+    (or dir (ly:grob-property (ly:grob-object grob 'stem) 'direction))))
+%#(define (ekm-assld tab grob log dir)
+%  (let* ((g (ly:grob? grob))
+%         (st (if g (ly:grob-property grob 'style) grob)))
+%    (ekm-asst tab
+%      st ;(if (symbol? st) st 'default)
+%      (if g (ly:grob-property grob 'duration-log) log)
+%      (if g (ly:grob-property (ly:grob-object grob 'stem) 'direction) dir))))
 
 
 %% Orientation arguments
@@ -1035,7 +1040,7 @@ ekmSlashSeparator =
       (make-ekm-char-markup d))))
 
 #(define (ekm-notehead grob)
-  (grob-interpret-markup grob (ekm-note grob #f UP)))
+  (grob-interpret-markup grob (ekm-note grob #f #f)))
 
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
@@ -1195,15 +1200,6 @@ ekmMakeClusters =
     (8 #xE24A . #xE24B)
     (9 #xE24C . #xE24D)
     (10 #xE24E . #xE24F))
-  (straight
-    (3 #xF40F . #xF411)
-    (4 #xF412 . #xF414)
-    (5 #xF415 . #xF417)
-    (6 #xF418 . #xF41A)
-    (7 #xF41B . #xF41D)
-    (8 #xF41E . #xF420)
-    (9 #xF421 . #xF423)
-    (10 #xF424 . #xF426))
   (short
     (3 #xF410 . #xF6C0)
     (4 #xF413 . #xF6C1)
@@ -1213,25 +1209,43 @@ ekmMakeClusters =
     (8 #xF41F . #xF6C5)
     (9 #xF422 . #xF6C6)
     (10 #xF425 . #xF6C7))
+  (straight
+    (3 #xF40F . #xF411)
+    (4 #xF412 . #xF414)
+    (5 #xF415 . #xF417)
+    (6 #xF418 . #xF41A)
+    (7 #xF41B . #xF41D)
+    (8 #xF41E . #xF420)
+    (9 #xF421 . #xF423)
+    (10 #xF424 . #xF426))
 ))
 
+%% Lengths of flag stems mapped onto style:
+%%  (style stem-length extra-length ...)
+%% stem-length:
+%%  Nominal unmodified stem length.
+%% extra-length:
+%%  Amount to lengthen stem for duration log 3-10.
 #(define ekm-stemlength-map '(
-  (default . (3.5 3.5 3.5 4.25 5.0 5.75 6.5 7.25 8.0))
-  (straight . (3.5 3.5 3.5 3.6 4.5 5.4 6.3 7.1 7.9))
-  (short . (3.5 3.5 3.5 3.5 4.05 4.5 5.1 5.6 6.2))
+  (default 3.5 0 0 0.73 1.45 2.18 2.92 3.65 4.39)
+  (short 3.5 0 0 0 0.53 1.03 1.61 2.18 2.76)
+  (straight 3.5 0 0 0 0.85 1.71 2.5 3.29 4.05)
 ))
+
+#(define (ekm-stemlength style)
+  (let* ((tab (ekm-assq ekm-stemlength-map style))
+         (len (car tab)))
+    (cons* len (map (lambda (y) (+ len y)) (cdr tab)))))
 
 #(define (ekm-flag grob)
   (let* ((stm (ly:grob-parent grob X))
          (dir (ly:grob-property stm 'direction))
+         (log (ly:grob-property stm 'duration-log))
          (st (ly:grob-property grob 'style))
-         (flg (ly:stencil-aligned-to
-                (ekm-cchar grob 0
-                  (ekm-asst ekm-flag-map
-                    (if (symbol? st) st 'default)
-                    (ly:grob-property stm 'duration-log)
-                    dir))
-                Y dir)))
+         (len (list-ref (ekm-assq ekm-stemlength-map st) (- log 2)))
+         (flg (grob-interpret-markup grob
+                (make-ekm-char-markup
+                  (ekm-asst ekm-flag-map st log dir)))))
     (ly:stencil-translate
       (if (equal? "grace" (ly:grob-property grob 'stroke-style))
         (ly:stencil-add
@@ -1244,16 +1258,15 @@ ekmMakeClusters =
                   (if (positive? dir) #xE564 #xE565))))))
         flg)
       (cons
-        (- (* (ly:grob-property stm 'thickness)
-              (ly:staff-symbol-line-thickness grob)))
-        0))))
+        (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
+        (if (negative? dir) len (- len))))))
 
 ekmFlag =
 #(define-music-function (style)
   (symbol?)
   #{
     \override Flag.style = #style
-    \override Stem.details.lengths = #(ekm-assq ekm-stemlength-map style)
+    \override Stem.details.lengths = #(ekm-stemlength style)
   #})
 
 
@@ -1262,14 +1275,15 @@ ekmFlag =
 %% Rests mapped onto style and duration log:
 %%  (style rest-data ...)
 %% rest-data:
-%%  (log cp)
+%%  (log . cp)
+%%  (log cp . cp-ledgered)
 #(define ekm-rest-map '(
   (default
     (-3 . #xE4E0)
     (-2 . #xE4E1)
-    (-1 . #xE4E2)
-    (0 . #xE4E3)
-    (1 . #xE4E4)
+    (-1 #xE4E2 . #xE4F3)
+    (0 #xE4E3 . #xE4F4)
+    (1 #xE4E4 . #xE4F5)
     (2 . #xE4E5)
     (3 . #xE4E6)
     (4 . #xE4E7)
@@ -1282,9 +1296,9 @@ ekmFlag =
   (classical
     (-3 . #xE4E0)
     (-2 . #xE4E1)
-    (-1 . #xE4E2)
-    (0 . #xE4E3)
-    (1 . #xE4E4)
+    (-1 #xE4E2 . #xE4F3)
+    (0 #xE4E3 . #xE4F4)
+    (1 #xE4E4 . #xE4F5)
     (2 . #xE4F2)
     (3 . #xE4E6)
     (4 . #xE4E7)
@@ -1297,9 +1311,9 @@ ekmFlag =
   (z
     (-3 . #xE4E0)
     (-2 . #xE4E1)
-    (-1 . #xE4E2)
-    (0 . #xE4E3)
-    (1 . #xE4E4)
+    (-1 #xE4E2 . #xE4F3)
+    (0 #xE4E3 . #xE4F4)
+    (1 #xE4E4 . #xE4F5)
     (2 . #xE4F6)
     (3 . #xE4E6)
     (4 . #xE4E7)
@@ -1311,8 +1325,153 @@ ekmFlag =
     (10 . #xE4ED))
 ))
 
+#(define-markup-command
+  (ekm-mmr layout props style ledgered measures limit width space)
+  (symbol? boolean? index? integer? number? number?)
+  (if (> measures limit)
+    (let* ((hbar (ekm:char layout props #xE4F0))
+           (lbar (ekm:char layout props #xE4EF))
+           (rbar (ekm:char layout props #xE4F1))
+           (edge (ekm-extent lbar X)))
+      (stack-stencil-line
+        (- (* edge 0.25)) ;; overlap edge and bar
+        (list
+          lbar
+          (make-filled-box-stencil
+            (cons 0 (- width (* edge 1.5)))
+            (ly:stencil-extent hbar Y))
+          rbar)))
+    (let* ((ssp (ly:output-def-lookup layout 'staff-space))
+           (cts
+             (let cnt ((m measures) (d '(8 4 2 1)) (c '()))
+               (if (null? d)
+                 (reverse c)
+                 (cnt (remainder m (car d))
+                      (cdr d)
+                      (cons* (quotient m (car d)) c)))))
+           (sils
+             (reverse (fold (lambda (ct lg sl)
+               (if (zero? ct)
+                 sl
+                 (let con ((c ct) (s sl))
+                   (if (zero? c)
+                     s
+                     (let ((r (ekm:char layout props
+                                (ekm-assld ekm-rest-map
+                                  style lg (if ledgered -1 1)))))
+                       (con (1- c)
+                            (cons*
+                              (if (= 0 lg)
+                                (ly:stencil-translate-axis r ssp Y)
+                                r)
+                              s)))))))
+               '() cts '(-3 -2 -1 0))))
+           (pad (if (< (length sils) 2)
+                  0
+                (if (>= space 0)
+                  space
+                  (/ (fold (lambda (s w) (- w (ekm-extent s X)))
+                       width sils)
+                     (1- (length sils)))))))
+      (stack-stencil-line pad sils))))
+
 #(define (ekm-rest grob)
-  (ekm-cchar grob 0 (ekm-assld ekm-rest-map grob #f #f)))
+  (ekm-cchar grob 0 (ekm-assld ekm-rest-map grob #f 1)))
+
+#(define (ekm-mmr grob)
+  (let* ((org (ly:multi-measure-rest::print grob))
+         (pos (ly:grob-property grob 'staff-position 0))
+         (lines (ly:grob-property (ly:grob-object grob 'staff-symbol) 'line-count))
+         (sil (grob-interpret-markup grob
+                (make-ekm-mmr-markup
+                  (ly:grob-property grob 'style 'default)
+                  (and (< 1 lines)
+                       (or (odd? pos) (<= lines (abs (+ 2 pos)))))
+                  (ly:grob-property grob 'measure-count)
+                  (ly:grob-property grob 'expand-limit)
+                  (ekm-extent org X)
+                  -1)))
+         (sil (ly:stencil-aligned-to sil X CENTER))
+         (lb (ly:spanner-bound grob LEFT))
+         (rb (ly:spanner-bound grob RIGHT))
+         (refp (ly:grob-common-refpoint lb rb X))
+         (sp (ly:grob-property grob 'spacing-pair
+               '(break-alignment . break-alignment)))
+         (l (ly:paper-column::break-align-width lb (car sp)))
+         (r (ly:paper-column::break-align-width rb (cdr sp))))
+    (ly:stencil-translate-axis
+      sil
+      (+ (* 0.5 (- (car r) (cdr l)))
+         (- (cdr l) (ly:grob-relative-coordinate grob refp X)))
+      X)))
+
+#(define (ekm-mmr-number grob)
+  (let ((num (ly:grob-property grob 'text #f)))
+    (if num
+      (grob-interpret-markup grob
+        (make-ekm-number-markup #xE080 (string->number num)))
+      empty-stencil)))
+
+#(define-markup-command
+  (ekm-rest-by-number layout props log dot-count)
+  (integer? integer?)
+  #:properties ((font-size 0)
+                (ledgers '(-1 0 1))
+                (style '()))
+  (let* ((ledg (memv log ledgers))
+         (rest (ekm-center 2 (ekm:char layout props
+                 (ekm-assld ekm-rest-map style log (if ledg -1 1)))))
+         (dot (and (> dot-count 0) (ekm:char layout props #xE1E7)))
+         (dots (and dot (ekm-cat-dots dot-count dot #f))))
+    (if dot
+      (ly:stencil-stack rest X RIGHT dots
+        (* (ekm-extent dot X)
+           (if (and ledg (<= -1 log 1)) 2
+           (if (> log 2) (/ (- 10 log) 7)
+           1))))
+      rest)))
+
+#(define-markup-command
+  (ekm-multi-measure-rest-by-number layout props measures)
+  (index?)
+  #:properties ((font-size 0)
+                (style '())
+                (expand-limit 10)
+                (word-space)
+                (width 8)
+                (multi-measure-rest-number #t))
+  (let* ((bar (> measures expand-limit))
+         (mmr (interpret-markup layout props
+                (make-ekm-mmr-markup
+                  (if (null? style) 'default style)
+                  #f measures expand-limit width word-space))))
+    (if (or bar
+            (and multi-measure-rest-number (> measures 1)))
+      (let ((num (interpret-markup layout props
+                   (make-fontsize-markup -2
+                     (make-ekm-number-markup #xE080 measures)))))
+        (ly:stencil-combine-at-edge
+          mmr
+          Y UP
+          (ly:stencil-translate-axis
+            num
+            (- (interval-center (ly:stencil-extent mmr X))
+               (interval-center (ly:stencil-extent num X)))
+            X)
+          (if bar 0 (* 0.8 (ly:output-def-lookup layout 'staff-space)))))
+      mmr)))
+
+#(define-markup-command (ekm-rest layout props duration)
+  (ly:duration?)
+  #:properties (ekm-rest-by-number-markup
+                ekm-multi-measure-rest-by-number-markup)
+  (let ((measures (ly:duration-scale duration))
+        (mmr? (chain-assoc-get 'multi-measure-rest props)))
+    (if (and (index? measures) mmr?)
+      (ekm-multi-measure-rest-by-number-markup layout props measures)
+      (ekm-rest-by-number-markup layout props
+        (ly:duration-log duration)
+        (ly:duration-dot-count duration)))))
 
 
 %% Parentheses
@@ -2225,8 +2384,7 @@ ekmPlayWith =
   (string?)
   (let* ((defl (string-split def #\73))
          (cnt (1- (max 4 (min 7 (length defl)))))
-         (board (interpret-markup layout props
-                (make-ekm-char-markup (+ (* cnt 2) #xE84B))))
+         (board (ekm:char layout props (+ (* cnt 2) #xE84B)))
          (thick (ly:output-def-lookup layout 'line-thickness))
          (w (/ (- (ekm-extent board X) 0.064) (1- cnt)))
          (h (ly:stencil-extent board Y))
@@ -2261,8 +2419,7 @@ ekmPlayWith =
           (ly:stencil-add
             sil
             (ly:stencil-translate
-              (interpret-markup layout props
-                (make-ekm-char-markup (car d)))
+              (ekm:char layout props (car d))
               (cons (second d) (third d)))
             (if (fourth d)
               (ly:stencil-translate
@@ -2385,12 +2542,9 @@ ekmPlayWith =
          (key (if (and i (< 0 i)) (string-drop name (1+ i)) name))
          (d (ekm-asst ekm-accordion-map st key 0)))
     (if (ekm-cp? d)
-      (interpret-markup layout props
-        (make-ekm-cchar-markup 1 d))
-      (let* ((reg (interpret-markup layout props
-                    (make-ekm-char-markup (car d))))
-             (dot (interpret-markup layout props
-                    (make-ekm-cchar-markup 3 #xE8CA)))
+      (ekm-center 1 (ekm:char layout props d))
+      (let* ((reg (ekm:char layout props (car d)))
+             (dot (ekm-center 3 (ekm:char layout props #xE8CA)))
              (sz (/ (magstep font-size) 100))
              (w (* sz (ekm-extent reg X)))
              (h (* sz (ekm-extent reg Y))))
@@ -2915,9 +3069,7 @@ ekmFuncList =
 
 #(define-markup-command (ekm-arrow layout props style orient)
   (symbol? number?)
-  (interpret-markup layout props
-    (make-ekm-char-markup
-      (ekm-oref (ekm-assq ekm-arrow-map style) orient))))
+  (ekm:char layout props (ekm-oref (ekm-assq ekm-arrow-map style) orient)))
 
 #(define-markup-command (ekm-arrow-head layout props axis dir filled)
   (integer? ly:dir? boolean?)
@@ -3016,7 +3168,7 @@ ekmFuncList =
          (dir (ekm-oref ekm-beater-dir orient))
          (dir (if (car ntab) dir (cddr dir)))
          (cp ((if (vector? cpvec) vector-ref +) cpvec (car dir)))
-         (sil (interpret-markup layout props (make-ekm-char-markup (abs cp))))
+         (sil (ekm:char layout props (abs cp)))
          (sil (if (or (negative? cp) (eq? #t (cadr dir))) (flip-stencil Y sil) sil)))
     (if (number? (cadr dir)) (ly:stencil-rotate sil (cadr dir) 0 0) sil)))
 
@@ -3087,15 +3239,12 @@ ekmFuncList =
   #:properties ((direction UP))
   (let ((cp (or (assoc-ref ekm-script-map (string-append "d" (symbol->string style) "fermata"))
                 (assoc-ref ekm-script-map "dfermata"))))
-    (interpret-markup layout props
-      (make-ekm-char-markup
-        (if (eqv? DOWN direction) (cdr cp) (car cp))))))
+    (ekm:char layout props (if (<= 0 direction) (car cp) (cdr cp)))))
 
 
 #(define-markup-command (ekm-eyeglasses layout props dir)
   (ly:dir?)
-  (interpret-markup layout props
-    (make-ekm-char-markup (if (< 0 dir) #xF65F #xEC62))))
+  (ekm:char layout props (if (< 0 dir) #xF65F #xEC62)))
 
 
 %% Brace size variants mapped onto size limit:
@@ -3139,36 +3288,22 @@ ekmFuncList =
   (let* ((note (interpret-markup layout props
                  (ekm-note style log (if (zero? dir) UP dir))))
          (cp (ekm-assq ekm-dots-map style))
-         (dt (interpret-markup layout props
-               (make-ekm-char-markup (car cp))))
+         (dt (ekm:char layout props (car cp)))
          (dts (ekm-cat-dots dots dt #f)))
     (ly:stencil-stack note X RIGHT dts
       (* (ekm-extent dt X)
          (if (and (<= 3 log) (< 0 dir))
            (list-ref cp (- (min log 5) 2)) 1)))))
 
-#(define-markup-command (ekm-rest-by-number layout props style log dots)
-  (symbol? integer? integer?)
-  (let* ((rest (interpret-markup layout props
-                 (make-ekm-cchar-markup 2
-                   (ekm-assld ekm-rest-map style log UP))))
-         (dt (interpret-markup layout props
-               (make-ekm-char-markup #xE1E7)))
-         (dts (ekm-cat-dots dots dt #f)))
-    (ly:stencil-stack rest X RIGHT dts
-      (* (ekm-extent dt X)
-         (if (< 4 log) (* (- log 5) -0.1) 1)))))
-
 
 #(define-markup-command (ekm-metronome layout props cnt)
   (integer?)
-  #:properties ((stroke-space 1))
-  (let ((stroke (interpret-markup layout props
-                  (make-override-markup '(font-size . -3)
-                  (make-ekm-char-markup #xF614)))))
-    (ly:stencil-aligned-to
-      (stack-stencil-line stroke-space (make-list cnt stroke))
-      X CENTER)))
+  #:properties ((word-space))
+  (ly:stencil-aligned-to
+    (stack-stencil-line word-space
+      (make-list cnt
+        (ekm:char layout (cons '((font-size . -3)) props) #xF614)))
+    X CENTER))
 
 ekmMetronome =
 #(define-music-function (music)
@@ -3232,11 +3367,13 @@ ekmSmuflOn =
       \override Dots.stencil = #ekm-dots
     #})
     (on 'flag #{
-      \override Stem.details.lengths = #(cdar ekm-stemlength-map)
+      \override Stem.details.lengths = #(ekm-stemlength 'default)
       \override Flag.stencil = #ekm-flag
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
+      \override MultiMeasureRest.stencil = #ekm-mmr
+      \override MultiMeasureRestNumber.stencil = #ekm-mmr-number
     #})
     (on 'dynamic #{
       \override DynamicText.stencil = #ekm-dyntext
@@ -3320,6 +3457,8 @@ ekmSmuflOff =
     #})
     (on 'rest #{
       \revert Rest.stencil
+      \revert MultiMeasureRest.stencil
+      \revert MultiMeasureRestNumber.stencil
     #})
     (on 'dynamic #{
       \revert DynamicText.stencil
