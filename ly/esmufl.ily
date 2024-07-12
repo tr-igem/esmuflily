@@ -1175,11 +1175,11 @@ ekmMakeClusters =
     (let cat ((c (max count 0))
               (r (if pad point-stencil empty-stencil)))
       (if (zero? c) r
-        (cat (1- c) (ly:stencil-stack r X RIGHT dot ext))))))
+        (cat (1- c) (ly:stencil-stack r X RIGHT dot 0))))))
 
 #(define (ekm-dots grob)
   (ekm-cat-dots
-    (ly:grob-property grob 'dot-count)
+    1
     (ekm-cchar grob 0 #xE1E7)
     #t))
 
@@ -3364,7 +3364,7 @@ ekmSmuflOn =
       \override NoteHead.stencil = #ekm-notehead
     #})
     (on 'dot #{
-      \override Dots.stencil = #ekm-dots
+      \override Dots.dot-stencil = #ekm-dots
     #})
     (on 'flag #{
       \override Stem.details.lengths = #(ekm-stemlength 'default)
@@ -3449,7 +3449,7 @@ ekmSmuflOff =
       \revert NoteHead.stencil
     #})
     (on 'dot #{
-      \revert Dots.stencil
+      \revert Dots.dot-stencil
     #})
     (on 'flag #{
       \revert Stem.details.lengths
