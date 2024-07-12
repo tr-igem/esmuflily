@@ -1253,7 +1253,7 @@ ekmMakeClusters =
           (grob-interpret-markup grob
             (make-translate-scaled-markup
               (cons -0.55 (* -2.5 dir))
-              (make-fontsize-markup 3
+              (make-fontsize-markup 0
                 (make-ekm-char-markup
                   (if (positive? dir) #xE564 #xE565))))))
         flg)
