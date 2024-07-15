@@ -305,3 +305,9 @@ January 2021 - May 2021:
 - Changed calculation of stem lengths for flags.
   Changed "ekm-stemlength-map" and added "(ekm-stemlength)".
 - Changed "(ekm-assld)" for more flexible table access.
+
+2024-07-15:
+- Added SMuFL support for system start delimiters (brace, bracket)
+  with symbol `systemstart`.
+- Added command "\ekm-system-start".
+- Removed command "\ekm-brace".
