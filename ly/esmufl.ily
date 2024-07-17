@@ -1252,10 +1252,10 @@ ekmMakeClusters =
           flg
           (grob-interpret-markup grob
             (make-translate-scaled-markup
-              (cons -0.55 (* -2.5 dir))
-              (make-fontsize-markup 0
-                (make-ekm-char-markup
-                  (if (positive? dir) #xE564 #xE565))))))
+              (if (= UP dir)
+                (cons -0.644 -2.456)
+                (cons -0.596  2.168))
+              (make-ekm-char-markup (if (= UP dir) #xE564 #xE565)))))
         flg)
       (cons
         (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
