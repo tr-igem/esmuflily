@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-07-17
+%% Latest revision: 2024-07-18
 %%
 
 \version "2.24.0"
@@ -1170,18 +1170,17 @@ ekmMakeClusters =
   (beamed    #xE1E7 -1.4 -1.4 -1.4)
 ))
 
-#(define (ekm-cat-dots count dot pad)
+#(define (ekm-cat-dots count dot)
   (let ((ext (ekm-extent dot X)))
     (let cat ((c (max count 0))
-              (r (if pad point-stencil empty-stencil)))
+              (r empty-stencil))
       (if (zero? c) r
-        (cat (1- c) (ly:stencil-stack r X RIGHT dot 0))))))
+        (cat (1- c) (ly:stencil-stack r X RIGHT dot ext))))))
 
 #(define (ekm-dots grob)
   (ekm-cat-dots
-    1
-    (ekm-cchar grob 0 #xE1E7)
-    #t))
+    (ly:grob-property grob 'dot-count)
+    (ekm-cchar grob 0 #xE1E7)))
 
 
 %% Flags and grace note slashes
@@ -1253,8 +1252,8 @@ ekmMakeClusters =
           (grob-interpret-markup grob
             (make-translate-scaled-markup
               (if (= UP dir)
-                (cons -0.644 -2.456)
-                (cons -0.596  2.168))
+                '(-0.644 . -2.456)
+                '(-0.596 . 2.168))
               (make-ekm-char-markup (if (= UP dir) #xE564 #xE565)))))
         flg)
       (cons
@@ -1422,7 +1421,7 @@ ekmFlag =
          (rest (ekm-center 2 (ekm:char layout props
                  (ekm-assld ekm-rest-tab style log (if ledg -1 1)))))
          (dot (and (> dot-count 0) (ekm:char layout props #xE1E7)))
-         (dots (and dot (ekm-cat-dots dot-count dot #f))))
+         (dots (and dot (ekm-cat-dots dot-count dot))))
     (if dot
       (ly:stencil-stack rest X RIGHT dots
         (* (ekm-extent dot X)
@@ -3345,7 +3344,7 @@ ekmFuncList =
                  (ekm-note style log (if (zero? dir) UP dir))))
          (cp (ekm-assq ekm-dots-tab style))
          (dt (ekm:char layout props (car cp)))
-         (dts (ekm-cat-dots dots dt #f)))
+         (dts (ekm-cat-dots dots dt)))
     (ly:stencil-stack note X RIGHT dts
       (* (ekm-extent dt X)
          (if (and (<= 3 log) (< 0 dir))
@@ -3418,7 +3417,7 @@ ekmSmuflOn =
       \override NoteHead.stencil = #ekm-notehead
     #})
     (on 'dot #{
-      \override Dots.dot-stencil = #ekm-dots
+      \override Dots.stencil = #ekm-dots
     #})
     (on 'flag #{
       \override Stem.details.lengths = #(ekm-stemlength 'default)
@@ -3507,7 +3506,7 @@ ekmSmuflOff =
       \revert NoteHead.stencil
     #})
     (on 'dot #{
-      \revert Dots.dot-stencil
+      \revert Dots.stencil
     #})
     (on 'flag #{
       \revert Stem.details.lengths
