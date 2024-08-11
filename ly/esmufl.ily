@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-07-18
+%% Latest revision: 2024-08-11
 %%
 
 \version "2.24.0"
@@ -3582,22 +3582,7 @@ ekmSmuflOff =
   (set! ekm:font-name (if (string-null? f) "Ekmelos" f))
   (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil))))
 
-%% System start delimiters mapped onto style and size limit:
-%%  (style delimiter-entry ...)
-%% delimiter-entry:
-%%  (limit text scale stretch end-height middle-height left right)
-%%  (limit text scale stretch bottom-text top-text left right)
-%%  (limit text scale stretch)
-%% limit:
-%%  entry is used for size < limit
-%% text:
-%%  symbol to draw or #f for lengthen with bottom/top-text
-%% scale:
-%%  scale factor em -> ssp, default is 255/1000
-%% stretch:
-%%  stretch factor or #f for no stretch (= 1), default is #f
-%% left, right:
-%%  X extent of fitting segments
+%% System start delimiters
 #(set! ekm-system-start-tab
   (if (string=? "Bravura" ekm:font-name)
     `((brace
@@ -3626,7 +3611,7 @@ ekmSmuflOff =
         (76 #xF718 255/18000)
         (84 #xF71A 255/20000)
         (97 #xF71A ,(* -83 255/20000) 83)
-        (+inf.0 #xF71A ,(* -83 255/20000) #f 1529/20016 16958/20016 158/676 320/676))
+        (+inf.0 #xF71A ,(* -83 255/20000) #f 1668/20016 16680/20016 168/676 336/676))
       (bracket
         (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.35))
       ;(line-bracket
