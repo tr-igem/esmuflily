@@ -41,11 +41,15 @@ or a single alist if there are no styles (Style = #f).
 
 
 
-Size of Brace
--------------
+System start delimiter
+----------------------
 
-One or more of the following steps are performed to obtain
-the requested size (height).
+The `brace` and `bracket` delimiters are currently supported.
+See [SMuFL glyphs](https://w3c.github.io/smufl/latest/tables/staff-brackets-and-dividers.html).
+
+The requested height is determined from a `bar-line` delimiter.
+Then, one or more of the following steps are performed to obtain
+the requested height for the actual delimiter symbol.
 
 1.  Select
 2.  Scale
@@ -65,8 +69,8 @@ GLYPH-1 is selected for heights less than LIMMIT-1, etc.
     ...
     (+inf.0 GLYPH-N)
 
-Typical (default) heights of a staff group, i.e. of a `'bar-line` delimiter
-in LilyPond and the appropriate limits.
+Typical (default) heights of a staff group, i.e. of a `bar-line` delimiter
+in LilyPond and the appropriate limits:
 
     Staves  Height  Limit
     1       4.1     9
@@ -96,7 +100,7 @@ This is a variant of the "large-item hack" proposed by
 [Daniel Benjamin Miller](https://github.com/dbenjaminmiller).
 
 Draw a top, bottom, and middle segment of the glyph,
-as well as intermediate vertical bars (fitting segmensts).
+as well as intermediate vertical bars (fitting segments).
 It assumes that the glyph is vertically symmetric.
 
     H       Height of the original glyph
@@ -119,11 +123,11 @@ The following parts are drawn:
 
 1.  Glyph for bottom segment
 
-2.  Glyph for top ssegment, translated by ADD
+2.  Glyph translated by ADD for top ssegment
 
 3.  Mask from END to (RH - END)
 
-4.  Glyph for middle segment, translated by ADD/2
+4.  Glyph translated by ADD/2 for middle segment
 
 5.  Bottom mask from END to (RH - MID)/2,
     and top mask from (RH + MID)/2 to (RH - END)
@@ -161,3 +165,49 @@ The following parts are drawn:
      |  ---      --            -------           -------    --        --     ---  |
      |  END       \\                                                   \\    END  |
     --- ---        --                                                   --   --- ---
+
+### Table
+
+The table `ekm-system-start-tab` currently contains hard coded
+font specific values for [Bravura](https://github.com/steinbergmedia/bravura)
+or [Ekmelos](https://github.com/tr-igem/ekmelos).
+
+    ((STYLE
+       DELIMITER-ENTRY
+       ...
+     )
+     ...
+    )
+
+*   STYLE (symbol):
+
+        brace
+        bracket
+
+*   DELIMITER-ENTRY (list):
+
+        (LIMIT GLYPH)
+        (LIMIT GLYPH SCALE)
+        (LIMIT GLYPH SCALE STRETCH)
+        (LIMIT GLYPH SCALE STRETCH END MID LEFT RIGHT)
+        (LIMIT #f SCALE STRETCH BOTTOM TOP LEFT RIGHT)
+
+*   LIMIT (number): The first entry with RH < LIMIT is selected.
+
+*   GLYPH (EXTEXT or #f): Glyph to draw.
+    `#f` draws the delimiter with BOTTOM and TOP without masks and
+    without a middle segment. This is intended for brackets.
+
+*   SCALE (number): Scale factor from EM to staff spaces.
+    Default is 255/1000.
+
+*   STRETCH (number or #f): Stretch factor.
+    `#f` performs no stretching (= 1). This is the default.
+
+*   END (number): Relative height of the end segments of GLYPH.
+
+*   MID (number): Relative height of the middle segment of GLYPH.
+
+*   BOTTOM, TOP (EXTEXT): Glyphs to draw as end segments if GLYPH is `#f`.
+
+*   LEFT, RIGHT (number): X extent of the fitting segment.
