@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-08-11
+%% Latest revision: 2024-08-18
 %%
 
 \version "2.24.0"
@@ -254,9 +254,6 @@
   (or (assq-ref tab key) (cdar tab)))
 
 #(define (ekm-asst tab style key dir)
-  ;; Return the value in tab for style and key,
-  ;; or for key if style #f, or the entire tab if style and key #f.
-  ;; Default is the first style and the last key.
   (let* ((stab (if style (ekm-assq tab style) tab))
          (val (if key (or (assoc-ref stab key) (cdr (last stab))) stab)))
     (if (or (not-pair? val) (zero? dir))
@@ -270,13 +267,6 @@
     (if (ly:grob? grob) (ly:grob-property grob 'style) grob)
     (or log (ly:grob-property grob 'duration-log))
     (or dir (ly:grob-property (ly:grob-object grob 'stem) 'direction))))
-%#(define (ekm-assld tab grob log dir)
-%  (let* ((g (ly:grob? grob))
-%         (st (if g (ly:grob-property grob 'style) grob)))
-%    (ekm-asst tab
-%      st ;(if (symbol? st) st 'default)
-%      (if g (ly:grob-property grob 'duration-log) log)
-%      (if g (ly:grob-property (ly:grob-object grob 'stem) 'direction) dir))))
 
 
 %% Orientation arguments
@@ -357,12 +347,10 @@
     "4stringtalltab"
     "4stringseriftab"
     "bridge"
+    "string"
+    "behindbridgestring"
     "accordion"))
 
-%% Clefs mapped onto glyph name:
-%%  ("glyph-name" cp . cp-change)
-%% glyph-name:
-%%  Has no "clefs." prefix for an additional SMuFL clef.
 #(define ekm-clef-tab '(
   ("clefs.G" #xE050 . #xE07A)
   ("clefs.GG" #xE055 . #xF630)
@@ -384,6 +372,8 @@
   ("4stringtalltab" #xF40C . #f)
   ("4stringseriftab" #xF40D . #f)
   ("bridge" #xE078 . #f)
+  ("string" #xF71C . #f)
+  ("behindbridgestring" #xF71D . #f)
   ("accordion" #xE079 . #f)
   ("clefs.neomensural.c" #xE060 . #xF632)
 ))
@@ -618,19 +608,8 @@ ekmSlashSeparator =
  #})
 
 
-%% Noteheads
+%% Note heads
 
-%% Noteheads mapped onto style and duration log:
-%%  (style . (notehead-entry ...))
-%% notehead-entry:
-%%  (log notehead-data-up . notehead-data-down)
-%%  (log notehead-data)
-%%  (log . cp)
-%% notehead-data:
-%%  cp
-%%  (cp cp-empty stem-attach-x . stem-attach-y)
-%% cp-empty:
-%%  Character to whiteout the background (used by note name noteheads) or #f.
 #(define ekm-notehead-tab '(
   (default
     (-2 #xF637 . #xF638)
@@ -1053,18 +1032,7 @@ ekmNameHeadsTiMinor =
 
 
 %% Note clusters
-%% after lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html
 
-%% Cluster noteheads mapped onto style and duration log:
-%%  (style cluster-entry ...)
-%% cluster-entry:
-%%  (log cluster-data)
-%%  (log cluster-data-up . cluster-data-down)  ; not used
-%% cluster-data:
-%%  (cp-single cp-2nd cp-3rd cp-top cp-mid cp-bottom)
-%%  (cp-single cp-2nd cp-3rd cp-top cp-mid cp-bottom stem-pos stem-attach-x . stem-attach-y)
-%% stem-pos:
-%%  Number added to 'stem-begin-position of stem down
 #(define ekm-cluster-tab '(
   (default
     (-1 (#xE0A0 #xE124 #xE128 #xE12C #xE12D #xE12E))
@@ -1156,11 +1124,6 @@ ekmMakeClusters =
 
 %% Augmentation dots
 
-%% Augmentation dots mapped onto style (for note-by-number):
-%%  (style cp pad-3 pad-4 pad-5)
-%% pad-N:
-%%  Padding between log N note and dot in units of dot width.
-%%  pad-5 applies also to log > 5.
 #(define ekm-dots-tab '(
   (default   #xE1E7 0 0 0)
   (note      #xE1E7 -0.2 0.7 0.7)
@@ -1185,10 +1148,6 @@ ekmMakeClusters =
 
 %% Flags and grace note slashes
 
-%% Flags mapped onto style and duration log (> 2):
-%%  (style flag-entry ...)
-%% flag-entry:
-%%  (log cp-up . cp-down)
 #(define ekm-flag-tab '(
   (default
     (3 #xE240 . #xE241)
@@ -1219,12 +1178,6 @@ ekmMakeClusters =
     (10 #xF424 . #xF426))
 ))
 
-%% Lengths of flag stems mapped onto style:
-%%  (style stem-length extra-length ...)
-%% stem-length:
-%%  Nominal unmodified stem length.
-%% extra-length:
-%%  Amount to lengthen stem for duration log 3-10.
 #(define ekm-stemlength-tab '(
   (default 3.5 0 0 0.73 1.45 2.18 2.92 3.65 4.39)
   (short 3.5 0 0 0 0.53 1.03 1.61 2.18 2.76)
@@ -1271,11 +1224,6 @@ ekmFlag =
 
 %% Rests
 
-%% Rests mapped onto style and duration log:
-%%  (style rest-entry ...)
-%% rest-entry:
-%%  (log . cp)
-%%  (log cp . cp-ledgered)
 #(define ekm-rest-tab '(
   (default
     (-3 . #xE4E0)
@@ -1479,12 +1427,6 @@ ekmFlag =
   (markup #:general-align Y dir #:fontsize size
     (if (ekm-cp? cpm) (make-ekm-char-markup cpm) cpm)))
 
-%% Parentheses mapped onto style and type:
-%%  (style parens-entry ...)
-%% parens-entry:
-%%  (type text-left . text-right)
-%% type:
-%%  a = accidental, h = hairpin, f = function, t = normal text
 #(define ekm-parens-tab `(
   (default
     (a #xE26A . #xE26B)
@@ -1603,8 +1545,6 @@ ekmFlag =
 
 %% Dynamics
 
-%% Dynamics mapped onto name (or single letter of name):
-%%  ("name" . cp)
 #(define ekm-dynamic-tab '(
   ("p" . #xE520)
   ("m" . #xE521)
@@ -1689,9 +1629,6 @@ ekmParensHairpin =
 
 %% Scripts
 
-%% Scripts mapped onto name (car of script-stencil):
-%%  ("name" text-up . text-down)
-%%  ("name" text)
 #(define ekm-script-tab '(
   ("sforzato" #xE4A0 . #xE4A1) ;; accent
   ("espr" #xED40 . #xED41) ;; espressivo
@@ -1969,8 +1906,6 @@ ekmBreathing =
           (else (make-ekm-char-markup (+ c #xE21F)))))
       (cons 0 y))))
 
-%% Tremolo marks mapped onto style name:
-%%  ("name" . text)
 #(define ekm-tremolo-tab '(
   ("buzzroll" . #xE22A)
   ("penderecki" . #xE22B)
@@ -2004,8 +1939,6 @@ ekmTremolo =
       (ly:stencil-combine-at-edge
         stm Y (- d) sym (- (* (ekm-extent sym Y) -0.5) 1.8366)))))
 
-%% Stem symbols mapped onto style name:
-%%  ("name" . text)
 #(define ekm-stem-tab '(
   ("sprechgesang" . #xE645)
   ("halbGesungen" . #xE64B)
@@ -2062,8 +1995,6 @@ ekmStem =
 
 %% Ottavation
 
-%% Ottavation symbols mapped onto definition key:
-%%  ("definition" . cp)
 #(define ekm-ottavation-tab '(
   ("8va" . #xE512)
   ("8vb" . #xE51C)
@@ -2245,9 +2176,6 @@ ekmStem =
 
 %% Fingering
 
-%% Fingering symbols mapped onto definition key:
-%%  ("definition" . cp)
-%% Note: p i m a x used by StrokeFinger
 #(define ekm-finger-tab '(
   ;; italic glyphs
   ("0" . #xED80)
@@ -2389,8 +2317,6 @@ ekmPlayWith =
 
 %% Piano pedals
 
-%% Pedal symbols mapped onto definition key:
-%%  ("key" . text)
 #(define ekm-pedal-tab '(
   ("Ped." . #xE650)
   ("Ped" . #xF434)
@@ -2438,8 +2364,6 @@ ekmPlayWith =
 
 %% Harp pedals
 
-%% Harp pedal symbols mapped onto definition key:
-%%  ("key" . text)
 #(define ekm-harp-pedal-tab '(
   ("^"  . #xE680)
   ("o^" . #xF648)
@@ -2532,15 +2456,7 @@ ekmPlayWith =
 
 
 %% Accordion registers
-%% replaces scm/accreg.scm
 
-%% Accordion registers mapped onto style and name:
-%%  (style register-entry ...)
-%% register-entry:
-%%  ("name" . cp)
-%%  ("name" . (cp-empty (dot-x . dot-y) ...))
-%% dot-x,dot-y:
-%%  Position in percent of cp-empty width/height.
 #(define ekm-accordion-tab '(
   (d ;; \discant
     ("1" . #xE8A4)
@@ -2677,12 +2593,6 @@ ekmStemRicochet =
 
 %% Falls and doits
 
-%% Brass data mapped onto style and duration log (0,1,2):
-%%  (style brass-entry ...)
-%% brass-entry:
-%%  (log minimum-length align-up cp-down cp-up)
-%% align-up:
-%%  #t aligns up if direction is upward.
 #(define ekm-brass-tab '(
   (bend
     (0 6.3  #f #xE5D6 . #xE5D9)
@@ -2731,8 +2641,6 @@ ekmBendAfter =
 #(define ekm-fbass-digits
   '#(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
 
-%% Bass figure accidentals mapped onto alteration:
-%%  (alteration . cp)
 #(define ekm-fbass-acc '(
   (0 . #xEA65)
   (-1/2 . #xEA64)
@@ -2743,10 +2651,6 @@ ekmBendAfter =
   (3/2 . #xECC2)
 ))
 
-%% Precomposed digits with + / \ mapped onto digit + flag:
-%%  (digit+flag . cp)
-%% flag:
-%%  #x100 +,  #x200 /,  #x400 \
 #(define ekm-fbass-pre '(
   (#x102 . #xEA53) ;; 2\+
   (#x104 . #xEA56) ;; 4\+
@@ -2842,8 +2746,6 @@ ekmBendAfter =
 
 %% Analytics
 
-%% Analytics symbols mapped onto definition key:
-%%  ("key" . text)
 #(define ekm-analytics-tab '(
   ("H" . #xE860)
   ("CH" . #xE86A)
@@ -2867,8 +2769,6 @@ ekmBendAfter =
 
 %% Function theory
 
-%% Function theory symbols mapped onto definition key:
-%%  ("key" . text)
 #(define ekm-func-tab `(
   ("0" . #xEA70)
   ("1" . #xEA71)
@@ -3009,7 +2909,6 @@ ekmBendAfter =
     (cons `((font-size . ,size)) props)
     (make-ekm-func-markup def)))
 
-%% after lsr.di.unimi.it/LSR/Item?id=967
 ekmFunc =
 #(define-music-function (def)
   (string?)
@@ -3074,12 +2973,6 @@ ekmFuncList =
 
 %% Arrows and arrow heads
 
-%% Arrows mapped onto style:
-%%  (style . #(cp-N cp-NE cp-E cp-SE cp-S cp-SW cp-W cp-NW cp-NS cp-NESW cp-EW cp-SENW))
-%%  (style . #(cp-N cp-NE cp-E cp-SE cp-S cp-SW cp-W cp-NW))
-%%  (style . #(cp-N cp-E cp-S cp-W))
-%% cp-NESW, cp-SENW:
-%%  Currently either equal cp-N or not present.
 #(define ekm-arrow-tab '(
   ;; SMuFL arrows
   (black .
@@ -3170,14 +3063,6 @@ ekmFuncList =
 
 %% Percussion symbols
 
-%% Beaters mapped onto style and type:
-%%  (style dirs beater-entry ...)
-%% dirs:
-%%  #t = udrl, #f = ud
-%% beater-entry:
-%%  (type . cp)
-%%  (type . #(cp ...))
-%% cp < 0 draws -cp flipped
 #(define ekm-beater-tab '(
   (xyl #t
     (soft . #xE770)
@@ -3237,10 +3122,6 @@ ekmFuncList =
     (fingernail . #(#xE7E6 #x-E7E6)))
 ))
 
-%% Beater orientations for orientation index
-%%  (cp-offset-udrl xform-udrl cp-offset-ud xform-ud)
-%% xform:
-%%  #f = no, #t = flip, or rotation angle
 #(define ekm-beater-dir '#(
   (0 #f  0 #f)
   (2 #f  0 -30)
