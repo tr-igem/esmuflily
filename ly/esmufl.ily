@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-08-18
+%% Latest revision: 2024-09-29
 %%
 
 \version "2.24.0"
@@ -256,9 +256,9 @@
 #(define (ekm-asst tab style key dir)
   (let* ((stab (if style (ekm-assq tab style) tab))
          (val (if key (or (assoc-ref stab key) (cdr (last stab))) stab)))
-    (if (or (not-pair? val) (zero? dir))
+    (if (or (not-pair? val) (boolean? dir))
       val
-      (if (or (null? (cdr val)) (positive? dir))
+      (if (or (null? (cdr val)) (>= dir 0))
         (car val)
         (cdr val)))))
 
@@ -266,7 +266,12 @@
   (ekm-asst tab
     (if (ly:grob? grob) (ly:grob-property grob 'style) grob)
     (or log (ly:grob-property grob 'duration-log))
-    (or dir (ly:grob-property (ly:grob-object grob 'stem) 'direction))))
+    (or dir
+        (let* ((stm (ly:grob-object grob 'stem))
+               (d (if (null? (ly:grob-object stm 'beam))
+                    (ly:grob-property stm 'direction)
+                    (ly:grob-property-data stm 'direction))))
+          (if (number? d) d UP)))))
 
 
 %% Orientation arguments
@@ -330,12 +335,9 @@
 
 
 %% Clefs
-%% see scm\parser-clef.scm
 
-%% Add new clefs to LilyPond
-%% Each has clp = trp = c0p = 0
 #(for-each
-  (lambda (n) (add-new-clef n n 0 0 0))
+  (lambda (n) (add-new-clef n n 0 0 0)) ;clp = trp = c0p = 0
   '("semipitched"
     "varsemipitched"
     "indiandrum"
@@ -350,6 +352,7 @@
     "string"
     "behindbridgestring"
     "accordion"))
+#(add-new-clef "frenchG" "frenchG" -2 0 3)
 
 #(define ekm-clef-tab '(
   ("clefs.G" #xE050 . #xE07A)
@@ -376,6 +379,7 @@
   ("behindbridgestring" #xF71D . #f)
   ("accordion" #xE079 . #f)
   ("clefs.neomensural.c" #xE060 . #xF632)
+  ("frenchG" #xF40E . #f)
 ))
 
 #(define (ekm-clef grob)
@@ -1008,18 +1012,23 @@ ekmSlashSeparator =
   (let* ((d (ekm-assld ekm-notehead-tab grob log dir)))
     (if (pair? d)
       (let ((mk (make-ekm-char-markup (car d))))
-        (if (ly:grob? grob)
-          (ly:grob-set-property! grob 'stem-attachment (cddr d)))
         (if (cadr d)
           (make-combine-markup
-            (make-with-color-markup white
-              (make-ekm-char-markup (cadr d)))
+            (make-with-color-markup white (make-ekm-char-markup (cadr d)))
             mk)
           mk))
       (make-ekm-char-markup d))))
 
 #(define (ekm-notehead grob)
   (grob-interpret-markup grob (ekm-note grob #f #f)))
+
+#(define (ekm-stem-attachment grob)
+  (let* ((stm (ly:grob-object grob 'stem))
+         (dir (ly:grob-property stm 'direction))
+         (d (ekm-assld ekm-notehead-tab grob #f dir)))
+    (if (pair? d)
+      (cddr d)
+      (cons (if (>= dir 0) 1 -1) 0))))
 
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
@@ -1305,7 +1314,7 @@ ekmFlag =
                      s
                      (let ((r (ekm:char layout props
                                 (ekm-assld ekm-rest-tab
-                                  style lg (if ledgered -1 1)))))
+                                  style lg (if ledgered DOWN UP)))))
                        (con (1- c)
                             (cons*
                               (if (= 0 lg)
@@ -1323,7 +1332,7 @@ ekmFlag =
       (stack-stencil-line pad sils))))
 
 #(define (ekm-rest grob)
-  (ekm-cchar grob 0 (ekm-assld ekm-rest-tab grob #f 1)))
+  (ekm-cchar grob 0 (ekm-assld ekm-rest-tab grob #f UP)))
 
 #(define (ekm-mmr grob)
   (let* ((org (ly:multi-measure-rest::print grob))
@@ -1367,7 +1376,7 @@ ekmFlag =
                 (style '()))
   (let* ((ledg (memv log ledgers))
          (rest (ekm-center 2 (ekm:char layout props
-                 (ekm-assld ekm-rest-tab style log (if ledg -1 1)))))
+                 (ekm-assld ekm-rest-tab style log (if ledg DOWN UP)))))
          (dot (and (> dot-count 0) (ekm:char layout props #xE1E7)))
          (dots (and dot (ekm-cat-dots dot-count dot))))
     (if dot
@@ -1599,7 +1608,7 @@ ekmFlag =
 ekmParensDyn =
 #(define-event-function (style dyn)
   (symbol? ly:event?)
-  (let ((p (ekm-asst ekm-parens-tab style 't 0)))
+  (let ((p (ekm-asst ekm-parens-tab style 't #f)))
     (make-music 'AbsoluteDynamicEvent
       'text
       (markup #:concat (
@@ -1616,7 +1625,7 @@ ekmParensHairpin =
   #{
     \once \override Hairpin.stencil =
     #(lambda (grob)
-      (let* ((p (ekm-asst ekm-parens-tab style 'h 0))
+      (let* ((p (ekm-asst ekm-parens-tab style 'h #f))
              (l (ekm-ctext grob 2 (car p)))
              (r (ekm-ctext grob 2 (cdr p)))
              (x (+ (ekm-extent l X) 0.6)))
@@ -1749,7 +1758,7 @@ ekmStartTrillSpan =
 
 #(define (ekm-calc-parenthesis-stencils grob)
   (let* ((parens (ekm-asst ekm-parens-tab
-                   (ly:grob-property grob 'style) 'a 0)))
+                   (ly:grob-property grob 'style) 'a #f)))
     (list (ekm-ctext grob 1 (car parens))
           (ekm-ctext grob 1 (cdr parens)))))
 
@@ -2547,7 +2556,7 @@ ekmPlayWith =
   (let* ((i (string-index name #\space))
          (st (if (and i (< 0 i)) (string->symbol (string-take name i)) 'd))
          (key (if (and i (< 0 i)) (string-drop name (1+ i)) name))
-         (d (ekm-asst ekm-accordion-tab st key 0)))
+         (d (ekm-asst ekm-accordion-tab st key #f)))
     (if (ekm-cp? d)
       (ekm-center 1 (ekm:char layout props d))
       (let* ((reg (ekm:char layout props (car d)))
@@ -2610,7 +2619,7 @@ ekmStemRicochet =
 
 #(define (ekm-accbrass style grob)
   (let ((dur (ly:grob-property (ly:grob-parent grob X) 'duration-log 2)))
-    (ekm-asst ekm-brass-tab style (max (min dur 2) 0) 0)))
+    (ekm-asst ekm-brass-tab style (max (min dur 2) 0) #f)))
 
 #(define (ekm-brass style up grob)
   (let* ((d (ekm-accbrass style grob))
@@ -3222,7 +3231,7 @@ ekmFuncList =
 #(define-markup-command (ekm-note-by-number layout props style log dots dir)
   (symbol? integer? integer? ly:dir?)
   (let* ((note (interpret-markup layout props
-                 (ekm-note style log (if (zero? dir) UP dir))))
+                 (ekm-note style log dir)))
          (cp (ekm-assq ekm-dots-tab style))
          (dt (ekm:char layout props (car cp)))
          (dts (ekm-cat-dots dots dt)))
@@ -3296,6 +3305,7 @@ ekmSmuflOn =
     #})
     (on 'notehead #{
       \override NoteHead.stencil = #ekm-notehead
+      \override NoteHead.stem-attachment = #ekm-stem-attachment
     #})
     (on 'dot #{
       \override Dots.stencil = #ekm-dots
@@ -3385,6 +3395,7 @@ ekmSmuflOff =
     #})
     (on 'notehead #{
       \revert NoteHead.stencil
+      \revert NoteHead.stem-attachment
     #})
     (on 'dot #{
       \revert Dots.stencil
