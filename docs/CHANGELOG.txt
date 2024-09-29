@@ -311,3 +311,14 @@ January 2021 - May 2021:
   with symbol `systemstart`.
 - Added command "\ekm-system-start".
 - Removed command "\ekm-brace".
+
+2024-08-18:
+- Added clefs "string" and "behindbridgestring".
+
+2024-08-19:
+- Added clef "frenchG".
+
+2024-09-29:
+- Fixed cyclic dependency of Stem "direction" property for beamed
+  cross-staff notes (issue #11). Changed "(ekm-assld)".
+- Added procedure for "NoteHead.stem-attachment".
