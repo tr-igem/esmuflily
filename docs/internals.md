@@ -27,9 +27,9 @@ falls and doits.
 *   STYLE (symbol): The style of one or more musical symbols.
     The first style is the default.
 
-*   ENTRY and the values returned by `(ekm-asst)` for Dir:
+*   ENTRY: Specifed are the values returned by `ekm-asst` for Dir:
 
-        Dir                         = 0                 > 0     < 0
+        _                   Dir:    #f                  >= 0    < 0
         (KEY . VALUE)               VALUE               VALUE   VALUE
         (KEY VALUE)                 (VALUE)             VALUE   VALUE
         (KEY VALUE-1 . VALUE-2)     (VALUE-1 . VALUE-2) VALUE-1 VALUE-2
@@ -38,9 +38,13 @@ falls and doits.
 *   KEY (symbol, number, string): Usually the duration log.
     The last key is the default.
 
-*   VALUE (EXTEXT): Musical symbol.
+*   VALUE: Musical symbol, possibly followed by metadata, e.g. the
+    stem-attachment for a note head.
 
-#### Access
+        EXTEXT
+        (EXTEXT ...)
+
+#### Access procedures
 
     (ekm-assq Table Key)
 
@@ -50,12 +54,16 @@ Return the value in Table for Key (symbol).
 
 Return the value in Table for Style (symbol), Key (symbol, number, string),
 and Dir (number).
-Style = #f reads from a single alist. Key = #f returns the entire table.
+Expect Table being a single alist if Style is #f.
+Return the entire table if Key is #f.
+Return the entire value of the entry if Dir is #f.
 
     (ekm-assld Table Grob Log Dir)
 
 Return the value in Table for the `style`, `duration-log`, and
-`stem.direction` properties of Grob, or for Log or Dir if true.
+`Stem.direction` properties of Grob, or for Log or Dir if true.
+If Grob is not a grob it must itself be a style and Log and Dir must be
+specific values (not #f).
 
 
 ### Definition Table
@@ -90,10 +98,9 @@ These keys are always applicable but can be overridden in a definition table.
 Note heads
 ----------
 
-### Table `ekm-notehead-tab`
-
-    ((NOTEHEAD-STYLE NOTEHEAD-ENTRY ...)
-     ...
+    ekm-notehead-tab (
+      (NOTEHEAD-STYLE NOTEHEAD-ENTRY ...)
+      ...
     )
 
 *   NOTEHEAD-STYLE (symbol): `default`, `harmonic`, `diamond`, `cross`,
@@ -128,10 +135,9 @@ Note clusters
 Implements Henry Cowell's clusters
 (see lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html)
 
-### Table `ekm-cluster-tab`
-
-    ((CLUSTER-STYLE CLUSTER-ENTRY ...)
-     ...
+    ekm-cluster-tab (
+      (CLUSTER-STYLE CLUSTER-ENTRY ...)
+      ...
     )
 
 *   CLUSTER-STYLE (symbol): `default`, `harmonic`, `diamond`, `square`.
@@ -165,10 +171,9 @@ Implements Henry Cowell's clusters
 Flags
 -----
 
-### Table `ekm-flag-tab`
-
-    ((FLAG-STYLE FLAG-ENTRY ...)
-     ...
+    ekm-flag-tab (
+      (FLAG-STYLE FLAG-ENTRY ...)
+      ...
     )
 
 *   FLAG-STYLE (symbol): `default`, `short`, `straight`.
@@ -181,10 +186,11 @@ Flags
 
 *   CP (integer): Code point of the flag glyph.
 
-### Table `ekm-stemlength-tab`
+###
 
-    ((FLAG-STYLE STEM-LENGTH EXTRA-LENGTH-3 ... EXTRA-LENGTH-10)
-     ...
+    ekm-stemlength-tab (
+      (FLAG-STYLE STEM-LENGTH EXTRA-LENGTH-3 ... EXTRA-LENGTH-10)
+      ...
     )
 
 *   STEM-LENGTH (number): Nominal unmodified stem length, usually 3.5.
@@ -196,10 +202,9 @@ Flags
 Rests
 -----
 
-### Table `ekm-rest-tab`
-
-    ((REST-STYLE REST-ENTRY ...)
-     ...
+    ekm-rest-tab (
+      (REST-STYLE REST-ENTRY ...)
+      ...
     )
 
 *   REST-STYLE (symbol): `default`, `classical`, `z`.
@@ -305,7 +310,7 @@ The following components are drawn:
 
 ####
 
-              Bottom    Top     Mask    Middle    Mask   Fitting   Result
+              Bottom    Top     Mask    Middle    Mask    Fitting   Result
     ---                    --                                           --   --- ---
      |                    //                                           //    END  |
      |                   --    -------           -------    --        --     ---  |
@@ -334,13 +339,14 @@ The following components are drawn:
      |  END       \\                                                   \\    END  |
     --- ---        --                                                   --   --- ---
 
-### Table `ekm-system-start-tab`
 
-It contains font specific values either for [Bravura](https://github.com/steinbergmedia/bravura)
+The table contains font specific values,
+either for [Bravura](https://github.com/steinbergmedia/bravura)
 or for [Ekmelos](https://github.com/tr-igem/ekmelos).
 
-    ((DELIMITER-STYLE DELIMITER-ENTRY ...)
-     ...
+    ekm-system-start-tab (
+      (DELIMITER-STYLE DELIMITER-ENTRY ...)
+      ...
     )
 
 *   DELIMITER-STYLE (symbol): `brace`, `bracket`.
@@ -356,14 +362,14 @@ or for [Ekmelos](https://github.com/tr-igem/ekmelos).
 *   LIMIT (number): The first entry with RH < LIMIT is selected.
 
 *   DELIMITER (EXTEXT or #f): Symbol to draw.
-     #f draws the delimiter with BOTTOM and TOP without masks
-    and without a middle segment. This is intended for brackets.
+    #f draws the delimiter with BOTTOM and TOP without masks and
+    without a middle segment. This is intended for brackets.
 
 *   SCALE (number): Scale factor from EM to staff spaces.
     Default is 255/1000.
 
 *   STRETCH (number or #f): Stretch factor.
-     #f does no stretching (= 1). This is the default.
+    #f does no stretching (= 1). This is the default.
 
 *   END (number): Relative height of the end segments of DELIMITER.
 
@@ -380,10 +386,9 @@ Accordion registers
 
 Note: The module `(scm accreg)` is not required.
 
-### Table `ekm-accordion-tab`
-
-    ((REGISTER-TYPE REGISTER-ENTRY ...)
-     ...
+    ekm-accordion-tab (
+      (REGISTER-TYPE REGISTER-ENTRY ...)
+      ...
     )
 
 *   REGISTER-TYPE (symbol): `d` (discant), `sb` (standard bass),
@@ -410,10 +415,9 @@ Note: The module `(scm accreg)` is not required.
 Falls and doits
 ---------------
 
-### Table `ekm-brass-tab`
-
-    ((BRASS-STYLE BRASS-ENTRY ...)
-     ...
+    ekm-brass-tab (
+      (BRASS-STYLE BRASS-ENTRY ...)
+      ...
     )
 
 *   BRASS-STYLE (symbol): `bend`, `rough`, `smooth`.
@@ -426,7 +430,7 @@ Falls and doits
 
 *   MINIMUM-LENGTH (number): Value for the `minimum-length` property.
 
-*   ALIGN-UP (boolean): `#t` aligns up if the direction is upward.
+*   ALIGN-UP (boolean): #t aligns up if the direction is upward.
 
 *   CP (integer): Code point of the fall or doit (lift) glyph.
 
@@ -435,10 +439,9 @@ Falls and doits
 Parentheses
 -----------
 
-### Table `ekm-parens-tab`
-
-    ((PARENS-STYLE PARENS-ENTRY ...)
-     ...
+    ekm-parens-tab (
+      (PARENS-STYLE PARENS-ENTRY ...)
+      ...
     )
 
 *   PARENS-STYLE (symbol): `default`, `bracket`, `brace`, `angle`.
@@ -457,9 +460,10 @@ Parentheses
 Clefs
 -----
 
-### Table `ekm-clef-tab`
-
-    ((CLEF-NAME CP . CP-CHANGE) ...)
+    ekm-clef-tab (
+      (CLEF-NAME CP . CP-CHANGE)
+      ...
+    )
 
 *   CLEF-NAME (string): `"clefs.G"`, ... `"semipitched"`, ...
     Additional SMuFL clefs have no prefix `"clefs."`.
@@ -467,16 +471,17 @@ Clefs
 *   CP (integer): Code point of the clef glyph.
 
 *   CP-CHANGE (integer or #f): Code point of the change clef glyph.
-     #f draws CP with a 2 steps smaller font size.
+    #f draws CP with a 2 steps smaller font size.
 
 
 
 Augmentation dots
 -----------------
 
-### Table `ekm-dots-tab`
-
-    ((DOT-STYLE CP PAD-3 PAD-4 PAD-5) ...)
+    ekm-dots-tab (
+      (DOT-STYLE CP PAD-3 PAD-4 PAD-5)
+      ...
+    )
 
 *   DOT-STYLE (symbol): `default`, `note`, `metronome`, `straight`,
     `short`, `beamed`.
@@ -493,9 +498,10 @@ This is used only by `\\note-by-number`.
 Dynamics
 --------
 
-### Table `ekm-dynamic-tab`
-
-    ((DYNAMIC-NAME . CP) ...)
+    ekm-dynamic-tab (
+      (DYNAMIC-NAME . CP)
+      ...
+    )
 
 *   DYNAMIC-NAME (string): `"p"`, `"m"`, `"f"`, `"r"`, `"s"`, `"z"`, `"n"`,
     `"pp"`, `"mp"`, ...
@@ -512,9 +518,10 @@ for each letter, but not for keys of two or more letters.
 Scripts - Expressive marks
 --------------------------
 
-### Table `ekm-script-tab`
-
-    (SCRIPT-ENTRY ...)
+    ekm-script-tab (
+      SCRIPT-ENTRY
+      ...
+    )
 
 *   SCRIPT-ENTRY:
 
@@ -531,9 +538,15 @@ Scripts - Expressive marks
 Stem symbols and Tremolos
 -------------------------
 
-### Tables `ekm-stem-tab` and `ekm-tremolo-tab`
+    ekm-stem-tab (
+      (STEMSYMBOL-NAME . STEMSYMBOL)
+      ...
+    )
 
-    ((STEMSYMBOL-NAME . STEMSYMBOL) ...)
+    ekm-tremolo-tab (
+      (STEMSYMBOL-NAME . STEMSYMBOL)
+      ...
+    )
 
 *   STEMSYMBOL-NAME (string): `"sprechgesang"`, `"sussurando"`, ...
     `"buzzroll"`, `"penderecki"`, ...
@@ -545,9 +558,10 @@ Stem symbols and Tremolos
 Ottavation
 ----------
 
-### Table `ekm-ottavation-tab`
-
-    ((OTTAVATION-KEY . CP) ...)
+    ekm-ottavation-tab (
+      (OTTAVATION-KEY . CP)
+      ...
+    )
 
 *   OTTAVATION-KEY (string): `"8"`, `"8va"`, `"15"`, `"15ma"`, ...
 
@@ -558,9 +572,10 @@ Ottavation
 Fingering
 ---------
 
-### Table `ekm-finger-tab`
-
-    ((FINGERING-KEY . CP) ...)
+    ekm-finger-tab (
+      (FINGERING-KEY . CP)
+      ...
+    )
 
 *   FINGERING-KEY (string): `"1"`, `"2"`, ... `"th"`, `"p"`, ...
 
@@ -574,9 +589,10 @@ Note: The fingering symbols p, i, m, a, and x are used by the
 Piano pedals
 ------------
 
-### Table `ekm-pedal-tab`
-
-    ((PEDAL-KEY . PEDAL) ...)
+    ekm-pedal-tab (
+      (PEDAL-KEY . PEDAL)
+      ...
+    )
 
 *   PEDAL-KEY (string): `"Ped."`, `"Sost."`, `"*"`, ...
 
@@ -587,9 +603,10 @@ Piano pedals
 Harp pedals
 -----------
 
-### Table `ekm-harp-pedal-tab`
-
-    ((HARPPEDAL-KEY . HARPPEDAL) ...)
+    ekm-harp-pedal-tab (
+      (HARPPEDAL-KEY . HARPPEDAL)
+      ...
+    )
 
 *   HARPPEDAL-KEY (string): `"^"`, `"-"`, `"v"`, ...
 
@@ -600,17 +617,21 @@ Harp pedals
 Figured bass
 ------------
 
-### Table `ekm-fbass-acc`
-
-    ((ALTERATION . CP) ...)
+    ekm-fbass-acc (
+      (ALTERATION . CP)
+      ...
+    )
 
 *   ALTERATION (rational): 0, ±1/2, ±1, ±3/2.
 
 *   CP (integer): Code point of the bass figure accidental.
 
-### Table `ekm-fbass-pre`
+###
 
-    ((PRECOMP-FLAG . CP) ...)
+    ekm-fbass-pre (
+      (PRECOMP-FLAG . CP)
+      ...
+    )
 
 *   PRECOMP-FLAG (integer): Value of the bass figure digit + flag for the
     combining glyph: #x100 (plus `+`), #x200 (raising `/`), #x400 (lowering `\\`).
@@ -622,9 +643,10 @@ Figured bass
 Analytics
 ---------
 
-### Table `ekm-analytics-tab`
-
-    ((ANALYTICS-KEY . ANALYTICS) ...)
+    ekm-analytics-tab (
+      (ANALYTICS-KEY . ANALYTICS)
+      ...
+    )
 
 *   ANALYTICS-KEY (string): `"H"`, `"CH"`, `"N"`, ...
 
@@ -637,9 +659,10 @@ Function theory
 
 See [LSR/Item?id=967](https://lsr.di.unimi.it/LSR/Item?id=967) for `\\ekmFunc`.
 
-### Table `ekm-func-tab`
-
-    ((FUNC-KEY . FUNC) ...)
+    ekm-func-tab (
+      (FUNC-KEY . FUNC)
+      ...
+    )
 
 *   FUNC-KEY (string): `"0"`, `"1"`, ... `"D"`, `"DD"`, `"/D"`, `"S"`, ...
 
@@ -650,19 +673,18 @@ See [LSR/Item?id=967](https://lsr.di.unimi.it/LSR/Item?id=967) for `\\ekmFunc`.
 Arrows and arrow heads
 ----------------------
 
-### Table `ekm-arrow-tab`
-
-    ((ARROW-STYLE . ARROW-DATA)
-     ...
+    ekm-arrow-tab (
+      (ARROW-STYLE . ARROW-DATA)
+      ...
     )
 
 *   ARROW-STYLE (symbol): `black`, `white`, `open`, `simple`, `double`, ...
 
 *   ARROW-DATA (vector):
 
-         #(CP-N CP-E CP-S CP-W)
-         #(CP-N CP-NE CP-E CP-SE CP-S CP-SW CP-W CP-NW)
-         #(CP-N CP-NE CP-E CP-SE CP-S CP-SW CP-W CP-NW CP-NS CP-NESW CP-EW CP-SENW)
+        #(CP-N CP-E CP-S CP-W)
+        #(CP-N CP-NE CP-E CP-SE CP-S CP-SW CP-W CP-NW)
+        #(CP-N CP-NE CP-E CP-SE CP-S CP-SW CP-W CP-NW CP-NS CP-NESW CP-EW CP-SENW)
 
 *   CP (integer): Code point of an arrow glyph.
     Except for `simple`, CP-NESW and CP-SENW are either = CP-N or not present.
@@ -672,10 +694,9 @@ Arrows and arrow heads
 Percussion symbols - Beaters
 ----------------------------
 
-### Table `ekm-beater-tab`
-
-    ((BEATER-STYLE BEATER-PREDEF BEATER-ENTRY ...)
-     ...
+    ekm-beater-tab (
+      (BEATER-STYLE BEATER-PREDEF BEATER-ENTRY ...)
+      ...
     )
 
 *   BEATER-STYLE (symbol): `xyl`, `glsp`, `timpani`, `yarn`, ...
@@ -696,16 +717,22 @@ Percussion symbols - Beaters
     CP < 0 draws (abs CP) flipped.
     For a single CP-N, the other predefined glyphs have consecutive code points.
 
-### Table `ekm-beater-dir`
 
-Vector with data to achieve a beater orientation for orientation index 0 to 7.
+### Beater orientation
 
-    #((CP-OFFSET-4 XFORM-4 CP-OFFSET-2 XFORM-2)
-     ...
+A vector with eight entries to obtain the beater orientation for the
+orientation index 0 to 7.
+
+    ekm-beater-dir #(
+      (CP-OFFSET-4 XFORM-4 CP-OFFSET-2 XFORM-2)
+      ...
     )
 
 *   CP-OFFSET-4/2 (integer): Offset to the code point of a beater glyph
     where 4 (N, S, NE, NW) or 2 (N, S) predefined orientations exist.
 
-*   XFORM-4/2 (boolean or number): #f = no transformation, #t = flip,
-    or rotation angle.
+*   XFORM-4/2 (boolean or number):
+
+        #f      No transformation
+        #t      Flip
+        NUMBER  Rotation angle
