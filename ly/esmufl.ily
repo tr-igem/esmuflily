@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-09-29
+%% Latest revision: 2024-10-07
 %%
 
 \version "2.24.0"
@@ -256,7 +256,7 @@
 #(define (ekm-asst tab style key dir)
   (let* ((stab (if style (ekm-assq tab style) tab))
          (val (if key (or (assoc-ref stab key) (cdr (last stab))) stab)))
-    (if (or (not-pair? val) (boolean? dir))
+    (if (or (not-pair? val) (not dir))
       val
       (if (or (null? (cdr val)) (>= dir 0))
         (car val)
@@ -1715,29 +1715,22 @@ ekmScriptSmall =
 %% Trill span
 
 #(define (ekm-trillspan grob)
-  (let* ((org (ly:grob-original grob))
-         (sib (if (ly:grob? org) (ly:spanner-broken-into org) '()))
-         (lbnd (assq-ref (ly:grob-property grob 'left-bound-info) 'X))
-         (rbnd (assq-ref (ly:grob-property grob 'right-bound-info) 'X))
+  (let* ((ext (ly:stencil-extent (ly:grob-property grob 'stencil) X))
          (tr (ekm-cchar grob 0 #xE566))
+         (tr (ly:stencil-translate-axis tr (car ext) X))
          (tempo (ly:grob-property grob 'text))
-         (tempo (if (integer? tempo) (min 4 (max -4 tempo)) 0))
-         (seg (- #xEAA4 tempo))
-         (sil (ly:stencil-combine-at-edge
-                tr X RIGHT
-                (grob-interpret-markup grob
-                  (make-ekm-chars-markup (make-list
-                    (inexact->exact (floor (/ (- rbnd lbnd (ekm-extent tr X))
-                      (ekm-extent (ekm-cchar grob 0 seg) X))))
-                    seg)))
-                0)))
-    (if (or (null? sib) (eq? grob (car sib)))
-      sil
-      (ly:stencil-translate-axis sil
-        (- lbnd
-           (ly:output-def-lookup (ly:grob-layout grob) 'short-indent)
-           1)
-        X))))
+         (seg (- #xEAA4 (if (integer? tempo) (min 4 (max -4 tempo)) 0))))
+    (ly:grob-set-property! grob 'stencil
+      (ly:stencil-combine-at-edge
+        tr
+        X RIGHT
+        (grob-interpret-markup grob
+          (make-ekm-chars-markup (make-list
+            (inexact->exact (floor
+              (/ (- (interval-length ext) (ekm-extent tr X))
+                 (ekm-extent (ekm-cchar grob 0 seg) X))))
+            seg)))
+        0))))
 
 ekmStartTrillSpan =
 #(define-event-function (tempo)
@@ -3333,7 +3326,7 @@ ekmSmuflOn =
       \override LaissezVibrerTie.stencil = #ekm-lvtie
     #})
     (on 'trill #{
-      \override TrillSpanner.stencil = #ekm-trillspan
+      \override TrillSpanner.after-line-breaking = #ekm-trillspan
       \override TrillPitchHead.stencil = #ekm-trillpitch-head
       \override TrillPitchParentheses.stencils = #ekm-calc-parenthesis-stencils
     #})
@@ -3423,7 +3416,7 @@ ekmSmuflOff =
       \revert LaissezVibrerTie.stencil
     #})
     (on 'trill #{
-      \revert TrillSpanner.stencil
+      \revert TrillSpanner.after-line-breaking
       \revert TrillPitchHead.stencil
       \revert TrillPitchParentheses.stencils
     #})
