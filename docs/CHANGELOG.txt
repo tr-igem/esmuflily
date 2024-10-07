@@ -322,3 +322,6 @@ January 2021 - May 2021:
 - Fixed cyclic dependency of Stem "direction" property for beamed
   cross-staff notes (issue #11). Changed "(ekm-assld)".
 - Added procedure for "NoteHead.stem-attachment".
+
+2024-10-07:
+- Fixed position of broken trill spanner with "after-line-breaking".
