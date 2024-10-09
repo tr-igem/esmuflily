@@ -325,3 +325,8 @@ January 2021 - May 2021:
 
 2024-10-07:
 - Fixed position of broken trill spanner with "after-line-breaking".
+
+2024-10-10:
+- Fixed too large change clef for non-default staff space (issue #12).
+- Added variable "ekm:clef-change-font-size".
+- Added variable "ekm:font-size" for all symbols like in Ekmelily.
