@@ -21,13 +21,16 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-10-07
+%% Latest revision: 2024-10-10
 %%
 
 \version "2.24.0"
 
 
+%% Font
+
 #(define ekm:font-name #f)
+#(define ekm:font-size 5)
 #(define ekm:draw-paths #f)
 
 
@@ -62,7 +65,7 @@
   (interpret-markup
     layout
     (cons
-      `((font-size . ,(+ font-size 5))
+      `((font-size . ,(+ ekm:font-size font-size))
         (font-name . ,ekm:font-name))
       props)
     str))
@@ -76,7 +79,7 @@
     (ekm-path-stencil cp font-size 0 #t)
     (interpret-markup layout
       (cons
-        `((font-size . ,(+ font-size 5))
+        `((font-size . ,(+ ekm:font-size font-size))
           (font-name . ,ekm:font-name))
         props)
       (ly:wide-char->utf-8 cp)))))
@@ -92,7 +95,7 @@
       (interpret-markup layout
         (cons
           (cons*
-            `(font-size . ,(+ font-size 5))
+            `(font-size . ,(+ ekm:font-size font-size))
             `(font-name . ,ekm:font-name)
             (if (null? ff)
               ff
@@ -382,18 +385,21 @@
   ("frenchG" #xF40E . #f)
 ))
 
+#(define-public ekm:clef-change-font-size '(1.5 . -2))
+
 #(define (ekm-clef grob)
   (let* ((name (ly:grob-property grob 'glyph-name))
          (ch (string-suffix? "_change" name))
          (name (if ch (string-drop-right name 7) name))
          (cps (assoc-ref ekm-clef-tab name))
-         (sz (ly:staff-symbol-staff-space grob)) ;; 1.5 for TabStaff (1.5 * 1.4 = 2.1)
-         (sz (if (= 1 sz) 0 (* sz 1.4))))
+         (mk (make-ekm-char-markup
+               (if (and ch (cdr cps)) (cdr cps) (car cps)))))
     (grob-interpret-markup grob
-      (make-fontsize-markup
-        (if ch (if (cdr cps) (+ sz 2) (- sz 2)) sz) ;; or (+ sz 1.5) for change
-        (make-ekm-char-markup
-          (if (and ch (cdr cps)) (cdr cps) (car cps)))))))
+      (if ch
+        (make-fontsize-markup
+          ((if (cdr cps) car cdr) ekm:clef-change-font-size)
+          mk)
+        mk))))
 
 #(define (ekm-clef-mod trans style)
   (let* ((cps (case style
