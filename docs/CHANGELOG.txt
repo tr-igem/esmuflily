@@ -330,3 +330,6 @@ January 2021 - May 2021:
 - Fixed too large change clef for non-default staff space (issue #12).
 - Added variable "ekm:clef-change-font-size".
 - Added variable "ekm:font-size" for all symbols like in Ekmelily.
+
+2024-10-16:
+- Added SMuFL support for ambitus note heads. Changed "(ekm-notehead)".
