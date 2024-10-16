@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-10-10
+%% Latest revision: 2024-10-16
 %%
 
 \version "2.24.0"
@@ -1025,8 +1025,8 @@ ekmSlashSeparator =
           mk))
       (make-ekm-char-markup d))))
 
-#(define (ekm-notehead grob)
-  (grob-interpret-markup grob (ekm-note grob #f #f)))
+#(define ((ekm-notehead dir) grob)
+  (grob-interpret-markup grob (ekm-note grob #f dir)))
 
 #(define (ekm-stem-attachment grob)
   (let* ((stm (ly:grob-object grob 'stem))
@@ -3303,8 +3303,9 @@ ekmSmuflOn =
       \override Timing.TimeSignature.stencil = #ekm-timesig
     #})
     (on 'notehead #{
-      \override NoteHead.stencil = #ekm-notehead
+      \override NoteHead.stencil = #(ekm-notehead #f)
       \override NoteHead.stem-attachment = #ekm-stem-attachment
+      \override AmbitusNoteHead.stencil = #(ekm-notehead 0)
     #})
     (on 'dot #{
       \override Dots.stencil = #ekm-dots
@@ -3395,6 +3396,7 @@ ekmSmuflOff =
     (on 'notehead #{
       \revert NoteHead.stencil
       \revert NoteHead.stem-attachment
+      \revert AmbitusNoteHead.stencil
     #})
     (on 'dot #{
       \revert Dots.stencil
