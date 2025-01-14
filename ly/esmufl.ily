@@ -1,5 +1,5 @@
 %% Esmuflily - Support for SMuFL/Ekmelos
-%% Copyright (c) 2020-2024 Thomas Richter
+%% Copyright (c) 2020-2025 Thomas Richter
 %%
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2024-10-16
+%% Latest revision: 2025-01-14
 %%
 
 \version "2.24.0"
@@ -1722,9 +1722,10 @@ ekmScriptSmall =
 
 #(define (ekm-trillspan grob)
   (let* ((ext (ly:stencil-extent (ly:grob-property grob 'stencil) X))
-         (tr (ekm-cchar grob 0 #xE566))
+         (tr (ly:grob-property grob 'text #xE566))
+         (tr (ekm-ctext grob 0 tr))
          (tr (ly:stencil-translate-axis tr (car ext) X))
-         (tempo (ly:grob-property grob 'text))
+         (tempo (ly:grob-property grob 'zigzag-width))
          (seg (- #xEAA4 (if (integer? tempo) (min 4 (max -4 tempo)) 0))))
     (ly:grob-set-property! grob 'stencil
       (ly:stencil-combine-at-edge
@@ -1743,7 +1744,15 @@ ekmStartTrillSpan =
   (integer?)
   (make-music 'TrillSpanEvent
     'span-direction START
-    'tweaks `((text . ,tempo))))
+    'tweaks `((zigzag-width . ,tempo))))
+
+ekmStartTrillSpanScript =
+#(define-event-function (tempo txt)
+  (integer? ekm-extext?)
+  (make-music 'TrillSpanEvent
+    'span-direction START
+    'tweaks `((zigzag-width . ,tempo)
+              (text . ,txt))))
 
 
 %% Trill pitch
