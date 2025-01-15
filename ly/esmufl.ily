@@ -21,7 +21,7 @@
 %%
 %%
 %% File: esmufl.ily
-%% Latest revision: 2025-01-14
+%%
 %%
 
 \version "2.24.0"
@@ -1817,7 +1817,9 @@ ekmBreathing =
 
 %% Colon (repeat) bar lines
 
-#(define (make-ekm-colon-bar-line grob ext)
+#(define (make-ekm-old-colon-bar-line grob extent)
+  (ekm-cchar grob 2 #xE043))
+#(define (make-ekm-colon-bar-line is-span grob extent)
   (ekm-cchar grob 2 #xE043))
 
 
@@ -3349,7 +3351,10 @@ ekmSmuflOn =
     (if (or all (memq 'segno typ))
       (ekm-segno-init))
     (if (or all (memq 'colon typ))
-      (add-bar-glyph-print-procedure ":" make-ekm-colon-bar-line))
+      (add-bar-glyph-print-procedure ":"
+        (if (ly:version? < '(2 25))
+          make-ekm-old-colon-bar-line
+          make-ekm-colon-bar-line)))
     (on 'percent #{
       \override RepeatSlash.stencil = #(ekm-percent 1)
       \override DoubleRepeatSlash.stencil = #(ekm-percent 2)
