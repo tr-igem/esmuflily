@@ -535,19 +535,29 @@ ekmCompoundMeter =
   (number-or-pair?)
   (let* ((pln (ekm-time-plain sig))
          (mlen (calculate-compound-measure-length pln))
-         (beat (calculate-compound-base-beat pln))
+         (mlen-moment (if (ly:version? < '(2 25)) mlen (ly:make-moment mlen)))
          (beatGrouping (calculate-compound-beat-grouping pln))
-         (timesig (cons (ly:moment-main-numerator mlen)
-                        (ly:moment-main-denominator mlen))))
-    #{
-      \once \override Timing.TimeSignature.stencil =
-        #(lambda (grob) (grob-interpret-markup grob (ekm-time-compound sig)))
-      \set Timing.timeSignatureFraction = #timesig
-      \set Timing.baseMoment = #beat
-      \set Timing.beatStructure = #beatGrouping
-      \set Timing.beamExceptions = #'()
-      \set Timing.measureLength = #mlen
-    #}))
+         (timesig (cons (ly:moment-main-numerator mlen-moment)
+                        (ly:moment-main-denominator mlen-moment))))
+    (if (ly:version? < '(2 25))
+      #{
+        \once \override Timing.TimeSignature.stencil =
+          #(lambda (grob) (grob-interpret-markup grob (ekm-time-compound sig)))
+        \set Timing.timeSignatureFraction = #timesig
+        \set Timing.baseMoment = #(calculate-compound-base-beat pln)
+        \set Timing.beatStructure = #beatGrouping
+        \set Timing.beamExceptions = #'()
+        \set Timing.measureLength = #mlen
+      #}
+      #{
+        \once \override Timing.TimeSignature.stencil =
+          #(lambda (grob) (grob-interpret-markup grob (ekm-time-compound sig)))
+        \set Timing.timeSignatureFraction = #timesig
+        \set Timing.beatBase = #(calculate-compound-beat-base pln)
+        \set Timing.beatStructure = #beatGrouping
+        \set Timing.beamExceptions = #'()
+        \set Timing.measureLength = #mlen
+      #})))
 
 #(define (ekm-timesig grob)
   (let* ((fr (ly:grob-property grob 'fraction))
@@ -1834,10 +1844,10 @@ ekmBreathing =
   (1.0 #xE04A 2)
 ))
 
-#(define ((make-ekm-segno-bar-line type show) grob ext)
+#(define ((make-ekm-old-segno-bar-line type show) grob extent)
   (let* ((th (layout-line-thickness grob))
          (bth (* (ly:grob-property grob 'hair-thickness 1) th))
-         (bext (bar-line::widen-bar-extent-on-span grob ext))
+         (bext (bar-line::widen-bar-extent-on-span grob extent))
          (bar (bar-line::draw-filled-box (cons 0 bth) bext bth bext grob))
          (d (vector-ref ekm-segno-tab type))
          (kern (* (ly:grob-property grob 'segno-kern 1) th (car d)))
@@ -1851,12 +1861,23 @@ ekmBreathing =
         (* 1/2 kern)
         X))))
 
+#(define ((make-ekm-segno-bar-line type show) is-span grob extent)
+  ((make-ekm-old-segno-bar-line type show) grob extent))
+
 #(define (ekm-segno-init)
-  (add-bar-glyph-print-procedure "S" (make-ekm-segno-bar-line 0 #t))
-  (add-bar-glyph-print-procedure "s" (make-ekm-segno-bar-line 1 #t))
-  (add-bar-glyph-print-procedure "$" (make-ekm-segno-bar-line 2 #t))
-  (add-bar-glyph-print-procedure "=" (make-ekm-segno-bar-line 0 #f))
-  (add-bar-glyph-print-procedure "#" (make-ekm-segno-bar-line 2 #f))
+  (if (ly:version? < '(2 25))
+    (begin
+      (add-bar-glyph-print-procedure "S" (make-ekm-old-segno-bar-line 0 #t))
+      (add-bar-glyph-print-procedure "s" (make-ekm-old-segno-bar-line 1 #t))
+      (add-bar-glyph-print-procedure "$" (make-ekm-old-segno-bar-line 2 #t))
+      (add-bar-glyph-print-procedure "=" (make-ekm-old-segno-bar-line 0 #f))
+      (add-bar-glyph-print-procedure "#" (make-ekm-old-segno-bar-line 2 #f)))
+    (begin
+      (add-bar-glyph-print-procedure "S" (make-ekm-segno-bar-line 0 #t))
+      (add-bar-glyph-print-procedure "s" (make-ekm-segno-bar-line 1 #t))
+      (add-bar-glyph-print-procedure "$" (make-ekm-segno-bar-line 2 #t))
+      (add-bar-glyph-print-procedure "=" (make-ekm-segno-bar-line 0 #f))
+      (add-bar-glyph-print-procedure "#" (make-ekm-segno-bar-line 2 #f))))
   (define-bar-line "s" "||" "s" "=")
   (define-bar-line "s-|" "|" "s" "=")
   (define-bar-line "s-s" "s" #f "=")
