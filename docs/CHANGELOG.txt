@@ -333,3 +333,10 @@ January 2021 - May 2021:
 
 2024-10-16:
 - Added SMuFL support for ambitus note heads. Changed "(ekm-notehead)".
+
+2025-01-13:
+- Fixed colon bar lines (volta repeat) for LilyPond 2.25 (issue #9).
+
+2025-01-16:
+- Added "\ekmStartTrillSpanScript" (issue #14).
+- Fixed segno bar lines and "\ekmCompoundMeter" for LilyPond 2.25 (issue #15).
