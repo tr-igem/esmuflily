@@ -2011,26 +2011,62 @@ ekmStem =
   #})
 
 
+%% Scoop / Plop
+
+#(define-markup-command (ekm-scoop layout props dir)
+  (ly:dir?)
+  (let* ((sil (interpret-markup layout props
+                (make-ekm-char-markup (if (<= 0 dir) #xE5D0 #xE5E0))))
+         (xext (ly:stencil-extent sil X))
+         (h (ekm-extent sil Y)))
+    (ly:stencil-outline sil
+      (make-filled-box-stencil xext
+        (if (<= 0 dir)
+          (cons (- (- h 0.35)) (+ h 0.35))
+          (cons (- (+ h 0.35)) (- h 0.35)))))))
+
+ekmScoop =
+#(define-music-function (dir music)
+  (ly:dir? ly:music?)
+  #{
+    \set fingeringOrientations = #'(left)
+    \override Fingering.padding = #0.2
+    #(music-map
+      (lambda (m)
+        (if (music-is-of-type? m 'note-event)
+          (begin
+            (ly:music-set-property! m 'articulations
+              (cons
+                (make-music 'FingeringEvent
+                  'text (if (<= 0 dir) "S" "P")
+                  'tweaks (list (cons 'stencil (ekm-fingering 0))))
+                (ly:music-property m 'articulations)))
+            (make-music 'EventChord
+              'elements (list m)))
+          m))
+      music)
+    \revert Fingering.padding
+    \unset fingeringOrientations
+  #})
+
+
 %% Arpeggios
 
 #(define (ekm-arpeggio grob)
-  (let* ((p (ly:grob-property grob 'positions))
-         (l (- (cdr p) (car p)))
-         (c (inexact->exact (ceiling l)))
-         (d (ly:grob-property grob 'arpeggio-direction))
-         ;(y (+ (car p) (if (eq? -1 d) -1.5 -0.5)))
-         (y (- (car p) 0.4)))
+  (let* ((pos (ly:grob-property grob 'positions))
+         (cnt (inexact->exact (ceiling (interval-length pos))))
+         (dir (ly:grob-property grob 'arpeggio-direction)))
     (ly:stencil-translate
       (ly:stencil-rotate
         (grob-interpret-markup grob
           (make-ekm-chars-markup
-            (case d
-              ((1) (append! (make-list (- c 2) #xEAA9) '(#xEAAD))) ; up
-              ((-1) (cons* #xEAAE (make-list (- c 2) #xEAAA))) ; down
-              (else (make-list c #xEAA9)))))
+            (case dir
+              ((1) (append! (make-list (- cnt 2) #xEAA9) '(#xEAAD))) ;up
+              ((-1) (cons* #xEAAE (make-list (- cnt 2) #xEAAA))) ;down
+              (else (make-list cnt #xEAA9)))))
         90 -1 0)
       ;; for left bearing -60 upm
-      (cons 0.25 y))))
+      (cons 0.25 (- (car pos) 0.4)))))
 
 
 %% Ottavation
@@ -2216,7 +2252,7 @@ ekmStem =
 
 %% Fingering
 
-#(define ekm-finger-tab '(
+#(define ekm-finger-tab `(
   ;; italic glyphs
   ("0" . #xED80)
   ("1" . #xED81)
@@ -2272,6 +2308,8 @@ ekmStem =
   ("R" . #xE66E)
   ("LE" . #xE671)
   ("L" . #xE670)
+  ("S" . ,(markup #:ekm-scoop UP))
+  ("P" . ,(markup #:ekm-scoop DOWN))
 ))
 
 #(define-markup-command (ekm-finger layout props def)
