@@ -340,3 +340,7 @@ January 2021 - May 2021:
 2025-01-16:
 - Added "\ekmStartTrillSpanScript" (issue #14).
 - Fixed segno bar lines and "\ekmCompoundMeter" for LilyPond 2.25 (issue #15).
+
+2025-01-24:
+- Added command "\ekm-scoop", music function "\ekmScoop",
+  and fingering definition keys "S", "P" (issue #5).
