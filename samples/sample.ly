@@ -23,10 +23,10 @@
 \markup \column {
   \line {
     Sample for
-    \with-url #"http://www.ekmelic-music.org/en/extra/esmuflily.htm"
+    \with-url #"https://github.com/tr-igem/esmuflily"
     \with-color #darkblue "Esmuflily"
     +
-    \with-url #"http://www.ekmelic-music.org/en/extra/ekmelily.htm"
+    \with-url #"https://github.com/tr-igem/ekmelily"
     \with-color #darkblue "Ekmelily"
   }
   \line {
