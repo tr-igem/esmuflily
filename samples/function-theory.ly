@@ -19,7 +19,7 @@
 \markup \column {
   \line {
     Sample for
-    \with-url #"http://www.ekmelic-music.org/en/extra/esmuflily.htm"
+    \with-url #"https://github.com/tr-igem/esmuflily"
     \with-color #darkblue "Esmuflily"
   }
   \wordwrap {
@@ -31,10 +31,10 @@
   }
   \vspace #0.6
   \line {
-    Adaption of
+    The sample is taken from
     \with-url #"http://lsr.di.unimi.it/LSR/Item?id=967"
     \with-color #darkblue "lsr.di.unimi.it/LSR/Item?id=967"
-    by Klaus Blum.
+    and adapted for Esmuflily.
   }
   \vspace #2
 }
