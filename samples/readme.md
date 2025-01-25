@@ -19,3 +19,9 @@ Some tables and snippets demonstrating Esmuflily:
 *   "sample":
     Sample for Esmuflily + [Ekmelily](https://github.com/tr-igem/ekmelily).
     Adaption of sample from [LilySMuFL](https://github.com/backseatviolist/lilysmufl).
+
+*   "system-start":
+    System start delimiters brace and bracket.
+
+*   "trill-spanner":
+    Trill spanner with accidental drawn with `\ekmStartTrillSpanScript`.
