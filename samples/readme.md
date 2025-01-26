@@ -9,10 +9,6 @@ Some tables and snippets demonstrating Esmuflily:
 *   "beaters":
     Table of percussion beater symbols drawn with `\ekm-beater`.
 
-*   "braces":
-    Brace glyphs with increasing size (height) using different fonts
-    (fetaBraces, Ekmelos, Bravura) and sizing techniques.
-
 *   "function-theory":
     Function theory symbols drawn with `\ekmFuncList` in a Lyrics context.
 
