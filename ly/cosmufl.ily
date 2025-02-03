@@ -29,10 +29,11 @@
 
 includeEkmelily =
 #(define-music-function (system)
-  (string?)
-  (let ((file (if (string=? "72" system)
-                "ekmel.ily"
-                (string-append "ekmel-" system ".ily"))))
+  (number-or-string?)
+  (let* ((sys (if (number? system) (number->string system 10) system))
+         (file (if (string=? "72" sys)
+                 "ekmel.ily"
+                 (string-append "ekmel-" sys ".ily"))))
     (if (ly:find-file file)
       (ly:parser-include-string (format #f "\\include \"~a\"\n" file))))
   (make-music 'SequentialMusic 'void #t))
