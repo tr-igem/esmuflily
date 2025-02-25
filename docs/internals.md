@@ -508,8 +508,8 @@ Dynamics
 
 *   CP (integer): Code point of the absolute dynamic glyph.
 
-Note: The interpretation of names for `\\ekm-dynamic` is subtly different
-from other DEFINITION strings.
+Note: The interpretation of names for `\\ekm-dynamic` is slightly
+different from other DEFINITION strings.
 A dynamics symbol is either a single glyph or a sequence of glyphs
 for each letter, but not for keys of two or more letters.
 
@@ -532,6 +532,33 @@ Scripts - Expressive marks
     This is the car of the `script-stencil` property.
 
 *   SCRIPT (EXTEXT): Expressive mark.
+
+
+
+Multi-segment spanner
+---------------------
+
+    ekm-spanner-tab (
+      (SPANNER-STYLE SPANNER-ENTRY ...)
+      ...
+    )
+
+*   SPANNER-STYLE (symbol): `trill`, `vibrato`, ..., `circular`, `circular-constant`,
+    `wavy`, `square`, `sawtooth`, `beam`.
+
+*   SPANNER-ENTRY:
+
+        (text CP-LEFT . CP-RIGHT)
+        (0 . CP-MAIN)
+        (N CP-FASTER-N . CP-SLOWER-N)
+
+*   CP-LEFT, CP-RIGHT (integer): Code point of the left and right symbol
+    to be placed on each spanner piece. 0 draws a point-stencil.
+
+*   CP-MAIN (integer): Code point of the main (medium) extender line segment.
+
+*   CP-FASTER-N, CP-SLOWER-N (integer): Code point of the N-th faster (narrower)
+    and slower (wider) extender line segment.
 
 
 
