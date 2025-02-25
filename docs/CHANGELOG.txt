@@ -344,3 +344,9 @@ January 2021 - May 2021:
 2025-01-24:
 - Added command "\ekm-scoop", music function "\ekmScoop",
   and fingering definition keys "S", "P" (issue #5).
+
+2025-02-25:
+- Added SMuFL switch "textspan", event function "\ekmStartSpan",
+  and music function "\ekmStartSpanMusic" for multi-segment spanner
+  (issue #13).
+- "\ekmStartTrillSpanScript" is now deprecated.
