@@ -26,6 +26,9 @@
 
 \version "2.24.0"
 
+%% let-values
+#(use-modules (srfi srfi-11))
+
 
 %% Font
 
@@ -53,6 +56,12 @@
 
 #(define (ekm-extext? x)
   (or (ekm-cp? x)
+      (string? x)
+      (pair? x)))
+
+#(define (ekm-extext-or-not? x)
+  (or (not x)
+      (ekm-cp? x)
       (string? x)
       (pair? x)))
 
@@ -1728,30 +1737,201 @@ ekmScriptSmall =
     'tweaks `((details . ,txt) (font-size . -3))))
 
 
-%% Trill span
+%% Multi-segment spanner
 
-#(define (ekm-trillspan grob)
-  (let* ((ext (ly:stencil-extent (ly:grob-property grob 'stencil) X))
-         (tr (ly:grob-property grob 'text #xE566))
-         (tr (ekm-ctext grob 0 tr))
-         (tr (ly:stencil-translate-axis tr (car ext) X))
-         (tempo (ly:grob-property grob 'zigzag-width))
-         (seg (- #xEAA4 (if (integer? tempo) (min 4 (max -4 tempo)) 0))))
+#(define ekm-spanner-tab '(
+  (trill
+    (text #xE566 . 0)
+    (0 . #xEAA4)
+    (1 #xEAA3 . #xEAA5)
+    (2 #xEAA2 . #xEAA6)
+    (3 #xEAA1 . #xEAA7)
+    (4 #xEAA0 . #xEAA8))
+  (vibrato ;; medium
+    (text #xEACC . 0)
+    (0 . #xEADE)
+    (1 #xEADD . #xEADF)
+    (2 #xEADC . #xEAE0)
+    (3 #xEADB . #xEAE1))
+  (vibrato-small
+    (text #xEACC . 0)
+    (0 . #xEAD7)
+    (1 #xEAD6 . #xEAD8)
+    (2 #xEAD5 . #xEAD9)
+    (3 #xEAD4 . #xEADA))
+  (vibrato-large
+    (text #xEACC . 0)
+    (0 . #xEAE5)
+    (1 #xEAE4 . #xEAE6)
+    (2 #xEAE3 . #xEAE7)
+    (3 #xEAE2 . #xEAE8))
+  (vibrato-smallest
+    (text #xEACC . 0)
+    (0 . #xEAD0)
+    (1 #xEACF . #xEAD1)
+    (2 #xEACE . #xEAD2)
+    (3 #xEACD . #xEAD3))
+  (vibrato-largest
+    (text #xEACC . 0)
+    (0 . #xEAEC)
+    (1 #xEAEB . #xEAED)
+    (2 #xEAEA . #xEAEE)
+    (3 #xEAE9 . #xEAEF))
+  (circular
+    (text #xEAC4 . #xEACB)
+    (0 . #xEAC9)
+    (1 #xEACA . #xEAC8)
+    (2 #xEACA . #xEAC7)
+    (3 #xEACA . #xEAC6)
+    (4 #xEACA . #xEAC5))
+  (circular-constant
+    (text 0 . 0)
+    (0 . #xEAC0)
+    (1 #xEAC0 . #xEAC1)
+    (2 #xEAC2 . #xEAC3))
+  (wavy
+    (text 0 . 0)
+    (0 . #xEAB5)
+    (1 #xEAB4 . #xEAB6)
+    (2 #xF6B3 . #xF6B4)
+    (3 #xF6B3 . #xF724)
+    (4 #xF6B3 . #xF725)
+    (5 #xF6B3 . #xF726)
+    (6 #xF6B3 . #xF727))
+  (square
+    (text 0 . 0)
+    (0 . #xEAB8)
+    (1 #xEAB7 . #xEAB9)
+    (2 #xF6B5 . #xF6B6)
+    (3 #xF6B5 . #xF728)
+    (4 #xF6B5 . #xF729)
+    (5 #xF6B5 . #xF72A)
+    (6 #xF6B5 . #xF72B))
+  (sawtooth
+    (text 0 . 0)
+    (0 . #xEABB)
+    (1 #xEABA . #xEABC)
+    (2 #xF6B7 . #xF6B8)
+    (3 #xF6B7 . #xF72C)
+    (4 #xF6B7 . #xF72D)
+    (5 #xF6B7 . #xF72E)
+    (6 #xF6B7 . #xF72F))
+  (beam
+    (text 0 . #xEB03)
+    (0 . #xEAFB)
+    (1 #xEAFC . #xEAFA)
+    (2 #xEAFD . #xEAF9)
+    (3 #xEAFE . #xEAF8)
+    (4 #xEAFF . #xEAF7)
+    (5 #xEB00 . #xEAF6)
+    (6 #xEB01 . #xEAF5)
+    (7 #xEB02 . #xEAF4))
+))
+
+#(define (ekm-segment-spanner grob tab tempo text)
+  (let* ((leftsil (ly:stencil-translate-axis
+                     (ekm-ctext grob 0 (if (pair? text) (car text) text))
+                     (car (ly:stencil-extent (ly:grob-property grob 'stencil) X))
+                     X))
+         (rightsil (ekm-ctext grob 0 (if (pair? text) (cdr text) 0)))
+         (siblings (ly:spanner-broken-into (ly:grob-original grob)))
+         (len (fold (lambda (p l)
+           (cons*
+             (+ (first l)
+                (- (interval-length
+                     (ly:stencil-extent (ly:grob-property p 'stencil) X))
+                   (ekm-extent leftsil X)
+                   (ekm-extent rightsil X)))
+             (if (eq? p grob) (list (car l)) l)))
+           '(0)
+           (if (null? siblings) (list grob) siblings)))
+         (tmp (if (pair? tempo) tempo (cons tempo tempo)))
+         (tmp (cons (round (car tmp)) (round (cdr tmp))))
+         (tmpdir (- (cdr tmp) (car tmp)))
+         (tmpcnt (1+ (abs tmpdir)))
+         (tmplen (/ (first len) tmpcnt))
+         (tmpidx (iota tmpcnt (car tmp) (if (<= 0 tmpdir) 1 -1)))
+         (len (reverse len)))
+    (fold (lambda (s sil)
+      (if (car s)
+        (ly:stencil-stack
+          sil X RIGHT
+          (if (eq? #t (car s))
+            rightsil
+            (let ((seg (ekm-asst tab #f (abs (car s)) (car s))))
+              (grob-interpret-markup grob
+                (make-ekm-chars-markup (make-list
+                  (inexact->exact (round
+                    (/ (cdr s) (ekm-extent (ekm-cchar grob 0 seg) X))))
+                  seg)))))
+          0)
+        sil))
+      leftsil
+      (let-values (((i prv) (floor/ (first len) tmplen))
+                   ((j rem) (floor/ (second len) tmplen)))
+        (append
+          (list
+            (cons
+              (if (> 0.1 prv) #f (list-ref tmpidx (inexact->exact i)))
+              (- tmplen prv)))
+          (map
+            (lambda (s) (cons s tmplen))
+            (list-tail
+              (take tmpidx (inexact->exact j))
+              (inexact->exact (if (= 0 prv) i (1+ i)))))
+          (list
+            (cons
+              (if (> 0.1 rem) #f (list-ref tmpidx (inexact->exact j)))
+              rem)
+            '(#t . 0)))))))
+
+#(define (ekm-spanner grob)
+  (let ((tab (assq-ref ekm-spanner-tab (ly:grob-property grob 'style #f))))
     (ly:grob-set-property! grob 'stencil
-      (ly:stencil-combine-at-edge
-        tr
-        X RIGHT
-        (grob-interpret-markup grob
-          (make-ekm-chars-markup (make-list
-            (inexact->exact (floor
-              (/ (- (interval-length ext) (ekm-extent tr X))
-                 (ekm-extent (ekm-cchar grob 0 seg) X))))
-            seg)))
-        0))))
+      (if tab
+        (ekm-segment-spanner grob
+          tab
+          (ly:grob-property grob 'zigzag-width 0)
+          (or (ly:grob-property grob 'text #f)
+              (ekm-asst tab #f 'text #f)))
+        ly:line-spanner::print))))
+
+#(define (trill? s)
+  (let ((t (string-prefix-length "trill-" (symbol->string s))))
+    (if (< 4 t) t #f)))
+
+ekmStartSpan =
+#(define-event-function (style tempo text)
+  (symbol? number-or-pair? ekm-extext-or-not?)
+  (let* ((t (trill? style))
+         (s (symbol->string style))
+         (s (if t (string-drop s t) s)))
+    (make-music
+      (if t 'TrillSpanEvent 'TextSpanEvent)
+      'span-direction START
+      'tweaks `((style . ,(if (string-null? s) 'trill (string->symbol s)))
+                (zigzag-width . ,tempo)
+                (text . ,text)))))
+
+ekmStartSpanMusic =
+#(define-music-function (style tempo text music)
+  (symbol? number-or-pair? ekm-extext-or-not? ly:music?)
+  (if (trill? style)
+    #{
+      \once \override TrillSpanner.after-line-breaking = #ekm-spanner
+      $music \ekmStartSpan #style #tempo #text
+    #}
+    #{
+      \once \override TextSpanner.after-line-breaking = #ekm-spanner
+      $music \ekmStartSpan #style #tempo #text
+    #}))
+
+
+%% Trill span
 
 ekmStartTrillSpan =
 #(define-event-function (tempo)
-  (integer?)
+  (number-or-pair?)
   (make-music 'TrillSpanEvent
     'span-direction START
     'tweaks `((zigzag-width . ,tempo))))
@@ -3402,8 +3582,11 @@ ekmSmuflOn =
     (on 'lv #{
       \override LaissezVibrerTie.stencil = #ekm-lvtie
     #})
+    (on 'textspan #{
+      \override TextSpanner.after-line-breaking = #ekm-spanner
+    #})
     (on 'trill #{
-      \override TrillSpanner.after-line-breaking = #ekm-trillspan
+      \override TrillSpanner.after-line-breaking = #ekm-spanner
       \override TrillPitchHead.stencil = #ekm-trillpitch-head
       \override TrillPitchParentheses.stencils = #ekm-calc-parenthesis-stencils
     #})
@@ -3495,6 +3678,9 @@ ekmSmuflOff =
     #})
     (on 'lv #{
       \revert LaissezVibrerTie.stencil
+    #})
+    (on 'textspan #{
+      \revert TextSpanner.after-line-breaking
     #})
     (on 'trill #{
       \revert TrillSpanner.after-line-breaking
