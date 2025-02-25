@@ -54,8 +54,8 @@ includeEkmelily =
 
 ekmStartTrillSpanAccidental =
 #(define-event-function (tempo alt)
-  (integer? rational?)
+  (number-or-pair? rational?)
   (make-music 'TrillSpanEvent
     'span-direction START
     'tweaks `((zigzag-width . ,tempo)
-              (text . ,(make-ekm-trill-accidental-markup alt)))))
+              (text . (,(make-ekm-trill-accidental-markup alt) . 0)))))
