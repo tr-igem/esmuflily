@@ -27,20 +27,25 @@
 \version "2.24.0"
 
 
-includeEkmelily =
-#(define-music-function (system)
-  (number-or-string?)
-  (let* ((sys (if (number? system) (number->string system 10) system))
-         (file (if (string=? "72" sys)
-                 "ekmel.ily"
-                 (string-append "ekmel-" sys ".ily"))))
-    (if (ly:find-file file)
-      (ly:parser-include-string (format #f "\\include \"~a\"\n" file))))
-  (make-music 'SequentialMusic 'void #t))
+#(define ekm:system #f)
 
-\includeEkmelily #(if (defined? 'ekmSystem) ekmSystem "24")
+#(let* ((s (ly:get-option 'ekmsystem))
+        (s (if s (symbol->string s)
+           (if (defined? 'ekmSystem) ekmSystem "24")))
+        (s (if (number? s) (number->string s 10) s))
+        (file (if (string=? "72" s)
+                 "ekmel.ily"
+                 (string-append "ekmel-" s ".ily"))))
+  (set! ekm:system s)
+  (if (ly:find-file file)
+    (ly:parser-include-string (format #f "\\include \"~a\"\n" file))))
+
 \include "esmufl.ily"
 
+
+#(define-markup-command (ekm-system layout props)
+  ()
+  (interpret-markup layout props ekm:system))
 
 #(define-markup-command (ekm-trill-accidental layout props alt)
   (rational?)
