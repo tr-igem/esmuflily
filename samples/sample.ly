@@ -13,9 +13,9 @@
 \version "2.24.0"
 
 % ekmFont = "Bravura"
+ekmSystem = 24
 
-\include "ekmel-24.ily"
-\include "esmufl.ily"
+\include "cosmufl.ily"
 
 \pointAndClickOff
 
@@ -38,8 +38,10 @@
   \line { Changes: }
   \line { * \typewriter "\\niente" is replaced with \typewriter "\\n" . }
   \line { * \typewriter "\\smufllig" is replaced with \typewriter "\\ekm-chars" . }
+  \vspace #1
   \line { Font: \typewriter { \ekmelic-font-name }}
-  \line { Include files: \typewriter { esmufl.ily } , \typewriter { ekmel-24.ily }}
+  \line { System: \typewriter { \ekm-system }}
+  \line { Include file: \typewriter { cosmufl.ily }}
   \line { Notation style: \typewriter { \ekmelic-style-name }}
   \vspace #2
 }
