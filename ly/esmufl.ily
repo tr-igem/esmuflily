@@ -346,6 +346,21 @@
       sil)))
 
 
+%% Standard staff line positions
+
+#(define ekm-linepos-tab '(
+  (5 4 2 0 -2 -4)
+  (2 1 -1)
+  (1 0)
+))
+
+#(define (ekm-linepos lines)
+  (or (assv-ref ekm-linepos-tab lines)
+      (let ((lp (iota lines (1- lines) -2)))
+        (set! ekm-linepos-tab (acons lines lp ekm-linepos-tab))
+        lp)))
+
+
 %% Clefs
 
 #(for-each
@@ -1307,8 +1322,8 @@ ekmFlag =
 ))
 
 #(define-markup-command
-  (ekm-mmr layout props style ledgered measures limit width space)
-  (symbol? boolean? index? integer? number? number?)
+  (ekm-mmr layout props style oneline ledgered measures limit width space)
+  (symbol? boolean? boolean? index? integer? number? number?)
   (if (> measures limit)
     (let* ((hbar (ekm:char layout props #xE4F0))
            (lbar (ekm:char layout props #xE4EF))
@@ -1340,12 +1355,14 @@ ekmFlag =
                      (let ((r (ekm:char layout props
                                 (ekm-assld ekm-rest-tab
                                   style lg (if ledgered DOWN UP)))))
-                       (con (1- c)
-                            (cons*
-                              (if (= 0 lg)
-                                (ly:stencil-translate-axis r ssp Y)
-                                r)
-                              s)))))))
+                       (con
+                        (1- c)
+                        (cons*
+                          (if ((if oneline = <) lg 0)
+                            r
+                            (ly:stencil-translate-axis
+                              r (if oneline (- ssp) ssp) Y))
+                          s)))))))
                '() cts '(-3 -2 -1 0))))
            (pad (if (< (length sils) 2)
                   0
@@ -1361,13 +1378,16 @@ ekmFlag =
 
 #(define (ekm-mmr grob)
   (let* ((org (ly:multi-measure-rest::print grob))
-         (pos (ly:grob-property grob 'staff-position 0))
          (lines (ly:grob-property (ly:grob-object grob 'staff-symbol) 'line-count))
+         (lpos (ly:grob-property (ly:grob-object grob 'staff-symbol) 'line-positions))
+         (lpos (if (null? lpos) (ekm-linepos lines) lpos))
+         (pos (inexact->exact (ly:grob-property grob 'staff-position 0)))
+         (oneline (= 1 lines))
          (sil (grob-interpret-markup grob
                 (make-ekm-mmr-markup
                   (ly:grob-property grob 'style 'default)
-                  (and (< 1 lines)
-                       (or (odd? pos) (<= lines (abs (+ 2 pos)))))
+                  oneline
+                  (not (memv (if oneline pos (+ 2 pos)) lpos))
                   (ly:grob-property grob 'measure-count)
                   (ly:grob-property grob 'expand-limit)
                   (ekm-extent org X)
@@ -1425,7 +1445,7 @@ ekmFlag =
          (mmr (interpret-markup layout props
                 (make-ekm-mmr-markup
                   (if (null? style) 'default style)
-                  #f measures expand-limit width word-space))))
+                  #f #f measures expand-limit width word-space))))
     (if (or bar
             (and multi-measure-rest-number (> measures 1)))
       (let ((num (interpret-markup layout props
