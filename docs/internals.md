@@ -763,3 +763,21 @@ orientation index 0 to 7.
         #f      No transformation
         #t      Flip
         NUMBER  Rotation angle
+
+
+
+Standard staff line positions
+-----------------------------
+
+    ekm-linepos-tab (
+      (LINE-COUNT LINE-POSITION ...)
+      ...
+    )
+
+*   LINE-COUNT (integer): Number of staff lines.
+
+*   LINE-POSITION (integer): Standard line position in the range
+    LINE-COUNT - 1, LINE-COUNT - 3,..., - (LINE-COUNT - 1)
+
+New entries are added if needed.
+The table is currently used only for multi-measure rests.
