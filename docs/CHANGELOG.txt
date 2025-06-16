@@ -350,3 +350,8 @@ January 2021 - May 2021:
   and music function "\ekmStartSpanMusic" for multi-segment spanner
   (issue #13).
 - "\ekmStartTrillSpanScript" is now deprecated.
+
+2025-06-16:
+- Fixed multi-measure rest placement on one-line staff (issue #16).
+- Changed condition for ledgered multi-measure rest.
+- Added table "ekm-linepos-tab" and "(ekm-linepos)" for standard staff line positions.
