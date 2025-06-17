@@ -1511,7 +1511,8 @@ ekmFlag =
 
 #(define-markup-command (ekm-system-start layout props style size)
   (symbol? number?)
-  #:properties ((font-size 0))
+  #:properties ((font-size 0)
+                (thickness 0.45))
   (let* (;; select
          (e (let sel ((t (ekm-assq ekm-system-start-tab style)))
               (if (null? t) '(#xE000) ;; should not occur
@@ -1568,7 +1569,7 @@ ekmFlag =
                      (make-ekm-text-markup (fourth e))))
                (et (interpret-markup layout prp
                      (make-ekm-text-markup (fifth e))))
-               (fitw (cons (* (sixth e) sc) (* (seventh e) sc)))
+               (fitw (cons (* (sixth e) sc) (* (or (seventh e) thickness) sc)))
                (over (/ (interval-length fitw) 8))
                (sil (ly:stencil-add
                       eb
@@ -1588,7 +1589,9 @@ ekmFlag =
       (let* ((lext (ly:stencil-extent line Y))
              (size (interval-length lext))
              (sil (grob-interpret-markup grob
-                    (make-ekm-system-start-markup style size)))
+                    (make-override-markup
+                      `(thickness . ,(ly:grob-property grob 'thickness))
+                    (make-ekm-system-start-markup style size))))
              (ext (ly:stencil-extent sil Y)))
         (ly:stencil-translate-axis
           sil
@@ -1916,14 +1919,14 @@ ekmScriptSmall =
               (ekm-asst tab #f 'text #f)))
         ly:line-spanner::print))))
 
-#(define (trill? s)
+#(define (ekm-trill? s)
   (let ((t (string-prefix-length "trill-" (symbol->string s))))
     (if (< 4 t) t #f)))
 
 ekmStartSpan =
 #(define-event-function (style tempo text)
   (symbol? number-or-pair? ekm-extext-or-not?)
-  (let* ((t (trill? style))
+  (let* ((t (ekm-trill? style))
          (s (symbol->string style))
          (s (if t (string-drop s t) s)))
     (make-music
@@ -1936,7 +1939,7 @@ ekmStartSpan =
 ekmStartSpanMusic =
 #(define-music-function (style tempo text music)
   (symbol? number-or-pair? ekm-extext-or-not? ly:music?)
-  (if (trill? style)
+  (if (ekm-trill? style)
     #{
       \once \override TrillSpanner.after-line-breaking = #ekm-spanner
       $music \ekmStartSpan #style #tempo #text
@@ -1955,14 +1958,6 @@ ekmStartTrillSpan =
   (make-music 'TrillSpanEvent
     'span-direction START
     'tweaks `((zigzag-width . ,tempo))))
-
-ekmStartTrillSpanScript =
-#(define-event-function (tempo txt)
-  (integer? ekm-extext?)
-  (make-music 'TrillSpanEvent
-    'span-direction START
-    'tweaks `((zigzag-width . ,tempo)
-              (text . ,txt))))
 
 
 %% Trill pitch
@@ -3766,7 +3761,7 @@ ekmSmuflOff =
         (50 (#xE000 4) ,(* -43 255/1000) 43)
         (+inf.0 (#xE000 4) ,(* -40 255/1000) #f 126/1000 468/1000 24/57 35/57))
       (bracket
-        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.45))
+        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.5))
     )
   (if (string=? "Ekmelos" ekm:font-name)
     `((brace
@@ -3792,5 +3787,5 @@ ekmSmuflOff =
     `((brace
         (+inf.0 #xE000))
       (bracket
-        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.45))
+        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 #f))
     ))))
