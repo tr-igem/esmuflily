@@ -46,24 +46,24 @@ falls and doits.
 
 #### Access procedures
 
-    (ekm-assq Table Key)
+    (ekm-assq TABLE KEY)
 
-Return the value in Table for Key (symbol).
+Return the value in TABLE for KEY (symbol).
 
-    (ekm-asst Table Style Key Dir)
+    (ekm-asst TABLE STYLE KEY DIR)
 
-Return the value in Table for Style (symbol), Key (symbol, number, string),
-and Dir (number).
-Expect Table being a single alist if Style is #f.
-Return the entire table if Key is #f.
-Return the entire value of the entry if Dir is #f.
+Return the value in TABLE for STYLE (symbol), KEY (symbol, number, string),
+and DIR (number).
+Expect TABLE being a single alist if STYLE is `#f`.
+Return the entire TABLE if KEY is `#f`.
+Return the entire value of the entry if DIR is `#f`.
 
-    (ekm-assld Table Grob Log Dir)
+    (ekm-assld TABLE GROB LOG DIR)
 
-Return the value in Table for the `style`, `duration-log`, and
-`Stem.direction` properties of Grob, or for Log or Dir if true.
-If Grob is not a grob it must itself be a style and Log and Dir must be
-specific values (not #f).
+Return the value in TABLE for the GROB properties `style`, `duration-log`,
+and `Stem.direction`, or for LOG or DIR if they have true values.
+If GROB is not a grob it must itself be a style, and LOG and DIR must be
+specific (true) values.
 
 
 ### Definition Table
@@ -81,7 +81,8 @@ harp pedals, analytics, and function theory, and by `\\ekm-def`.
     after them, i.e. the correct order is "abc", "ab", "a".
     Else the other keys will be ignored.
 
-*   VALUE (EXTEXT or #f): Musical symbol. #f ignores DEF-KEY in DEFINITION strings.
+*   VALUE (EXTEXT or `#f`): Musical symbol.
+    `#f` ignores DEF-KEY in DEFINITION strings.
 
 #### Common keys
 
@@ -121,7 +122,7 @@ Note heads
 
 *   CP (integer): Code point of the note head glyph.
 
-*   CP-EMPTY (integer or #f): Code point of the glyph to whiteout
+*   CP-EMPTY (integer or `#f`): Code point of the glyph to whiteout
     the background. This is intended for note name note heads.
 
 *   STEM-ATTACH-X, STEM-ATTACH-Y (number): Values for the
@@ -154,7 +155,7 @@ Implements Henry Cowell's clusters
         (CP-1 CP-2 CP-3 CP-TOP CP-MID CP-BOTTOM)
         (CP-1 CP-2 CP-3 CP-TOP CP-MID CP-BOTTOM STEM-POS STEM-ATTACH-X . STEM-ATTACH-Y)
 
-*   CP-1, CP-2, CP-3 (integer or #f): Code points of the note head glyphs
+*   CP-1, CP-2, CP-3 (integer or `#f`): Code points of the note head glyphs
     for unison, second, and third.
 
 *   CP-TOP, CP-MID, CP-BOTTOM (integer): Code points of the top, middle,
@@ -361,23 +362,24 @@ or for [Ekmelos](https://github.com/tr-igem/ekmelos).
 
 *   LIMIT (number): The first entry with RH < LIMIT is selected.
 
-*   DELIMITER (EXTEXT or #f): Symbol to draw.
-    #f draws the delimiter with BOTTOM and TOP without masks and
+*   DELIMITER (EXTEXT or `#f`): Symbol to draw.
+    `#f` draws the delimiter with BOTTOM and TOP without masks and
     without a middle segment. This is intended for brackets.
 
 *   SCALE (number): Scale factor from EM to staff spaces.
     Default is 255/1000.
 
-*   STRETCH (number or #f): Stretch factor.
-    #f does no stretching (= 1). This is the default.
+*   STRETCH (number or `#f`): Stretch factor.
+    `#f` does not stretch (= 1). This is the default.
 
 *   END (number): Relative height of the end segments of DELIMITER.
 
 *   MID (number): Relative height of the middle segment of DELIMITER.
 
-*   BOTTOM, TOP (EXTEXT): Symbols to draw as end segments if DELIMITER is #f.
+*   BOTTOM, TOP (EXTEXT): Symbols to draw as end segments if DELIMITER is `#f`.
 
-*   LEFT, RIGHT (number): X extent of the fitting segment.
+*   LEFT, RIGHT (number or `#f`): X extent of the fitting segment.
+    `#f` uses the `thickness` property whose default is 0.45 for brackets.
 
 
 
@@ -430,7 +432,7 @@ Falls and doits
 
 *   MINIMUM-LENGTH (number): Value for the `minimum-length` property.
 
-*   ALIGN-UP (boolean): #t aligns up if the direction is upward.
+*   ALIGN-UP (boolean): `#t` aligns up if the direction is upward.
 
 *   CP (integer): Code point of the fall or doit (lift) glyph.
 
@@ -470,8 +472,8 @@ Clefs
 
 *   CP (integer): Code point of the clef glyph.
 
-*   CP-CHANGE (integer or #f): Code point of the change clef glyph.
-    #f draws CP with a 2 steps smaller font size.
+*   CP-CHANGE (integer or `#f`): Code point of the change clef glyph.
+    `#f` draws CP with a 2 steps smaller font size.
 
 
 
@@ -728,7 +730,8 @@ Percussion symbols - Beaters
 
 *   BEATER-STYLE (symbol): `xyl`, `glsp`, `timpani`, `yarn`, ...
 
-*   BEATER-PREDEF (boolean): Flag for predefined orientations: #t = N, S, NE, NW. #f = N, S.
+*   BEATER-PREDEF (boolean): Flag for predefined orientations:
+    `#t`: N, S, NE, NW. `#f`: N, S.
     The remaining orientations are achieved by flipping or by rotating
     through 90 or 30 degrees.
 
@@ -755,14 +758,11 @@ orientation index 0 to 7.
       ...
     )
 
-*   CP-OFFSET-4/2 (integer): Offset to the code point of a beater glyph
+*   CP-OFFSET-4, CP-OFFSET-2 (integer): Offset to the code point of a beater glyph
     where 4 (N, S, NE, NW) or 2 (N, S) predefined orientations exist.
 
-*   XFORM-4/2 (boolean or number):
-
-        #f      No transformation
-        #t      Flip
-        NUMBER  Rotation angle
+*   XFORM-4, XFORM-2 (boolean or number):
+    `#f` does not transform. `#t` flips. Number is a rotation angle.
 
 
 
