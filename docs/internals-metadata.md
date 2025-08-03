@@ -125,7 +125,8 @@ and "bravura-installer.iss".
                   macOS:    ~/Library/Application Support
 
     SYS_DIR       Linux:    $XDG_DATA_DIRS
-                  Windows:  %COMMONPROGRAMFILES%
+                  Windows:  %CommonProgramFiles%
+                            %CommonProgramFiles(x86)%
                   macOS:    /Library/Application Support
 
     SMUFL_DIR     SMuFL/Fonts/FONTNAME
