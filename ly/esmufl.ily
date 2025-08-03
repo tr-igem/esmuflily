@@ -29,6 +29,8 @@
 %% let-values
 #(use-modules (srfi srfi-11))
 
+#(load "ekmd.scm")
+
 
 %% Font
 
@@ -284,6 +286,9 @@
                     (ly:grob-property stm 'direction)
                     (ly:grob-property-data stm 'direction))))
           (if (number? d) d UP)))))
+
+#(define (ekm-md key)
+  (assq-ref ekmd:defaults key))
 
 
 %% Orientation arguments
@@ -1569,7 +1574,7 @@ ekmFlag =
                      (make-ekm-text-markup (fourth e))))
                (et (interpret-markup layout prp
                      (make-ekm-text-markup (fifth e))))
-               (fitw (cons (* (sixth e) sc) (* (or (seventh e) thickness) sc)))
+               (fitw (cons (* (sixth e) sc) (* thickness sc)))
                (over (/ (interval-length fitw) 8))
                (sil (ly:stencil-add
                       eb
@@ -3587,6 +3592,7 @@ ekmSmuflOn =
     (on 'systemstart #{
       \override SystemStartBrace.stencil = #ekm-system-start
       \override SystemStartBracket.stencil = #ekm-system-start
+      \override SystemStartBracket.thickness = #(ekm-md 'bracketThickness)
     #})
     (on 'dynamic #{
       \override DynamicText.stencil = #ekm-dyntext
@@ -3684,6 +3690,7 @@ ekmSmuflOff =
     (on 'systemstart #{
       \revert SystemStartBrace.stencil
       \revert SystemStartBracket.stencil
+      \revert SystemStartBracket.thickness
     #})
     (on 'dynamic #{
       \revert DynamicText.stencil
@@ -3745,9 +3752,44 @@ ekmSmuflOff =
            (if (defined? 'ekmFont) ekmFont
            (if (defined? 'ekmelicFont) ekmelicFont ""))))
         (p (string-suffix? "#" f))
-        (f (if p (string-drop-right f 1) f)))
-  (set! ekm:font-name (if (string-null? f) "Ekmelos" f))
-  (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil))))
+        (f (if p (string-drop-right f 1) f))
+        (f (if (string-null? f) "Ekmelos" f))
+        (dir (ly:get-option 'ekmmetadata))
+        (dir (if dir (symbol->string dir)
+             (if (defined? 'ekmMetadata) ekmMetadata #f)))
+        (name (string-append "metadata-" (string-downcase f) ".scm"))
+        (tab (ekmd:load name)))
+  (set! ekm:font-name f)
+  (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil)))
+
+  ;; create metadata table
+  (if (not tab)
+    (let* ((gn (ekmd:load #f))
+           (tab (ekmd:load "metadata-default.scm"))
+           (md (ekmd:read
+                dir f f
+                '((fontName . #t)
+                  (fontVersion . #t)
+                  (engravingDefaults (#t . #\d))
+                  (glyphsWithAnchors
+                    ("note" (stemDownNW . #\03) (stemUpSE . #\04)))
+                  (optionalGlyphs
+                    (#t (codepoint . #\c))))
+                '())))
+      (if (and tab gn md)
+        (let ((gnex (append gn (or (assq-ref md 'optionalGlyphs) '()))))
+          (let n->c ((g ekmd:glyphs))
+            (if (null? g)
+              #t
+              (let ((c (assq-ref gnex (caar g))))
+                (if c (set-car! (car g) c))
+                (n->c (cdr g)))))
+          (ekmd:save (string-append ekmd:dir "/" name)
+            (list
+              (cons 'fontName f)
+              (cons 'fontVersion (assq-ref md 'fontVersion))
+              (cons 'defaults ekmd:defaults)
+              (cons 'glyphs ekmd:glyphs))))))))
 
 %% System start delimiters
 #(set! ekm-system-start-tab
@@ -3761,7 +3803,7 @@ ekmSmuflOff =
         (50 (#xE000 4) ,(* -43 255/1000) 43)
         (+inf.0 (#xE000 4) ,(* -40 255/1000) #f 126/1000 468/1000 24/57 35/57))
       (bracket
-        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.5))
+        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 #f))
     )
   (if (string=? "Ekmelos" ekm:font-name)
     `((brace
@@ -3780,7 +3822,7 @@ ekmSmuflOff =
         (97 #xF71A ,(* -83 255/20000) 83)
         (+inf.0 #xF71A ,(* -83 255/20000) #f 1668/20016 16680/20016 168/676 336/676))
       (bracket
-        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 0.35))
+        (+inf.0 #f ,(* -4 255/1000) #f #xE004 #xE003 0 #f))
       ;(line-bracket
       ;  (+inf.0 #f ,(* -4 255/1000) #f #xF702 #xF701 0 0.1))
     )
