@@ -290,6 +290,23 @@
 #(define (ekm-md key)
   (assq-ref ekmd:defaults key))
 
+#(define (ekm-md-glyph grob cp)
+  (let ((d (assv-ref ekmd:glyphs cp)))
+    (if d
+      (if (first d)
+        d
+        (let* ((sil (grob-interpret-markup grob (make-ekm-char-markup cp)))
+               (w (* 0.5 (ekm-extent sil X)))
+               (h (ly:stencil-extent sil Y))
+               (c (list #t
+                    (cons (1- (/ (car (second d)) w))
+                          (/ (cdr (second d)) (abs (cdr h))))
+                    (cons (1- (/ (car (third d)) w))
+                          (/ (cdr (third d)) (abs (car h)))))))
+          (assv-set! ekmd:glyphs cp c)
+          c))
+      '(#t (1 . 0) (-1 . 0)))))
+
 
 %% Orientation arguments
 
@@ -664,166 +681,166 @@ ekmSlashSeparator =
     (-2 #xF637 . #xF638)
     (-1 . #xF639) ;; breve with one vertical line
     (0 . #xE0A2)
-    (1 (#xE0A3 #f 1 . 0.44) . (#xE0A3 #f -1 . -0.44))
-    (2 (#xE0A4 #f 1 . 0.3) . (#xE0A4 #f -1 . -0.3)))
+    (1 . #xE0A3)
+    (2 . #xE0A4))
   (altdefault
     (-2 #xF637 . #xF638)
     (-1 . #xE0A0) ;; breve with two vertical lines
     (0 . #xE0A2)
-    (1 (#xE0A3 #f 1 . 0.44) . (#xE0A3 #f -1 . -0.44))
-    (2 (#xE0A4 #f 1 . 0.3) . (#xE0A4 #f -1 . -0.3)))
+    (1 . #xE0A3)
+    (2 . #xE0A4))
   (harmonic
-    (2 (#xE0D9 #f 1 . -0.08) . (#xE0D9 #f -1 . 0.08)))
+    (2 . #xE0D9))
   (harmonic-black
     (-1 . #xE0DC)
     (0 . #xE0DC)
-    (1 (#xE0DB #f 1 . -0.08) . (#xE0DB #f -1 . 0.08)))
+    (1 . #xE0DB))
   (harmonic-white
     (-1 . #xE0DE)
     (0 . #xE0DE)
-    (1 (#xE0DD #f 1 . -0.08) . (#xE0DD #f -1 . 0.08)))
+    (1 . #xE0DD))
   (harmonic-mixed
     (-1 . #xE0D7)
     (0 . #xE0D8)
-    (1 (#xE0D9 #f 1 . -0.08) . (#xE0D9 #f -1 . 0.08))
-    (2 (#xE0DB #f 1 . -0.08) . (#xE0DB #f -1 . 0.08)))
+    (1 . #xE0D9)
+    (2 . #xE0DB))
   (harmonic-wide
     (-1 . #xE0D7)
     (0 . #xE0D8)
-    (1 (#xE0DA #f 1 . -0.08) . (#xE0DA #f -1 . 0.08))
-    (2 (#xE0DC #f 1 . -0.08) . (#xE0DC #f -1 . 0.08)))
+    (1 . #xE0DA)
+    (2 . #xE0DC))
   (diamond
     (-1 . #xE0DF)
     (0 . #xE0E0)
-    (1 (#xE0E1 #f 1 . 0.6) . (#xE0E1 #f -1 . -0.6))
-    (2 (#xE0E2 #f 1 . 0.6) . (#xE0E2 #f -1 . -0.6)))
+    (1 . #xE0E1)
+    (2 . #xE0E2))
   (cross
     (-1 . #xE0A6)
     (0 . #xE0A7)
-    (1 (#xE0A8 #f 1 . 0.65) . (#xE0A8 #f -1 . -0.65))
-    (2 (#xE0A9 #f 1 . 0.72) . (#xE0A9 #f -1 . -0.72)))
+    (1 . #xE0A8)
+    (2 . #xE0A9))
   (plus
     (-1 . #xE0AC)
     (0 . #xE0AD)
-    (1 (#xE0AE #f 0.99 . 0.05) . (#xE0AE #f -0.99 . -0.05))
-    (2 (#xE0AF #f 0.99 . 0) . (#xE0AF #f -0.99 . 0)))
+    (1 . #xE0AE)
+    (2 . #xE0AF))
   (xcircle
     (-1 . #xE0B0)
     (0 . #xE0B1)
-    (1 (#xE0B2 #f 0.8 . 0.44) . (#xE0B2 #f -0.8 . -0.44))
-    (2 (#xE0B3 #f 0.77 . 0.54) . (#xE0B3 #f -0.77 . -0.54)))
+    (1 . #xE0B2)
+    (2 . #xE0B3))
   (withx
     (-1 . #xE0B4)
     (0 . #xE0B5)
-    (1 (#xE0B6 #f 1 . 0.44) . (#xE0B6 #f -1 . -0.44))
-    (2 (#xE0B7 #f 1 . 0.39) . (#xE0B7 #f -1 . -0.39)))
+    (1 . #xE0B6)
+    (2 . #xE0B7))
   (withx-black
     (-1 . #xE0B4)
     (0 . #xE0B5)
-    (1 (#xE0B6 #f 1 . 0.44) . (#xE0B6 #f -1 . -0.44))
-    (2 (#xF680 #f 1 . 0.15) . (#xF680 #f -1 . -0.15)))
+    (1 . #xE0B6)
+    (2 . #xF680))
   (slashed
     (-1 . #xE0D5)
     (0 . #xE0D3)
-    (1 (#xE0D1 #f 0.95 . 0.5) . (#xE0D1 #f -0.95 . -0.5))
-    (2 (#xE0CF #f 0.93 . 0.5) . (#xE0CF #f -0.93 . -0.5)))
+    (1 . #xE0D1)
+    (2 . #xE0CF))
   (backslashed
     (-1 . #xE0D6)
     (0 . #xE0D4)
-    (1 (#xE0D2 #f 1 . 0.38) . (#xE0D2 #f -1 . -0.38))
-    (2 (#xE0D0 #f 1 . 0.3) . (#xE0D0 #f -1 . -0.3)))
+    (1 . #xE0D2)
+    (2 . #xE0D0))
   (slash
     (-1 . #xE10A)
     (0 . #xE102)
-    (1 (#xE103 #f 1 . 0.94) . (#xE103 #f -1 . -0.94))
-    (2 (#xE101 #f 1 . 0.9) . (#xE101 #f -1 . -0.9)))
+    (1 . #xE103)
+    (2 . #xE101))
   (slash-muted
     (-1 . #xE109)
     (0 . #xE109)
-    (1 (#xE109 #f 1 . 0.94) . (#xE109 #f -1 . -0.94))
-    (2 (#xE108 #f 0.88 . 0.9) . (#xE108 #f -0.88 . -0.9)))
+    (1 . #xE109)
+    (2 . #xE108))
   (circled
     (-1 . #xE0E7)
     (0 . #xE0E6)
-    (1 (#xE0E5 #f 1 . 0.44) . (#xE0E5 #f -1 . -0.44))
-    (2 (#xE0E4 #f 1 . 0.3) . (#xE0E4 #f -1 . -0.3)))
+    (1 . #xE0E5)
+    (2 . #xE0E4))
   (circled-large
     (-1 . #xE0EB)
     (0 . #xE0EA)
-    (1 (#xE0E9 #f 1 . 0.29) . (#xE0E9 #f -1 . -0.29))
-    (2 (#xE0E8 #f 1 . 0.2) . (#xE0E8 #f -1 . -0.2)))
+    (1 . #xE0E9)
+    (2 . #xE0E8))
   (triangle
     (-1 #xE0BA . #xE0C3)
     (0 #xE0BB . #xE0C4)
-    (1 (#xE0BC #f 1 . -0.95) . (#xE0C5 #f -1 . 0.95))
-    (2 (#xE0BE #f 1 . -0.95) . (#xE0C7 #f -1 . 0.95)))
+    (1 #xE0BC . #xE0C5)
+    (2 #xE0BE . #xE0C7))
   (triangle-up
     (-1 . #xE0BA)
     (0 . #xE0BB)
-    (1 (#xE0BC #f 1 . -0.95) . (#xE0BC #f -1 . -0.8))
-    (2 (#xE0BE #f 1 . -0.95) . (#xE0BE #f -1 . -0.8)))
+    (1 . #xE0BC)
+    (2 . #xE0BE))
   (triangle-down
     (-1 . #xE0C3)
     (0 . #xE0C4)
-    (1 (#xE0C5 #f 1 . 0.8) . (#xE0C5 #f -1 . 0.95))
-    (2 (#xE0C7 #f 1 . 0.8) . (#xE0C7 #f -1 . 0.95)))
+    (1 . #xE0C5)
+    (2 . #xE0C7))
   (arrow
     (-1 #xE0ED . #xE0F1)
     (0 #xE0EE . #xE0F2)
-    (1 (#xE0EF #f 1 . -0.94) . (#xE0F3 #f -1 . 0.94))
-    (2 (#xE0F0 #f 1 . -0.94) . (#xE0F4 #f -1 . 0.94)))
+    (1 #xE0EF . #xE0F3)
+    (2 #xE0F0 . #xE0F4))
   (arrow-up
     (-1 . #xE0ED)
     (0 . #xE0EE)
-    (1 (#xE0EF #f 1 . -0.94) . (#xE0EF #f -1 . -0.94))
-    (2 (#xE0F0 #f 1 . -0.94) . (#xE0F0 #f -1 . -0.94)))
+    (1 . #xE0EF)
+    (2 . #xE0F0))
   (arrow-down
     (-1 . #xE0F1)
     (0 . #xE0F2)
-    (1 (#xE0F3 #f 1 . 0.9) . (#xE0F3 #f -1 . 0.94))
-    (2 (#xE0F4 #f 1 . 0.9) . (#xE0F4 #f -1 . 0.94)))
+    (1 . #xE0F3)
+    (2 . #xE0F4))
   (round
     (0 . #xE114)
-    (1 (#xE114 #f 0.91 . 0.33) . (#xE114 #f -0.91 . -0.33))
-    (2 (#xE113 #f 0.91 . 0.33) . (#xE113 #f -0.91 . -0.33)))
+    (1 . #xE114)
+    (2 . #xE113))
   (round-large
     (0 . #xE111)
-    (1 (#xE111 #f 1 . 0.06) . (#xE111 #f -1 . -0.06))
-    (2 (#xE110 #f 1 . 0.06) . (#xE110 #f -1 . -0.06)))
+    (1 . #xE111)
+    (2 . #xE110))
   (round-dot
     (0 . #xE115)
-    (1 (#xE115 #f 0.91 . 0.33) . (#xE115 #f -0.91 . -0.33))
-    (2 (#xE113 #f 0.91 . 0.33) . (#xE113 #f -0.91 . -0.33)))
+    (1 . #xE115)
+    (2 . #xE113))
   (round-dot-large
     (0 . #xE112)
-    (1 (#xE112 #f 1 . 0.06) . (#xE112 #f -1 . -0.06))
-    (2 (#xE110 #f 1 . 0.06) . (#xE110 #f -1 . -0.06)))
+    (1 . #xE112)
+    (2 . #xE110))
   (round-slashed
     (0 . #xE119)
-    (1 (#xE119 #f 0.74 . 0.17) . (#xE119 #f -0.74 . -0.17))
-    (2 (#xE118 #f 0.74 . 0.17) . (#xE118 #f -0.74 . -0.17)))
+    (1 . #xE119)
+    (2 . #xE118))
   (round-slashed-large
     (0 . #xE117)
-    (1 (#xE117 #f 1 . 0.06) . (#xE117 #f -1 . -0.06))
-    (2 (#xE116 #f 1 . 0.06) . (#xE116 #f -1 . -0.06)))
+    (1 . #xE117)
+    (2 . #xE116))
   (square
     (0 . #xE0B8)
-    (1 (#xE0B8 #f 1 . 0.78) . (#xE0B8 #f -1 . -0.78))
-    (2 (#xE0B9 #f 1 . 0.78) . (#xE0B9 #f -1 . -0.78)))
+    (1 . #xE0B8)
+    (2 . #xE0B9))
   (square-large
     (0 . #xE11B)
-    (1 (#xE11B #f 1 . 0.88) . (#xE11B #f -1 . -0.88))
-    (2 (#xE11A #f 1 . 0.88) . (#xE11A #f -1 . -0.88)))
+    (1 . #xE11B)
+    (2 . #xE11A))
   (baroque
     (-1 . #xE0A1)
     (0 . #xE0A2)
-    (1 (#xE0A3 #f 1 . 0.44) . (#xE0A3 #f -1 . -0.44))
-    (2 (#xE0A4 #f 1 . 0.3) . (#xE0A4 #f -1 . -0.3)))
+    (1 . #xE0A3)
+    (2 . #xE0A4))
   (parenthesised
     (-1 . #xF5DF)
     (0 . #xF5DE)
-    (1 (#xF5DD #f 0.61 . 0.365) . (#xF5DD #f -0.61 . -0.365))
-    (2 (#xF5DC #f 0.61 . 0.23) . (#xF5DC #f -0.61 . -0.23)))
+    (1 . #xF5DD)
+    (2 . #xF5DC))
 
   ;; shape noteheads
   (sol ;; round
@@ -940,7 +957,7 @@ ekmSlashSeparator =
     (-1 . #xECD9)
     (0 . #xE1C2)
     (1 . #xE1C2)
-    (2 (#xE1C3 #f 1 . 0) . (#xE1C3 #f -1 . -0.74)))
+    (2 . #xE1C3))
   (tiWalker ;; u: isosceles triangle rev, d: isosceles triangle
     (-1 . #xECDA)
     (0 . #xE1C4)
@@ -955,7 +972,7 @@ ekmSlashSeparator =
     (-1 . #xECDC)
     (0 . #xE1C8)
     (1 . #xE1C8)
-    (2 (#xE1C9 #f 1 . 0.74) . (#xE1C9 #f -1 . 0)))
+    (2 . #xE1C9))
   (tiFunk ;; u: triangle round left rev, d: triangle round left
     (-1 . #xECDD)
     (0 . #xE1CA)
@@ -964,37 +981,37 @@ ekmSlashSeparator =
 
   ;; note name noteheads
   (doName
-    (0 (#xE150 #xE1AD))
-    (1 (#xE158 #xE1AE 1 . 0.44) . (#xE158 #xE1AE -1 . -0.44))
-    (2 (#xE160 #xE1AF 1 . 0.3) . (#xE160 #xE1AF -1 . -0.3)))
+    (0 (#xE150 . #xE1AD))
+    (1 (#xE158 . #xE1AE))
+    (2 (#xE160 . #xE1AF)))
   (reName
-    (0 (#xE151 #xE1AD))
-    (1 (#xE159 #xE1AE 1 . 0.44) . (#xE159 #xE1AE -1 . -0.44))
-    (2 (#xE161 #xE1AF 1 . 0.3) . (#xE161 #xE1AF -1 . -0.3)))
+    (0 (#xE151 . #xE1AD))
+    (1 (#xE159 . #xE1AE))
+    (2 (#xE161 . #xE1AF)))
   (miName
-    (0 (#xE152 #xE1AD))
-    (1 (#xE15A #xE1AE 1 . 0.44) . (#xE15A #xE1AE -1 . -0.44))
-    (2 (#xE162 #xE1AF 1 . 0.3) . (#xE162 #xE1AF -1 . -0.3)))
+    (0 (#xE152 . #xE1AD))
+    (1 (#xE15A . #xE1AE))
+    (2 (#xE162 . #xE1AF)))
   (faName
-    (0 (#xE153 #xE1AD))
-    (1 (#xE15B #xE1AE 1 . 0.44) . (#xE15B #xE1AE -1 . -0.44))
-    (2 (#xE163 #xE1AF 1 . 0.3) . (#xE163 #xE1AF -1 . -0.3)))
+    (0 (#xE153 . #xE1AD))
+    (1 (#xE15B . #xE1AE))
+    (2 (#xE163 . #xE1AF)))
   (soName
-    (0 (#xE154 #xE1AD))
-    (1 (#xE15C #xE1AE 1 . 0.44) . (#xE15C #xE1AE -1 . -0.44))
-    (2 (#xE164 #xE1AF 1 . 0.3) . (#xE164 #xE1AF -1 . -0.3)))
+    (0 (#xE154 . #xE1AD))
+    (1 (#xE15C . #xE1AE))
+    (2 (#xE164 . #xE1AF)))
   (laName
-    (0 (#xE155 #xE1AD))
-    (1 (#xE15D #xE1AE 1 . 0.44) . (#xE15D #xE1AE -1 . -0.44))
-    (2 (#xE165 #xE1AF 1 . 0.3) . (#xE165 #xE1AF -1 . -0.3)))
+    (0 (#xE155 . #xE1AD))
+    (1 (#xE15D . #xE1AE))
+    (2 (#xE165 . #xE1AF)))
   (siName
-    (0 (#xE157 #xE1AD))
-    (1 (#xE15F #xE1AE 1 . 0.44) . (#xE15F #xE1AE -1 . -0.44))
-    (2 (#xE167 #xE1AF 1 . 0.3) . (#xE167 #xE1AF -1 . -0.3)))
+    (0 (#xE157 . #xE1AD))
+    (1 (#xE15F . #xE1AE))
+    (2 (#xE167 . #xE1AF)))
   (tiName
-    (0 (#xE156 #xE1AD))
-    (1 (#xE15E #xE1AE 1 . 0.44) . (#xE15E #xE1AE -1 . -0.44))
-    (2 (#xE166 #xE1AF 1 . 0.3) . (#xE166 #xE1AF -1 . -0.3)))
+    (0 (#xE156 . #xE1AD))
+    (1 (#xE15E . #xE1AE))
+    (2 (#xE166 . #xE1AF)))
 
   ;; individual notes (for note-by-number)
   (note
@@ -1054,14 +1071,11 @@ ekmSlashSeparator =
 ))
 
 #(define (ekm-note grob log dir)
-  (let* ((d (ekm-assld ekm-notehead-tab grob log dir)))
+  (let ((d (ekm-assld ekm-notehead-tab grob log dir)))
     (if (pair? d)
-      (let ((mk (make-ekm-char-markup (car d))))
-        (if (cadr d)
-          (make-combine-markup
-            (make-with-color-markup white (make-ekm-char-markup (cadr d)))
-            mk)
-          mk))
+      (make-combine-markup
+        (make-with-color-markup white (make-ekm-char-markup (cdr d)))
+        (make-ekm-char-markup (car d)))
       (make-ekm-char-markup d))))
 
 #(define ((ekm-notehead dir) grob)
@@ -1070,10 +1084,9 @@ ekmSlashSeparator =
 #(define (ekm-stem-attachment grob)
   (let* ((stm (ly:grob-object grob 'stem))
          (dir (ly:grob-property stm 'direction))
-         (d (ekm-assld ekm-notehead-tab grob #f dir)))
-    (if (pair? d)
-      (cddr d)
-      (cons (if (>= dir 0) 1 -1) 0))))
+         (d (ekm-assld ekm-notehead-tab grob #f dir))
+         (d (ekm-md-glyph grob (if (pair? d) (car d) d))))
+    (if (>= dir 0) (second d) (third d))))
 
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
@@ -3765,7 +3778,7 @@ ekmSmuflOff =
   ;; create metadata table
   (if (not tab)
     (let* ((gn (ekmd:load #f))
-           (tab (ekmd:load "metadata-default.scm"))
+           (tab (ekmd:load "metadata-template.scm"))
            (md (ekmd:read
                 dir f f
                 '((fontName . #t)
