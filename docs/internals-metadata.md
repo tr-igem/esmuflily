@@ -64,7 +64,7 @@ not with the Unicode code point.
     }
 
 
-### Default metadata table
+### Template metadata table
 
 A tree similar to the final metadata table, but
 without `fontName` and `fontVersion` (actually they are ignored),
@@ -169,8 +169,8 @@ Process
 *   Load the glyphnames table from the file
     "EKMD_DIR/glyphnames.scm".
 
-*   Load the default metadata table from the file
-    "EKMD_DIR/metadata-default.scm"
+*   Load the template metadata table from the file
+    "EKMD_DIR/metadata-template.scm"
     and set the variables `ekmd:defaults` and `ekmd:glyphs` as above.
 
 *   Parse the file "MD_DIR/FNAME.json".
@@ -182,9 +182,9 @@ Process
         glyphsWithAnchors/note*
         optionalGlyphs/codepoint
 
-*   Replace the default values in `ekmd:defaults` and `ekmd:glyphs`,
+*   Replace the values in `ekmd:defaults` and `ekmd:glyphs`,
     and add new elements according to the template
-    for keys not defined in `glyphs` of the default metadata table.
+    for keys not defined in `glyphs` of the template metadata table.
 
 *   Replace the glyph names in `ekmd:glyphs` with their code points
     defined in the glyphnames table and in `optionalGlyphs`.
@@ -192,7 +192,7 @@ Process
 *   Create a new metadata table from `ekm:font-name`, `ekm:font-version`,
     `ekmd:defaults`, and `ekmd:glyphs`.
     Save the table in the file "EKMD_DIR/metadata-FNAME.scm".
-    EKMD_DIR is the same as for "metadata-default.scm".
+    EKMD_DIR is the same as for "metadata-template.scm".
 
 
 
@@ -255,7 +255,7 @@ VALUE specifies how to store members:
         {... k: v ...}   ->   (... (k . v) ...)
 
     Like #t but stores the key-value pair in `ekmd:defaults`
-    replacing the default value for k or adding a new entry.
+    replacing the value for k or adding a new entry.
     Used for members of "engravingDefaults".
 
 *   `#\c`
@@ -274,7 +274,7 @@ VALUE specifies how to store members:
         pk: {... k: [x, y] ...}   ->   (pk ... (x . y) ...)
 
     Stores v at index 1,2,... in the parent alist in `ekmd:glyphs`
-    replacing the default value for pk.
+    replacing the value for pk.
     Stores the first two elements of an array v in a pair.
     Used for "stemDown*" and "stemUp*" members of note heads and flags.
 
@@ -284,7 +284,7 @@ Template
 --------
 
 An alist with (KEY . VALUE) elements for keys not defined in `glyphs`
-of the default metadata table.
+of the template metadata table.
 
 KEY selects a template:
 
