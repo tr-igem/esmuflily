@@ -3772,7 +3772,7 @@ ekmSmuflOff =
                   (fontVersion . #t)
                   (engravingDefaults (#t . #\d))
                   (glyphsWithAnchors
-                    ("note" (stemDownNW . #\03) (stemUpSE . #\04)))
+                    ("note" (stemUpSE . #\02) (stemDownNW . #\03)))
                   (optionalGlyphs
                     (#t (codepoint . #\c))))
                 '())))
