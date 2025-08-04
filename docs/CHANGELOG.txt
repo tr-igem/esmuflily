@@ -361,3 +361,10 @@ January 2021 - May 2021:
   Added property "thickness" to "\ekm-system-start" and "(ekm-system-start)".
 - Changed name of "(trill?)" to "(ekm-trill?)".
 - Removed "\ekmStartTrillSpanScript", replaced by "\ekmStartSpan".
+
+2025-08-04:
+- Added basic metadata support (issue #3).
+- Added "ekmd.scm": Parse JSON file and create metadata table.
+- Added metadata tables: "metadata-bravura.scm", "metadata-ekmelos.scm",
+  and "metadata-default.scm" to create new tables.
+  They include data from "engravingDefaults" and stem attachment of note heads.
