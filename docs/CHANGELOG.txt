@@ -366,5 +366,10 @@ January 2021 - May 2021:
 - Added basic metadata support (issue #3).
 - Added "ekmd.scm": Parse JSON file and create metadata table.
 - Added metadata tables: "metadata-bravura.scm", "metadata-ekmelos.scm",
-  and "metadata-default.scm" to create new tables.
+  and "metadata-template.scm" to create new tables.
   They include data from "engravingDefaults" and stem attachment of note heads.
+- Added "(ekm-md)" to access engravingDefaults,
+  and "(ekm-md-glyph)" to access glyph metadata.
+- Added bracket thickness from engravingDefaults.
+- Removed stem-attachment data from table "ekm-notehead-tab".
+- Changed "(ekm-note)" and "(ekm-stem-attachment)" to access metadata.
