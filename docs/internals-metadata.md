@@ -179,7 +179,7 @@ Process
         fontName
         fontVersion
         engravingDefaults
-        glyphsWithAnchors/flag* and note*
+        glyphsWithAnchors/note*
         optionalGlyphs/codepoint
 
 *   Replace the default values in `ekmd:defaults` and `ekmd:glyphs`,
@@ -300,19 +300,16 @@ Note heads
 ----------
 
     (glyphs
-      (CP CP_EMPTY CONVERTED STEM_DOWN_ATTACH STEM_UP_ATTACH)
+      (CP CONVERTED STEM_UP_ATTACH STEM_DOWN_ATTACH)
       ...
     )
 
 *   CP (integer): Code point of the note head glyph.
 
-*   CP_EMPTY (integer or `#f`): Code point of the glyph to whiteout
-    the background. This is intended for note name note heads.
+*   CONVERTED (boolean): `#t` if the original metadata are converted.
 
-*   CONVERTED (boolean): `#t` if the original metadata hs been converted.
-
-*   STEM_DOWN_ATTACH, STEM_UP_ATTACH (pair):
-    Either the original metadata from "stemDownNW" and "stemUpSE",
+*   STEM_UP_ATTACH, STEM_DOWN_ATTACH (pair):
+    Either the original metadata from "stemUpSE" and "stemDownNW",
     or the converted values for the `stem-attachment` property.
 
 
@@ -320,23 +317,26 @@ Note heads
 
         bBoxNE        --------------   o - - - - -
                      /      :       \
-                    /       :        \
+                    /       :        \           h-up
       stemUpSE     /        :         o  - - -
                   /         :          |    uy
-             0   | - - - - -:- - - - - | - - -   h
+             0   | - - - - -:- - - - - | - - - - -
                  |          :         /     dy
     stemDownNW    o         :        /   - - -
-                   \        :       /
+                   \        :       /            h-down
                     \       :      /
         bBoxSW   o   --------------      - - - - -
                  ::         :         ::
                  ::    dx   :   ux    ::
                  :                     :
-                 :          w          :
+                 :       w-roght       :
 
-    w = bBoxNE.x - bBoxSW.x
-    h = bBoxNE.y - bBoxSW.y
-    ux = (stemUpSE.x - w/2) / w/2 = stemUpSE.x / w/2 - 1
-    uy = stemUpSE.y / h/2
-    dx = (stemDownNW.x - w/2) / w/2 = stemDownNW.x / w/2 - 1
-    dy = stemDownNW.y / h/2
+    x-ext = (0 . w-right)
+    y-ext = (h-down . h-up)
+    w = w-right / 2
+
+    ux = (stemUpSE.x - w) / w = stemUpSE.x / w - 1
+    uy = stemUpSE.y / h-up
+
+    dx = (stemDownNW.x - w) / w = stemDownNW.x / w - 1
+    dy = stemDownNW.y / abs(h-down)
