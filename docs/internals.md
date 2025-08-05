@@ -118,15 +118,60 @@ Note heads
 *   NOTEHEAD-DATA:
 
         CP
-        (CP CP-EMPTY STEM-ATTACH-X . STEM-ATTACH-Y)
+        (CP . CP-EMPTY)
 
 *   CP (integer): Code point of the note head glyph.
 
 *   CP-EMPTY (integer or `#f`): Code point of the glyph to whiteout
     the background. This is intended for note name note heads.
 
-*   STEM-ATTACH-X, STEM-ATTACH-Y (number): Values for the
+
+### Note head metadata
+
+    ekmd:glyphs (
+      (CP CONVERTED STEM-ATTACH-UP STEM-ATTACH-DOWN)
+      ...
+    )
+
+*   CP (integer): Code point of the note head glyph.
+
+*   CONVERTED (boolean): `#t` if STEM-ATTACH is converted for the
     `stem-attachment` property.
+
+*   STEM-ATTACH (pair):
+    Either the original metadata from "stemUpSE" and "stemDownNW",
+    or the converted values for the `stem-attachment` property.
+
+
+### Convert note head metadata
+
+        bBoxNE        --------------   o - - - - -
+                     /      :       \
+                    /       :        \           y-up
+      stemUpSE     /        :         o  - - -
+                  /         :          |    uy
+             0   | - - - - -:- - - - - | - - - - -
+                 |          :         /     dy
+    stemDownNW    o         :        /   - - -
+                   \        :       /            y-down
+                    \       :      /
+        bBoxSW   o   --------------      - - - - -
+                 ::         :         ::
+                 ::    dx   :   ux    ::
+                 :                     :
+                 :       x-right       :
+
+    x-ext = (0 . x-right)
+    y-ext = (y-down . y-up)
+    w = x-right / 2
+
+    ux = (stemUpSE.x - w) / w = stemUpSE.x / w - 1
+    uy = stemUpSE.y / y-up
+    dx = (stemDownNW.x - w) / w = stemDownNW.x / w - 1
+    dy = stemDownNW.y / abs(y-down)
+
+    stem-attach-up   = (ux . uy)
+    stem-attach-down = (dx . dy)
 
 
 
@@ -152,8 +197,7 @@ Implements Henry Cowell's clusters
 
 *   CLUSTER-DATA:
 
-        (CP-1 CP-2 CP-3 CP-TOP CP-MID CP-BOTTOM)
-        (CP-1 CP-2 CP-3 CP-TOP CP-MID CP-BOTTOM STEM-POS STEM-ATTACH-X . STEM-ATTACH-Y)
+        (CP-1 CP-2 CP-3 CP-TOP CP-MID CP-BOTTOM STEM-POS)
 
 *   CP-1, CP-2, CP-3 (integer or `#f`): Code points of the note head glyphs
     for unison, second, and third.
@@ -163,9 +207,6 @@ Implements Henry Cowell's clusters
 
 *   STEM-POS (number): Added to the `stem-begin-position` property
     of stem down.
-
-*   STEM-ATTACH-X, STEM-ATTACH-Y (number): Values for the
-    `stem-attachment` property.
 
 
 
