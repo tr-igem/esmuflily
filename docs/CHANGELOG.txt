@@ -373,3 +373,8 @@ January 2021 - May 2021:
 - Added bracket thickness from engravingDefaults.
 - Removed stem-attachment data from table "ekm-notehead-tab".
 - Changed "(ekm-note)" and "(ekm-stem-attachment)" to access metadata.
+
+2025-08-05:
+- Added cluster notes to "metadata-*.scm".
+- Removed stem-attachment data from table "ekm-cluster-tab".
+- Changed "(ekm-cluster)" to access metadata.
