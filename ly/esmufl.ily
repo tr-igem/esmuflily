@@ -1085,8 +1085,8 @@ ekmSlashSeparator =
   (let* ((stm (ly:grob-object grob 'stem))
          (dir (ly:grob-property stm 'direction))
          (d (ekm-assld ekm-notehead-tab grob #f dir))
-         (d (ekm-md-glyph grob (if (pair? d) (car d) d))))
-    (if (>= dir 0) (second d) (third d))))
+         (md (ekm-md-glyph grob (if (pair? d) (car d) d))))
+    (if (>= dir 0) (second md) (third md))))
 
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
@@ -1102,66 +1102,66 @@ ekmNameHeadsTiMinor =
 
 #(define ekm-cluster-tab '(
   (default
-    (-1 (#xE0A0 #xE124 #xE128 #xE12C #xE12D #xE12E))
-    (0 (#xE0A2 #xE125 #xE129 #xE12F #xE130 #xE131))
-    (1 (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0 1 . 0.44) .
-       (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0 -1 . -0.44))
-    (2 (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0 1 . 0.3) .
-       (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0 -1 . -0.3)))
+    (-1 (#xE0A0 #xE124 #xE128 #xE12C #xE12D #xE12E 0))
+    (0 (#xE0A2 #xE125 #xE129 #xE12F #xE130 #xE131 0))
+    (1 (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0) .
+       (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0))
+    (2 (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0) .
+       (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0)))
   (harmonic
-    (1 (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5 1 . -0.1) .
-       (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5 -1 . -0.4))
-    (2 (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4 1 . -0.1) .
-       (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4 -1 . -0.3)))
+    (1 (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5) .
+       (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5))
+    (2 (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4) .
+       (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4)))
   (diamond
-    (1 (#xE0D9 #xF64B #xF64C #xF64D #xF64E #xF64F 0.5 1 . -0.1) .
-       (#xE0D9 #xF64B #xF64C #xF64D #xF64E #xF64F 0.5 -1 . -0.4))
-    (2 (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4 1 . -0.1) .
-       (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4 -1 . -0.3)))
+    (1 (#xE0D9 #xF64B #xF64C #xF64D #xF64E #xF64F 0.5) .
+       (#xE0D9 #xF64B #xF64C #xF64D #xF64E #xF64F 0.5))
+    (2 (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4) .
+       (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4)))
   (square
-    (1 (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3 1 . 0.8) .
-       (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3 -1 . -0.5))
-    (2 (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3 1 . 0.8) .
-       (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3 -1 . -0.5)))
+    (1 (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3) .
+       (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3))
+    (2 (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3) .
+       (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3)))
 ))
 
 #(define (ekm-cluster grob)
   (let ((nhs (ly:grob-object grob 'note-heads)))
     (if (ly:grob-array? nhs)
       (let* ((nhl (ly:grob-array->list nhs))
-             (bot (fold
-               (lambda (nh m)
-                 (let ((p (ly:grob-property nh 'staff-position)))
-                   (ly:grob-set-property! nh 'transparent #t)
-                   (if (< p (car m)) (cons p nh) m)))
+             (bot (fold (lambda (nh b)
+                (let ((p (ly:grob-property nh 'staff-position)))
+                  (ly:grob-set-property! nh 'transparent #t)
+                  (if (< p (car b)) (cons p nh) b)))
                (cons 999 #f)
                nhl))
-             (d (ekm-assld ekm-cluster-tab (cdr bot) #f #f))
-             (st (list-tail d 6))
-             (top (fold
-               (lambda (nh m)
-                 (ly:grob-set-property! nh 'style 'default)
-                 (if (pair? st) (ly:grob-set-property! nh 'stem-attachment (cdr st)))
-                 (max m (ly:grob-property nh 'staff-position)))
+             (top (fold (lambda (nh t)
+                (ly:grob-set-property! nh 'style 'default)
+                (max t (ly:grob-property nh 'staff-position)))
                -999
                nhl))
+             (d (ekm-assld ekm-cluster-tab (cdr bot) #f #f))
              (h (- top (car bot)))
-             (c (and (< h 3) (list-ref d h)))
+             (cp (and (< h 3) (list-ref d h)))
              (stm (ly:grob-object grob 'stem))
-            )
+             (dir (ly:grob-property stm 'direction))
+             (md (ekm-md-glyph (cdr bot)
+                  (or cp (if (>= dir 0) (fourth d) (sixth d))))))
+        (ly:grob-set-property! (cdr bot) 'stem-attachment
+          (if (>= dir 0) (second md) (third md)))
         (ly:grob-set-property! stm 'avoid-note-head #t)
         (ly:grob-set-property! stm 'note-collision-threshold 0)
-        (if (and (pair? st)
-                 (> 0 (ly:grob-property stm 'direction)))
+        (if (< dir 0)
           (ly:grob-set-property! stm 'stem-begin-position
-            (+ (ly:grob-property stm 'stem-begin-position) (car st))))
+            (+ (ly:grob-property stm 'stem-begin-position)
+               (seventh d))))
         (ly:grob-set-property! (cdr bot) 'transparent #f)
         (ly:grob-set-property! (cdr bot) 'stencil
           (grob-interpret-markup grob
             (make-with-dimensions-from-markup
               (make-ekm-char-markup (car d))
-              (if c
-                (make-ekm-char-markup c)
+              (if cp
+                (make-ekm-char-markup cp)
                 (make-combine-markup
                   (let bar ((m (make-ekm-char-markup (sixth d)))
                             (y (- h 3)))
