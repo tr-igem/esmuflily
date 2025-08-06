@@ -261,6 +261,12 @@
 #(define (ekm-dim grob mk dir)
   (cdr (ly:stencil-extent (grob-interpret-markup grob mk) dir)))
 
+#(define (ekm-dir stm)
+  (let ((dir (if (null? (ly:grob-object stm 'beam))
+              (ly:grob-property stm 'direction)
+              (ly:grob-property-data stm 'direction))))
+    (if (number? dir) dir UP)))
+
 
 %% Table access
 
@@ -280,12 +286,7 @@
   (ekm-asst tab
     (if (ly:grob? grob) (ly:grob-property grob 'style) grob)
     (or log (ly:grob-property grob 'duration-log))
-    (or dir
-        (let* ((stm (ly:grob-object grob 'stem))
-               (d (if (null? (ly:grob-object stm 'beam))
-                    (ly:grob-property stm 'direction)
-                    (ly:grob-property-data stm 'direction))))
-          (if (number? d) d UP)))))
+    (or dir (ekm-dir (ly:grob-object grob 'stem)))))
 
 #(define (ekm-md key)
   (assq-ref ekmd:defaults key))
@@ -1135,26 +1136,25 @@ ekmNameHeadsTiMinor =
                   (if (< p (car b)) (cons p nh) b)))
                (cons 999 #f)
                nhl))
+             (d (ekm-assld ekm-cluster-tab (cdr bot) #f #f))
              (top (fold (lambda (nh t)
                 (ly:grob-set-property! nh 'style 'default)
                 (max t (ly:grob-property nh 'staff-position)))
                -999
                nhl))
-             (d (ekm-assld ekm-cluster-tab (cdr bot) #f #f))
              (h (- top (car bot)))
              (cp (and (< h 3) (list-ref d h)))
              (stm (ly:grob-object grob 'stem))
-             (dir (ly:grob-property stm 'direction))
+             (dir (ekm-dir stm))
              (md (ekm-md-glyph (cdr bot)
                   (or cp (if (>= dir 0) (fourth d) (sixth d))))))
         (ly:grob-set-property! (cdr bot) 'stem-attachment
           (if (>= dir 0) (second md) (third md)))
         (ly:grob-set-property! stm 'avoid-note-head #t)
         (ly:grob-set-property! stm 'note-collision-threshold 0)
-        (if (< dir 0)
+        (if (and (< dir 0) (> h 0))
           (ly:grob-set-property! stm 'stem-begin-position
-            (+ (ly:grob-property stm 'stem-begin-position)
-               (seventh d))))
+            (+ (ly:grob-property stm 'stem-begin-position) (seventh d))))
         (ly:grob-set-property! (cdr bot) 'transparent #f)
         (ly:grob-set-property! (cdr bot) 'stencil
           (grob-interpret-markup grob
