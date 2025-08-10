@@ -129,6 +129,7 @@ Note heads
 ### Note head metadata
 
     ekmd:glyphs (
+      ...
       (CP CONVERTED STEM-ATTACH-UP STEM-ATTACH-DOWN)
       ...
     )
@@ -218,7 +219,7 @@ Flags
       ...
     )
 
-*   FLAG-STYLE (symbol): `default`, `short`, `straight`.
+*   FLAG-STYLE (symbol): `default`, `short`, `straight`, ...
 
 *   FLAG-ENTRY:
 
@@ -228,7 +229,8 @@ Flags
 
 *   CP (integer): Code point of the flag glyph.
 
-###
+
+### Flag stem length
 
     ekm-stemlength-tab (
       (FLAG-STYLE STEM-LENGTH EXTRA-LENGTH-3 ... EXTRA-LENGTH-10)
@@ -238,6 +240,19 @@ Flags
 *   STEM-LENGTH (number): Nominal unmodified stem length, usually 3.5.
 
 *   EXTRA-LENGTH (number): Amount to lengthen stem for duration log 3 to 10.
+
+
+### Flag metadata
+
+These metadata entries are used to create the above tables
+`ekm-flag-tab` and `ekm-stemlength-tab`.
+
+    ekmd:glyphs (
+      ...
+      (CP-UP FLAG-STYLE LOG (0 . EXTRA-LENGTH-UP) (#f . #f))
+      (CP-DOWN FLAG-STYLE LOG (#f . #f) (0 . EXTRA-LENGTH-DOWN))
+      ...
+    )
 
 
 

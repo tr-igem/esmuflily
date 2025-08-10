@@ -378,3 +378,13 @@ January 2021 - May 2021:
 - Added cluster notes to "metadata-*.scm".
 - Removed stem-attachment data from table "ekm-cluster-tab".
 - Changed "(ekm-cluster)" to access metadata.
+
+2025-08-06:
+- Added "(ekm-dir)" for beamed notes and clusters (issue #19).
+
+2025-08-10:
+- Added metadata support for flags of different font-specific styles.
+- Added "\ekmInitFlag" to prepare flag metadata.
+- ekmd.scm: Added "(ekmd:tag!)" to tag glyphs for grouping by style
+  and duration log. Used for flags.
+- ekmd.scm: Added "(ekmd:name->cp gn)" to convert glyph names to code points.
