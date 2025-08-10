@@ -1224,32 +1224,35 @@ ekmMakeClusters =
     (7 #xE248 . #xE249)
     (8 #xE24A . #xE24B)
     (9 #xE24C . #xE24D)
-    (10 #xE24E . #xE24F))
-  (short
-    (3 #xF410 . #xF6C0)
-    (4 #xF413 . #xF6C1)
-    (5 #xF416 . #xF6C2)
-    (6 #xF419 . #xF6C3)
-    (7 #xF41C . #xF6C4)
-    (8 #xF41F . #xF6C5)
-    (9 #xF422 . #xF6C6)
-    (10 #xF425 . #xF6C7))
-  (straight
-    (3 #xF40F . #xF411)
-    (4 #xF412 . #xF414)
-    (5 #xF415 . #xF417)
-    (6 #xF418 . #xF41A)
-    (7 #xF41B . #xF41D)
-    (8 #xF41E . #xF420)
-    (9 #xF421 . #xF423)
-    (10 #xF424 . #xF426))
-))
+    (10 #xE24E . #xE24F))))
 
 #(define ekm-stemlength-tab '(
-  (default 3.5 0 0 0.73 1.45 2.18 2.92 3.65 4.39)
-  (short 3.5 0 0 0 0.53 1.03 1.61 2.18 2.76)
-  (straight 3.5 0 0 0 0.85 1.71 2.5 3.29 4.05)
-))
+  (default 3.5 -0.04 -0.088 0.376 1.172 1.9 2.592 3.324 4.064)))
+
+ekmInitFlag =
+#(define-void-function () ()
+  (let init ((t ekmd:glyphs))
+    (if (null? t) #t
+    (let* ((e (car t))
+           (s (second e)))
+      (if (symbol? s)
+        (let* ((orgflg (assq-ref ekm-flag-tab s))
+               (flg (or orgflg (list)))
+               (orglog (assv-ref flg (third e)))
+               (log (or orglog (cons 0 0)))
+               (len (or (assq-ref ekm-stemlength-tab s) (list 3.5 0 0 0 0 0 0 0 0))))
+          (if (not orgflg) (begin
+            (set! ekm-flag-tab (append ekm-flag-tab (list (cons* s flg))))
+            (set! ekm-stemlength-tab (append ekm-stemlength-tab (list (cons* s len))))))
+          (if (not orglog)
+            (set! ekm-flag-tab
+              (assq-set! ekm-flag-tab s (append flg (list (cons* (third e) log))))))
+          (if (number? (cdr (fourth e)))
+            (begin
+              (set-car! log (first e))
+              (list-set! len (- (third e) 2) (cdr (fourth e))))
+            (set-cdr! log (first e)))))
+      (init (cdr t))))))
 
 #(define (ekm-stemlength style)
   (let* ((tab (ekm-assq ekm-stemlength-tab style))
@@ -1278,7 +1281,8 @@ ekmMakeClusters =
         flg)
       (cons
         (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
-        (if (negative? dir) len (- len))))))
+        (if (negative? dir) len (- len))
+      ))))
 
 ekmFlag =
 #(define-music-function (style)
@@ -3594,8 +3598,10 @@ ekmSmuflOn =
       \override Dots.stencil = #ekm-dots
     #})
     (on 'flag #{
-      \override Stem.details.lengths = #(ekm-stemlength 'default)
+      \ekmInitFlag
       \override Flag.stencil = #ekm-flag
+      \override Flag.style = #'default
+      \override Stem.details.lengths = #(ekm-stemlength 'default)
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
@@ -3692,8 +3698,9 @@ ekmSmuflOff =
       \revert Dots.stencil
     #})
     (on 'flag #{
-      \revert Stem.details.lengths
       \revert Flag.stencil
+      \revert Flag.style
+      \revert Stem.details.lengths
     #})
     (on 'rest #{
       \revert Rest.stencil
@@ -3769,14 +3776,16 @@ ekmSmuflOff =
         (f (if (string-null? f) "Ekmelos" f))
         (dir (ly:get-option 'ekmmetadata))
         (dir (if dir (symbol->string dir)
-             (if (defined? 'ekmMetadata) ekmMetadata #f)))
+             (if (defined? 'ekmMetadata) ekmMetadata "")))
+        (cr (string-suffix? "%" dir))
+        (dir (if cr (string-drop-right dir 1) dir))
         (name (string-append "metadata-" (string-downcase f) ".scm"))
         (tab (ekmd:load name)))
   (set! ekm:font-name f)
   (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil)))
 
   ;; create metadata table
-  (if (not tab)
+  (if (or cr (not tab))
     (let* ((gn (ekmd:load #f))
            (tab (ekmd:load "metadata-template.scm"))
            (md (ekmd:read
@@ -3785,18 +3794,15 @@ ekmSmuflOff =
                   (fontVersion . #t)
                   (engravingDefaults (#t . #\d))
                   (glyphsWithAnchors
+                    ("flag" (stemUpNW . #\03) (stemDownSW . #\04))
                     ("note" (stemUpSE . #\02) (stemDownNW . #\03)))
                   (optionalGlyphs
                     (#t (codepoint . #\c))))
-                '())))
+                '(("flag" flag #f (#f . #f) (#f . #f))))))
       (if (and tab gn md)
-        (let ((gnex (append gn (or (assq-ref md 'optionalGlyphs) '()))))
-          (let n->c ((g ekmd:glyphs))
-            (if (null? g)
-              #t
-              (let ((c (assq-ref gnex (caar g))))
-                (if c (set-car! (car g) c))
-                (n->c (cdr g)))))
+        (begin
+          (ekmd:tag! 'flag '(short straight small))
+          (ekmd:name->cp (append gn (or (assq-ref md 'optionalGlyphs) '())))
           (ekmd:save (string-append ekmd:dir "/" name)
             (list
               (cons 'fontName f)

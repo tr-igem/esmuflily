@@ -201,7 +201,7 @@
                 (append! (string-split l #\\) (list "SMuFL/Fonts" font))
                 "/"))
               ls)))
-    (if dir (cons* dir ls) ls)))
+    (if (string-null? dir) ls (cons* dir ls))))
 
 (define-public (ekmd:read dir font name mask tmpl)
   (let loc ((ls (ekmd:loc dir font)))
@@ -214,6 +214,32 @@
             (close-port p)
             t)
           (loc (cdr ls)))))))
+
+(define-public (ekmd:tag! tag styles)
+  (let tg ((g ekmd:glyphs))
+    (if (null? g) #t
+    (begin
+      (if (eq? tag (cadar g))
+        (let* ((e (car g))
+               (n (symbol->string (car e)))
+               (s (let st ((s styles))
+                    (if (null? s) 'default
+                    (if (string-contains-ci n (symbol->string (car s))) (car s)
+                    (st (cdr s))))))
+               (l (let lg ((l 10) (d 1024))
+                    (if (< d 8) #f
+                    (if (string-contains n (number->string d)) l
+                    (lg (1- l) (/ d 2)))))))
+          (list-set! e 1 s)
+          (list-set! e 2 l)))
+      (tg (cdr g))))))
+
+(define-public (ekmd:name->cp gn)
+  (let n->c ((g ekmd:glyphs))
+    (if (null? g) #t
+    (let ((c (assq-ref gn (caar g))))
+      (if c (set-car! (car g) c))
+      (n->c (cdr g))))))
 
 (define-public (ekmd:load name)
   (let ((fn (ly:find-file (or name "glyphnames.scm"))))
