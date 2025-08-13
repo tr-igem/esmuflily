@@ -3779,15 +3779,14 @@ ekmSmuflOff =
              (if (defined? 'ekmMetadata) ekmMetadata "")))
         (cr (string-suffix? "%" dir))
         (dir (if cr (string-drop-right dir 1) dir))
-        (name (string-append "metadata-" (string-downcase f) ".scm"))
+        (name (string-append "ekmd-" (string-downcase f) ".scm"))
         (tab (ekmd:load name)))
   (set! ekm:font-name f)
   (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil)))
 
   ;; create metadata table
   (if (or cr (not tab))
-    (let* ((gn (ekmd:load #f))
-           (tab (ekmd:load "metadata-template.scm"))
+    (let* ((tab (ekmd:load "ekmd-template.scm"))
            (md (ekmd:read
                 dir f f
                 '((fontName . #t)
@@ -3799,10 +3798,10 @@ ekmSmuflOff =
                   (optionalGlyphs
                     (#t (codepoint . #\c))))
                 '(("flag" flag #f (#f . #f) (#f . #f))))))
-      (if (and tab gn md)
+      (if (and tab md)
         (begin
           (ekmd:tag! 'flag '(short straight small))
-          (ekmd:name->cp (append gn (or (assq-ref md 'optionalGlyphs) '())))
+          (ekmd:name->cp (append ekmd:glyphnames (or (assq-ref md 'optionalGlyphs) '())))
           (ekmd:save (string-append ekmd:dir "/" name)
             (list
               (cons 'fontName f)
