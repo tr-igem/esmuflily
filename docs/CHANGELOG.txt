@@ -388,3 +388,8 @@ January 2021 - May 2021:
 - ekmd.scm: Added "(ekmd:tag!)" to tag glyphs for grouping by style
   and duration log. Used for flags.
 - ekmd.scm: Added "(ekmd:name->cp gn)" to convert glyph names to code points.
+
+2025-08-13:
+- ekmd.scm: Includes the glyphnames table "ekmd:glyphnames" instead of
+  separate file "glyphnames.scm".
+- Changed names of cache files from "metadata-*" to "ekmd-*".
