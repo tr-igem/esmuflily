@@ -139,9 +139,9 @@ Note heads
 *   CONVERTED (boolean): `#t` if STEM-ATTACH is converted for the
     `stem-attachment` property.
 
-*   STEM-ATTACH (pair):
-    Either the original metadata from "stemUpSE" and "stemDownNW",
-    or the converted values for the `stem-attachment` property.
+*   STEM-ATTACH (pair): Either the original metadata from "stemUpSE"
+    and "stemDownNW", or the converted values for the `stem-attachment`
+    property.
 
 
 ### Convert note head metadata
@@ -239,7 +239,12 @@ Flags
 
 *   STEM-LENGTH (number): Nominal unmodified stem length, usually 3.5.
 
-*   EXTRA-LENGTH (number): Amount to lengthen stem for duration log 3 to 10.
+*   EXTRA-LENGTH:
+
+        (EXTRA-LENGTH-UP . EXTRA-LENGTH-DOWN)
+
+    Amount to lengthen stem for duration log 3 to 10.
+    Currently, only EXTRA-LENGTH-UP is used.
 
 
 ### Flag metadata
