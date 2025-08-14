@@ -1227,7 +1227,7 @@ ekmMakeClusters =
     (10 #xE24E . #xE24F))))
 
 #(define ekm-stemlength-tab '(
-  (default 3.5 -0.04 -0.088 0.376 1.172 1.9 2.592 3.324 4.064)))
+  (default 3.5 (-0.04 . 0.132) (-0.088 . 0.128) (0.376 . -0.448) (1.172 . -1.244) (1.9 . -2.076) (2.592 . -2.812) (3.324 . -3.608) (4.064 . -4.684))))
 
 ekmInitFlag =
 #(define-void-function () ()
@@ -1240,7 +1240,8 @@ ekmInitFlag =
                (flg (or orgflg (list)))
                (orglog (assv-ref flg (third e)))
                (log (or orglog (cons 0 0)))
-               (len (or (assq-ref ekm-stemlength-tab s) (list 3.5 0 0 0 0 0 0 0 0))))
+               (len (or (assq-ref ekm-stemlength-tab s)
+                        (list 3.5 (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)))))
           (if (not orgflg) (begin
             (set! ekm-flag-tab (append ekm-flag-tab (list (cons* s flg))))
             (set! ekm-stemlength-tab (append ekm-stemlength-tab (list (cons* s len))))))
@@ -1248,16 +1249,18 @@ ekmInitFlag =
             (set! ekm-flag-tab
               (assq-set! ekm-flag-tab s (append flg (list (cons* (third e) log))))))
           (if (number? (cdr (fourth e)))
-            (begin
+            (begin ;; up
               (set-car! log (first e))
-              (list-set! len (- (third e) 2) (cdr (fourth e))))
-            (set-cdr! log (first e)))))
+              (set-car! (list-ref len (- (third e) 2)) (cdr (fourth e))))
+            (begin ;; down
+              (set-cdr! log (first e))
+              (set-cdr! (list-ref len (- (third e) 2)) (cdr (fifth e)))))))
       (init (cdr t))))))
 
 #(define (ekm-stemlength style)
   (let* ((tab (ekm-assq ekm-stemlength-tab style))
-         (len (car tab)))
-    (cons* len (map (lambda (y) (+ len y)) (cdr tab)))))
+         (nom (car tab)))
+    (cons* nom (map (lambda (y) (+ nom (car y))) (cdr tab)))))
 
 #(define (ekm-flag grob)
   (let* ((stm (ly:grob-parent grob X))
@@ -1274,15 +1277,14 @@ ekmInitFlag =
           flg
           (grob-interpret-markup grob
             (make-translate-scaled-markup
-              (if (= UP dir)
+              (if (>= dir 0)
                 '(-0.644 . -2.456)
                 '(-0.596 . 2.168))
-              (make-ekm-char-markup (if (= UP dir) #xE564 #xE565)))))
+              (make-ekm-char-markup (if (>= dir 0) #xE564 #xE565)))))
         flg)
       (cons
         (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
-        (if (negative? dir) len (- len))
-      ))))
+        (if (>= dir 0) (- (car len)) (car len))))))
 
 ekmFlag =
 #(define-music-function (style)
