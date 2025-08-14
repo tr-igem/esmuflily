@@ -393,3 +393,8 @@ January 2021 - May 2021:
 - ekmd.scm: Includes the glyphnames table "ekmd:glyphnames" instead of
   separate file "glyphnames.scm".
 - Changed names of cache files from "metadata-*" to "ekmd-*".
+
+2025-08-14:
+- Changed table "ekm-stemlength-tab" and "\ekmInitFlag"
+  to provide up and down stem length.
+  Adapt "(ekm-stemlength)" and "(ekm-flag)" accordingly.
