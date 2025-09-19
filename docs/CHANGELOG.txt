@@ -398,3 +398,53 @@ January 2021 - May 2021:
 - Changed table "ekm-stemlength-tab" and "\ekmInitFlag"
   to provide up and down stem length.
   Adapt "(ekm-stemlength)" and "(ekm-flag)" accordingly.
+
+2025-09-05:
+- Added common type table "ekm-types" replacing type-specific tables:
+  "ekm-notehead-tab", "ekm-flag-tab", "ekm-rest-tab", "ekm-script-tab",
+  "ekm-cluster-tab", "ekm-delimiter-tab", "ekm-spanner-tab",
+  "ekm-accordion-tab", "ekm-brass-tab", "ekm-parens-tab", ...
+- Added "(ekm-merge-type)" to extend type tables with font-specific
+  styles from the cache file.
+- Changed format of flag entries in the "glyphs" sub-table of the
+  metadata table. Moved FLAG-STYLE and LOG to the "styles" sub-table.
+- Added "(ekm-init-stemlength)" replacing "\ekmInitFlag".
+- Changed tables delimiter, accordion, brass:
+  Separate up and down values for a unique format and to allow directions.
+- Removed MINIMUM-LENGTH from brass table.
+- Changed "\ekmBendAfter" to calculate minimum-length from glyphs.
+- Changed parens table:
+  "#t" instead of "ekm-align" to avoid quasi-quote.
+
+2025-09-07:
+- Changed tables script, clef, dynamic, shared:
+  Sub-table with style "#t".
+- Added "(ekm-init-clef)".
+- Added table laissezvibrer.
+  Changed "\ekmLaissezVibrer" to accept an extent instead of an index.
+
+2025-09-08:
+- Added tables tremolo, stem, ottava, ottavation, finger, string.
+- Added "(ekm-ottavation)" creating an ottavation style list for "ottavationMarkups".
+- Removed predefined lists "ekm-ottavation-*" and "(ekm-cdr-text)".
+- Set shared table to "\hspace" markups for SP,EMSP,ENSP,THSP,HSP,
+  and new key "`" to 0 for ZWSP.
+
+2025-09-09:
+- Added tables pedal, harp.
+
+2025-09-10:
+- Added styles to table number: time, time-turned, time-reversed, tuplet,
+  finger, finger-italic, string, fbass, func.
+  string replaces type table.
+- Changed "(ekm-number->list)" and "\ekm-number" to access table number.
+- Added table clef-mod.
+- Added command "\ekm-concat".
+- Changed direction order in glyphs and types tables to (DOWN . UP).
+
+2025-09-18:
+- Added tables fbass, fbass-acc, lyric, analytics, func, arrow, beater.
+- Changed "(ekm-fbass)" to accept any extext.
+- Added command "\ekm-orient".
+- Removed "(ekm-oref)".
+- Changed "\ekmBendAfter" to accept any extext.
