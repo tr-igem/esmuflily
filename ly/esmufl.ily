@@ -172,6 +172,12 @@
   (interpret-markup layout props (make-ekm-text-markup txt)))
 
 
+#(define-public CX #b101)
+#(define-public CY #b110)
+#(define-public CXY #b111)
+#(define-public STEMCX #b001)
+#(define-public STEMCXY #b011)
+
 #(define (ekm-center center sil)
   (let ((s (if (logtest center 1) (ly:stencil-aligned-to sil X CENTER) sil)))
     (if (logtest center 2) (ly:stencil-aligned-to s Y CENTER) s)))
@@ -193,11 +199,12 @@
 #(define-markup-command (ekm-ctext layout props center txt)
   (integer? ekm-extext?)
   (ekm-center
-    (logand center
-      (if (< 3 center) 3
-      (if (ekm-cp? txt) 0
-      (if (pair? txt)
-        (if (ekm-cp? (car txt)) (if (ekm-cdr-cp? txt) 1 0) 3) 3))))
+    (if (> center 3)
+      center
+      (logand center
+        (if (ekm-cp? txt) 0
+        (if (pair? txt)
+          (if (ekm-cp? (car txt)) (if (ekm-cdr-cp? txt) 1 0) 3) 3))))
     (interpret-markup layout props
       (make-ekm-text-markup txt))))
 
@@ -474,26 +481,21 @@
 %% Time signature
 
 #(define (ekm-time-subnum num)
-  (case num
-    ((1/4) #xE097)
-    ((1/2) #xE098)
-    ((3/4) #xE099)
-    ((1/3) #xE09A)
-    ((2/3) #xE09B)
-    (else #xE08E)))
+  (or (ekm-assid 'time-sub num)
+      (ekm-assid 'time "//")))
 
 #(define (ekm-time-num l num)
   (if num
     (cond
       ((pair? (car l))
-        (make-ekm-chars-markup
-          (append
+        (make-ekm-concat-markup
+          (list
             (ekm-number->list 'time (caar l))
-            (list (ekm-time-subnum (cdar l))))))
+            (ekm-time-subnum (cdar l)))))
       ((integer? (car l))
         (make-ekm-number-markup 'time (car l)))
       (else
-        (make-ekm-char-markup (ekm-time-subnum (car l)))))
+        (make-ekm-text-markup (ekm-time-subnum (car l)))))
     (car l)))
 
 #(define (ekm-time-join ls sep denom)
@@ -518,7 +520,7 @@
                 ((number? fr) (list fr))
                 ((number-pair? fr) (list (car fr) (cdr fr)))
                 (else fr))
-              (make-ekm-char-markup #xE08D)
+              (make-ekm-text-markup (ekm-assid 'time "/+"))
               #t))
          (num (make-line-markup (car t))))
     (make-vcenter-markup
@@ -536,7 +538,7 @@
       (car
         (ekm-time-join
           (map (lambda (fr) (ekm-time-fraction fr st)) sig)
-          (make-ekm-cchar-markup 2 #xE08C)
+          (make-ekm-ctext-markup CY (ekm-assid 'time "+"))
           #f)))))
 
 #(define (ekm-time-plain sig)
@@ -604,13 +606,13 @@ ekmCompoundMeter =
 #(define (ekm-timesig grob)
   (let* ((fr (ly:grob-property grob 'fraction))
          (st (ly:grob-property grob 'style))
-         (cp (cond
-               ((equal? '(4 . 4) fr) #xE08A)
-               ((equal? '(2 . 2) fr) #xE08B)
+         (sym (cond
+               ((equal? '(4 . 4) fr) (ekm-assid 'time "C"))
+               ((equal? '(2 . 2) fr) (ekm-assid 'time "|C"))
                (else #f))))
     (grob-interpret-markup grob
-      (if (and cp (or (eq? 'C st) (eq? 'default st)))
-        (make-ekm-cchar-markup 2 cp)
+      (if (and sym (or (eq? 'C st) (eq? 'default st)))
+        (make-ekm-ctext-markup CY sym)
         (ekm-time-fraction fr st)))))
 
 
@@ -618,15 +620,12 @@ ekmCompoundMeter =
 
 ekmCadenzaOn =
 #(define-music-function (style)
-  (symbol?)
-  (let ((cp (case style
-              ((time-x) #xE09C)
-              ((time-penderecki) #xE09D)
-              (else #f))))
-    (if cp
+  (string-or-symbol?)
+  (let ((sym (ekm-assid 'time style)))
+    (if sym
       #{
         \once \override Staff.TimeSignature.stencil =
-          #(lambda (grob) (ekm-cchar grob 2 cp))
+          #(lambda (grob) (ekm-ctext grob CY sym))
         \time 1/1 % force printing
         \cadenzaOn
       #}#{
@@ -765,15 +764,6 @@ ekmMakeClusters =
 
 
 %% Augmentation dot
-
-#(define ekm-dots-tab '(
-  (default   #xE1E7 0 0 0)
-  (note      #xE1E7 -0.2 0.7 0.7)
-  (metronome #xECB7 0.2 0.7 0.7)
-  (straight  #xE1E7 -0.8 -0.8 0.3)
-  (short     #xE1E7 -0.8 -0.8 0.5)
-  (beamed    #xE1E7 -1.4 -1.4 -1.4)
-))
 
 #(define (ekm-cat-dots count dot)
   (let ((ext (ekm-extent dot X)))
@@ -1145,8 +1135,8 @@ ekmParensHairpin =
     \once \override Hairpin.stencil =
     #(lambda (grob)
       (let* ((p (ekm-parens style 'h))
-             (l (ekm-ctext grob 2 (car p)))
-             (r (ekm-ctext grob 2 (cdr p)))
+             (l (ekm-ctext grob CY (car p)))
+             (r (ekm-ctext grob CY (cdr p)))
              (x (+ (ekm-extent l X) 0.6)))
         (ly:grob-set-property! grob 'shorten-pair (cons x x))
         (ly:stencil-combine-at-edge
@@ -1160,7 +1150,7 @@ ekmParensHairpin =
 #(define (ekm-script grob)
   (let* ((dir (ly:grob-property grob 'direction))
          (d (ly:grob-property grob 'details #f)))
-    (ekm-ctext grob 1
+    (ekm-ctext grob CX
       (ekm-sym
         (or d (ekm-assid 'script (cadr (ly:grob-property grob 'script-stencil))))
         dir))))
@@ -1183,7 +1173,6 @@ ekmScriptSmall =
 #(define (ekm-segment-spanner grob tab tempo text)
   (let* ((lsil (ly:stencil-translate-axis
                 (ekm-ctext grob 0 (or (ekm-sym text LEFT) 0))
-                ;(ekm-ctext grob 0 (if (pair? text) (car text) (or text 0)))
                 (car (ly:stencil-extent (ly:grob-property grob 'stencil) X))
                 X))
          (rsil (ekm-ctext grob 0 (or (if (pair? text) (cdr text) #f) 0)))
@@ -1300,8 +1289,8 @@ ekmStartTrillSpan =
 
 #(define (ekm-calc-parenthesis-stencils grob)
   (let ((p (ekm-parens (ly:grob-property grob 'style) 'a)))
-    (list (ekm-ctext grob 1 (car p))
-          (ekm-ctext grob 1 (cdr p)))))
+    (list (ekm-ctext grob CX (car p))
+          (ekm-ctext grob CX (cdr p)))))
 
 ekmPitchedTrill =
 #(define-music-function (head parens main aux)
@@ -1367,7 +1356,7 @@ ekmBreathing =
          (bar (bar-line::draw-filled-box (cons 0 bth) bext bth bext grob))
          (d (vector-ref ekm-segno-tab type))
          (kern (* (ly:grob-property grob 'segno-kern 1) th (car d)))
-         (segno (ekm-ctext grob 3 (cdr d))))
+         (segno (ekm-ctext grob CXY (cdr d))))
     (ly:stencil-add
       (if show
         segno
@@ -1461,7 +1450,7 @@ ekmBreathing =
       (grob-interpret-markup grob
         (if (eq? 'ekm style)
           (let ((text (ly:grob-property grob 'text)))
-            (make-ekm-ctext-markup 3
+            (make-ekm-ctext-markup STEMCXY
               (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
                   text)))
           (make-ekm-char-markup
@@ -1486,7 +1475,7 @@ ekmTremolo =
   (let* ((stm (ly:stem::print grob))
          (dir (ly:grob-property grob 'direction))
          (sym (grob-interpret-markup grob
-           (make-ekm-ctext-markup 1
+           (make-ekm-ctext-markup STEMCX
              (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
                  text)))))
     (if (null? stm)
@@ -1910,13 +1899,13 @@ ekmBendAfter =
                 (if (and alt (= RIGHT adir)) alt 0)
                 (if (and aug (= RIGHT pdir) (not pre)) (ekm-assid 'fbass aug) 0)))
          (sil (if pre
-                (make-ekm-ctext-markup 5 pre)
+                (make-ekm-ctext-markup CX pre)
               (if (number? fig)
                 (let ((num (make-center-align-markup
                         (make-ekm-number-markup 'fbass fig))))
                   (if (or dim augs)
                     (make-combine-markup num
-                      (make-ekm-ctext-markup 5
+                      (make-ekm-ctext-markup CX
                         (ekm-assid 'fbass (or dim augs))))
                   num))
               #f))))
@@ -2194,7 +2183,7 @@ ekmFuncList =
   #:properties ((direction UP))
   (let ((val (or (ekm-assid 'script (string-append "d" (symbol->string style) "fermata"))
                  (ekm-assid 'script "dfermata"))))
-    (ekm:char layout props (ekm-sym val direction))))
+    (ekm:text layout props (ekm-sym val direction))))
 
 
 #(define-markup-command (ekm-eyeglasses layout props dir)
@@ -2206,13 +2195,13 @@ ekmFuncList =
   (symbol? integer? integer? ly:dir?)
   (let* ((note (interpret-markup layout props
                  (ekm-note style log dir)))
-         (cp (ekm-assq ekm-dots-tab style))
-         (dt (ekm:char layout props (car cp)))
+         (val (ekm-assns 'dots style))
+         (dt (ekm:text layout props (car val)))
          (dts (ekm-cat-dots dots dt)))
     (ly:stencil-stack note X RIGHT dts
       (* (ekm-extent dt X)
          (if (and (<= 3 log) (< 0 dir))
-           (list-ref cp (- (min log 5) 2)) 1)))))
+           (list-ref val (- (min log 5) 2)) 1)))))
 
 
 #(define-markup-command (ekm-metronome layout props cnt)
@@ -2758,8 +2747,27 @@ ekmMetronome =
   (bracketed #xED8C . #xED8D)
   ))
 
-  ;(time (#t
-  ;))
+  (time (#t
+  ("+" . #xE08C)
+  ("/+" . #xE08D)
+  ("//" . #xE08E)
+  ("C" . #xE08A)
+  ("|C" . #xE08B)
+  ("|2" . #xEC85)
+  ("|3" . #xEC86)
+  ("X" . #xE09C)
+  ("~" . #xE09D)
+  (time-x . #xE09C)
+  (time-penderecki . #xE09D)
+  ))
+
+  (time-sub (#t
+  (1/4 . #xE097)
+  (1/2 . #xE098)
+  (3/4 . #xE099)
+  (1/3 . #xE09A)
+  (2/3 . #xE09B)
+  ))
 
   (shared (#t #t
   (" " . ,(markup #:hspace 1))
@@ -3443,6 +3451,16 @@ ekmMetronome =
   (fist . #(#xE7E5))
   (fingernails . #(#xE7E6))
   )
+
+  (dots
+  (default   #xE1E7 0 0 0)
+  (note      #xE1E7 -0.2 0.7 0.7)
+  (metronome #xECB7 0.2 0.7 0.7)
+  (straight  #xE1E7 -0.8 -0.8 0.3)
+  (short     #xE1E7 -0.8 -0.8 0.5)
+  (beamed    #xE1E7 -1.4 -1.4 -1.4)
+  )
+
 ))
 
 #(define (ekm-merge-type type tab)
