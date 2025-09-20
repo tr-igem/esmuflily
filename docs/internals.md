@@ -319,7 +319,7 @@ Note heads
 *   SYM:
 
         NH
-        (NH . EMPTY)
+        (NH . NH-EMPTY)
 
 *   NH (CP):
     Note head symbol.
@@ -585,8 +585,51 @@ A new font-specific clef can be added to the list of supported clefs.
 
 
 
-Time signatures
----------------
+Time / Cadenza signatures
+-------------------------
+
+### Digits
+
+Number table with style `time`.
+
+
+### Special symbols
+
+    (time (#t
+      TIME-ENTRY
+      ...
+    ))
+
+*   TIME-ENTRY:
+
+        (NAME . SYM)
+
+*   NAME (string):
+    "C", "+", "/+", "X", ...
+
+*   SYM (EXTEXT):
+    Special time or cadenza signature symbol.
+
+
+### Sub-fractions
+
+    (time-sub (#t
+      TIME-SUB-ENTRY
+      ...
+    ))
+
+*   TIME-SUB-ENTRY:
+
+        (FRACTION . SYM)
+
+*   FRACTION (rational):
+    Value of a sub-fraction to be part of a numerator.
+
+*   SYM (EXTEXT):
+    Precomposed fraction symbol.
+
+
+### Procedures
 
 *   (ekm-time-num L NUM)
 
@@ -728,33 +771,33 @@ The following components are drawn:
 
 #### Figure
 
-              Bottom    Top     Mask    Middle    Mask    Fitting   Result
+    |         Bottom    Top     Mask    Middle    Mask    Fitting   Result
     ---                    --                                           --   --- ---
-     |                    //                                           //    END  |
-     |                   --    -------           -------    --        --     ---  |
-     |                   ||    |     |           |     |    ||        ||      |   |
-    ADD                  ||    |     |       --  |     |    ||        ||      |   |
-     |                   ||    |     |      //   |     |    ||        ||      |   |
-     |                   --    |     |     --    |     |    ||        ||     FIT  |
-     |                  //     |     |     ||    |     |    ||        ||      |   |
-    --- ---        --  //      |     |     ||    |     |    ||        ||      |   |
-     |  END       //  <<       |     |     ||    |     |    ||        ||      |   |
-     |  ---      --    \\      |     |     --    -------    --        --     ---  |
-     |   |       ||     \\     |     |    //                         //       |   |
-     |  REM      ||      --    |     |   //                         //        |   |
-     |   |       ||      ||    |     |  <<                         <<        MID  RH
-     |  ---      --      ||    |     |   \\                         \\        |   |
-     |   |      //       ||    |     |    \\                         \\       |   |
-     |   |     //        --    |     |     --    -------    --        --     ---  |
-     H  MID   <<          \\   |     |     ||    |     |    ||        ||      |   |
-     |   |     \\          --  |     |     ||    |     |    ||        ||      |   |
-     |   |      \\             |     |     ||    |     |    ||        ||      |   |
-     |  ---      --            |     |     --    |     |    ||        ||     FIT  |
-     |   |       ||            |     |      \\   |     |    ||        ||      |   |
-     |  REM      ||            |     |       --  |     |    ||        ||      |   |
-     |   |       ||            |     |           |     |    ||        ||      |   |
-     |  ---      --            -------           -------    --        --     ---  |
-     |  END       \\                                                   \\    END  |
+    |                     //                                           //    END   |
+    |                    --    -------           -------    --        --     ---   |
+    |                    ||    |     |           |     |    ||        ||           |
+    ADD                  ||    |     |       --  |     |    ||        ||           |
+    |                    ||    |     |      //   |     |    ||        ||           |
+    |                    --    |     |     --    |     |    ||        ||     FIT   |
+    |                   //     |     |     ||    |     |    ||        ||           |
+    --- ---        --  //      |     |     ||    |     |    ||        ||           |
+    |   END       //  <<       |     |     ||    |     |    ||        ||           |
+    |   ---      --    \\      |     |     --    -------    --        --     ---   |
+    |            ||     \\     |     |    //                         //            |
+    |   REM      ||      --    |     |   //                         //             |
+    |            ||      ||    |     |  <<                         <<        MID  RH
+    |   ---      --      ||    |     |   \\                         \\             |
+    |           //       ||    |     |    \\                         \\            |
+    |          //        --    |     |     --    -------    --        --     ---   |
+    H   MID   <<          \\   |     |     ||    |     |    ||        ||           |
+    |          \\          --  |     |     ||    |     |    ||        ||           |
+    |           \\             |     |     ||    |     |    ||        ||           |
+    |   ---      --            |     |     --    |     |    ||        ||     FIT   |
+    |            ||            |     |      \\   |     |    ||        ||           |
+    |   REM      ||            |     |       --  |     |    ||        ||           |
+    |            ||            |     |           |     |    ||        ||           |
+    |   ---      --            -------           -------    --        --     ---   |
+    |   END       \\                                                   \\    END   |
     --- ---        --                                                   --   --- ---
 
 
@@ -1265,7 +1308,7 @@ Percussion Beaters
 Augmentation dots
 -----------------
 
-    ekm-dots-tab (
+    (dots
       (STYLE DOT PAD-3 PAD-4 PAD-5)
       ...
     )
@@ -1273,7 +1316,7 @@ Augmentation dots
 *   STYLE (symbol):
     default, note, metronome, straight, short, beamed
 
-*   DOT (CP):
+*   DOT (EXTEXT):
     Augmentation dot symbol.
 
 *   PAD-3, PAD-4, PAD-5 (number):

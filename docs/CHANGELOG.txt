@@ -443,8 +443,14 @@ January 2021 - May 2021:
 - Changed direction order in glyphs and types tables to (DOWN . UP).
 
 2025-09-18:
-- Added tables fbass, fbass-acc, lyric, analytics, func, arrow, beater.
-- Changed "(ekm-fbass)" to accept any extext.
-- Added command "\ekm-orient".
-- Removed "(ekm-oref)".
-- Changed "\ekmBendAfter" to accept any extext.
+- Add tables fbass, fbass-acc, lyric, analytics, func, arrow, beater.
+- Change "(ekm-fbass)" to accept any extext.
+- Add command "\ekm-orient".
+- Remove "(ekm-oref)".
+- Change "\ekmBendAfter" to accept any extext.
+
+2025-09-20:
+- Add tables time, time-sub, dots.
+- Change "\ekm-note-by-number", "\ekm-fermata", "(ekm-time-num)",
+  "(ekm-timesig)", "\ekmCadenzaOn" to accept any extext.
+- Change "\ekmCadenzaOn" to accept string styles from table time.
