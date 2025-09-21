@@ -658,6 +658,48 @@ See scm\time-signature-settings.scm
 
 
 
+Bar glyphs and lines
+--------------------
+
+    (colon (#t
+      BAR-ENTRY
+      ...
+    ))
+
+    (segno (#t
+      BAR-ENTRY
+      ...
+    ))
+
+*   BAR-ENTRY:
+
+        (NAME . CP)
+        (NAME BAR)
+        (NAME BAR SHOW SCALE)
+        (BAR-NAME EOL-NAME BOL-NAME SPAN-NAME)
+
+*   NAME (char)
+    Name of bar glyph. Must be ASCII character.
+
+*   BAR (EXTEXT)
+    Bar glyph.
+
+*   SHOW (boolean):
+    `#f` draws an empty glyph with the X-extent of BAR.
+    `#t` is the default.
+
+*   SCALE (number or #f):
+    Scaling factor for the property `segno-kern`.
+    `#f` draws BAR without bar lines. This is the default.
+
+*   BAR-NAME, EOL-NAME, BOL-NAME, SPAN-NAME (string):
+    Name of bar line normal, eol, bol, and span bar.
+    `#t` draws BAR-NAME. `#f` draws nothing.
+
+See scm/bar-line.scm
+
+
+
 Dynamics
 --------
 
@@ -1324,30 +1366,6 @@ Augmentation dots
     in units of the dot width. PAD-5 applies also to higher logs.
 
 Used by `\note-by-number`.
-
-
-
-Segno bar lines
----------------
-
-    ekm-segno-tab '#(
-      SYM-0
-      ...
-    )
-
-*   SYM-I:
-
-        (KERN-SCALE SEGNO)
-
-    Segno bar line for the type I = 0 to 2.
-
-*   KERN-SCALE (number):
-    Scaling factor for the property `segno-kern`.
-
-*   SEGNO (EXTEXT):
-    Segno serpent symbol.
-
-See scm/bar-line.scm
 
 
 

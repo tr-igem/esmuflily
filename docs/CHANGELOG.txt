@@ -454,3 +454,10 @@ January 2021 - May 2021:
 - Change "\ekm-note-by-number", "\ekm-fermata", "(ekm-time-num)",
   "(ekm-timesig)", "\ekmCadenzaOn" to accept any extext.
 - Change "\ekmCadenzaOn" to accept string styles from table time.
+
+2025-09-21:
+- Add tables colon, segno.
+- Add "(make-ekm-old-bar-line)", "(make-ekm-bar-line)", and "(ekm-bar-init)"
+  replacing separate functions for colon and segno.
+- Add "(ekm-symex)".
+- Change "(ekm-asst)" to accept type symbol or table.
