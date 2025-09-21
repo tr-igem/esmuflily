@@ -1541,18 +1541,22 @@ ekmScoop =
 
 %% Tuplet number
 
-#(define (ekm-tuplet-list num grob prop)
-  (ekm-number->list 'tuplet
+#(define (ekm-tuplet-num num grob prop)
+  (make-ekm-number-markup
+    'tuplet
     (or num (ly:event-property (event-cause grob) prop))))
 
+#(define (ekm-tuplet-frac grob tail)
+  (let ((sp (make-hspace-markup (ly:grob-property grob 'word-space 0.2))))
+    (cons* sp (ekm-assid 'tuplet ":") sp tail)))
+
 #(define ((ekm-tuplet-number num denom) grob)
-  (let* ((ev (event-cause grob))
-         (l (if (eqv? 0 denom)
-              '()
-              (cons* #x200A #xE88A #x200A
-                (ekm-tuplet-list denom grob 'numerator)))))
-    (make-ekm-chars-markup
-      (append! (ekm-tuplet-list num grob 'denominator) l))))
+  (make-ekm-concat-markup (cons*
+    (ekm-tuplet-num num grob 'denominator)
+    (if (eqv? 0 denom)
+      '()
+      (ekm-tuplet-frac grob
+        (list (ekm-tuplet-num denom grob 'numerator)))))))
 
 #(define-markup-command (ekm-tuplet-note layout props dur)
   (ly:duration?)
@@ -1583,14 +1587,13 @@ ekmScoop =
 
 #(define ((ekm-tuplet-number::non-default-fraction-with-notes
            num numdur denom denomdur) grob)
-  (make-concat-markup (list
-    (make-ekm-chars-markup
-      (ekm-tuplet-list num grob 'denominator))
+  (make-ekm-concat-markup (cons*
+    (ekm-tuplet-num num grob 'denominator)
     (make-ekm-tuplet-note-markup numdur)
-    (make-ekm-chars-markup
-      (cons* #x2009 #xE88A #x2009
-        (ekm-tuplet-list denom grob 'numerator)))
-    (make-ekm-tuplet-note-markup denomdur))))
+    (ekm-tuplet-frac grob
+      (list
+        (ekm-tuplet-num denom grob 'numerator)
+        (make-ekm-tuplet-note-markup denomdur))))))
 
 #(define ((ekm-tuplet-number::fraction-with-notes
            numdur denomdur) grob)
@@ -3001,6 +3004,10 @@ ekmMetronome =
     (2 "15mb" . "15ma")
     (3 "22mb" . "22ma"))
   )
+
+  (tuplet (#t
+    (":" . #xE88A)
+  ))
 
   (tremolo
   (beam-like
