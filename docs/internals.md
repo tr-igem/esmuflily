@@ -167,11 +167,11 @@ The type `shared` defines additional tokens that are always applicable
 in DEFINITION strings.
 The predefined shared token table defines spaces:
 
-    " "       ,(markup #:hspace 1)      SP
-    "____"    ,(markup #:hspace 4)      EMSP
-    "___"     ,(markup #:hspace 2)      ENSP
-    "__"      ,(markup #:hspace 0.78)   THSP
-    "_"       ,(markup #:hspace 0.17)   HSP
+    " "       \hspace #1      SP
+    "____"    \hspace #4      EMSP
+    "___"     \hspace #2      ENSP
+    "__"      \hspace #0.78   THSP
+    "_"       \hspace #0.17   HSP
 
 
 ### Number table
@@ -230,21 +230,18 @@ Type table with index-tables.
 
 ### Table access procedures
 
-*   (ekm-asst TABLE STYLE KEY DIR)
+*   (ekm-asst TYPE-OR-TABLE STYLE KEY DIR)
 
-    Return the value according to DIR of KEY in the style table STYLE in TABLE,
+    Return the value according to DIR of KEY in the style table STYLE
+    in the type table TYPE or in TABLE,
     or in the style table TABLE if STYLE is `#f`.
     Return the value of the last entry if KEY is not found.
-
-    Types: flag, parens, script, spanner, accordion, brass, rest markup.
 
 *   (ekm-assld TABLE GROB LOG DIR)
 
     Like `(ekm-asst)` but for the GROB properties `style`, `duration-log`,
     and `Stem.direction`, or for LOG or DIR if true.
     If GROB is not a grob it must be a style, and LOG and DIR must be true.
-
-    Types: notehead, cluster, rest.
 
 *   (ekm-asslim TYPE STYLE SIZE DIR)
 
@@ -256,7 +253,8 @@ Type table with index-tables.
 *   (ekm-assid TYPE KEY)
 
     Return the value of KEY in the identifier table in the type table TYPE,
-    or the whole identifier or token table if KEY is `#f`.
+    or the whole identifier table if KEY is `#f`, where it skips
+    the first entry `#t` (token table).
 
 *   (ekm-token-list TABLE DEF TOKENS)
 
@@ -290,6 +288,11 @@ Type table with index-tables.
         (KEY SYM)             SYM     SYM     (SYM)
         (KEY SYM1 . SYM2)     SYM1    SYM2    (SYM1 . SYM2)
         (KEY SYM ...)         SYM     (...)   (SYM ...)
+
+*   (ekm-symex SYM)
+
+    Return SYM extended to a pair with cdr #f if SYM is an EXTEXT
+    without further data.
 
 
 
@@ -658,8 +661,8 @@ See scm\time-signature-settings.scm
 
 
 
-Bar glyphs and lines
---------------------
+Bar glyphs and Bar lines
+------------------------
 
     (colon (#t
       BAR-ENTRY
@@ -679,7 +682,7 @@ Bar glyphs and lines
         (BAR-NAME EOL-NAME BOL-NAME SPAN-NAME)
 
 *   NAME (char)
-    Name of bar glyph. Must be ASCII character.
+    Name of bar glyph. Must be an ASCII character.
 
 *   BAR (EXTEXT)
     Bar glyph.
@@ -690,7 +693,7 @@ Bar glyphs and lines
 
 *   SCALE (number or #f):
     Scaling factor for the property `segno-kern`.
-    `#f` draws BAR without bar lines. This is the default.
+    `#f` draws BAR without bar lines (usually colon). This is the default.
 
 *   BAR-NAME, EOL-NAME, BOL-NAME, SPAN-NAME (string):
     Name of bar line normal, eol, bol, and span bar.
@@ -1023,6 +1026,40 @@ Ottavation
 
 *   DEFINITION (string):
     Ottavation symbol defined as ottava tokens.
+
+
+
+Tuplet number
+-------------
+
+### Digits
+
+Number table with style `tuplet`.
+
+
+### Notes
+
+`\note-by-number` with style `metronome`.
+
+
+### Special symbols
+
+    (tuplet (#t
+      TUPLET-ENTRY
+      ...
+    ))
+
+*   TUPLET-ENTRY:
+
+        (NAME . SYM)
+
+*   NAME (string):
+    ":"
+
+*   SYM (EXTEXT):
+    Special tuplet symbol.
+
+See output-lib.scm
 
 
 

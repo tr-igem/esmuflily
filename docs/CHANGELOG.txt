@@ -461,3 +461,10 @@ January 2021 - May 2021:
   replacing separate functions for colon and segno.
 - Add "(ekm-symex)".
 - Change "(ekm-asst)" to accept type symbol or table.
+
+2025-09-21:
+- Add table tuplet.
+- Add "(ekm-tuplet-num)" replacing "(ekm-tuplet-list)",
+  and "(ekm-tuplet-frac)".
+- Change "(ekm-tuplet-number)" and "(ekm-tuplet-number::non-default-fraction-with-notes)"
+  to accept extext and "word-space" property instead of space chars.
