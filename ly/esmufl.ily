@@ -238,6 +238,11 @@
     val
     (if (or (null? (cdr val)) (< dir 0)) (car val) (cdr val))))
 
+#(define (ekm-symex sym)
+  (if (pair? sym)
+    (if (null? (cdr sym)) (cons (car sym) #f) sym)
+    (cons sym #f)))
+
 #(define (ekm-assq tab key)
   (or (assq-ref tab key) (cdar tab)))
 
@@ -250,7 +255,7 @@
     (if (eq? #t (car t)) (cdr t) t))))
 
 #(define (ekm-asst tab style key dir)
-  (let ((stab (if style (ekm-assq tab style) tab)))
+  (let ((stab (if style (ekm-assq (if (symbol? tab) (assq-ref ekm-types tab) tab) style) tab)))
     (ekm-sym
       ;; key #f never occurs
       ;(if key (or (assoc-ref stab key) (cdr (last stab))) stab)
@@ -1003,7 +1008,7 @@ ekmFlag =
       (markup #:ekm-text sym))))
 
 #(define (ekm-parens style use)
-  (let* ((p (ekm-asst (assq-ref ekm-types 'parens) style use #f)))
+  (let* ((p (ekm-asst 'parens style use #f)))
     (cons
       (ekm-parens-align p LEFT)
       (ekm-parens-align p RIGHT))))
@@ -1333,74 +1338,40 @@ ekmBreathing =
         (make-ekm-text-markup txt))))))
 
 
-%% Colon (repeat) bar line
+%% Bar line
 
-#(define (make-ekm-old-colon-bar-line grob extent)
-  (ekm-cchar grob 2 #xE043))
-#(define (make-ekm-colon-bar-line is-span grob extent)
-  (ekm-cchar grob 2 #xE043))
+#(define ((make-ekm-old-bar-line type name) grob extent)
+  (let* ((sym (ekm-symex (ekm-assid type name)))
+         (scale (if (cdr sym) (third sym) #f))
+         (sil (ekm-ctext grob (if scale CXY CY) (car sym)))
+         (sil (if (and (cdr sym) (second sym))
+                sil (ly:make-stencil "" (ly:stencil-extent sil X) '(0 . 0)))))
+    (if scale ; segno
+      (let* ((th (layout-line-thickness grob))
+             (bth (* (ly:grob-property grob 'hair-thickness 1) th))
+             (bext (bar-line::widen-bar-extent-on-span grob extent))
+             (bar (bar-line::draw-filled-box (cons 0 bth) bext bth bext grob))
+             (kern (* (ly:grob-property grob 'segno-kern 1) th scale)))
+        (ly:stencil-add
+          sil
+          (ly:stencil-translate-axis
+            (ly:stencil-combine-at-edge bar X LEFT bar kern)
+            (* 1/2 kern)
+            X)))
+      sil)))
 
+#(define ((make-ekm-bar-line type name) is-span grob extent)
+  ((make-ekm-old-bar-line type name) grob extent))
 
-%% Segno bar line
-
-#(define ekm-segno-tab '#(
-  (0.5 #xE04A)
-  (0.5 #xE04A 1)
-  (1.0 #xE04A 2)
-))
-
-#(define ((make-ekm-old-segno-bar-line type show) grob extent)
-  (let* ((th (layout-line-thickness grob))
-         (bth (* (ly:grob-property grob 'hair-thickness 1) th))
-         (bext (bar-line::widen-bar-extent-on-span grob extent))
-         (bar (bar-line::draw-filled-box (cons 0 bth) bext bth bext grob))
-         (d (vector-ref ekm-segno-tab type))
-         (kern (* (ly:grob-property grob 'segno-kern 1) th (car d)))
-         (segno (ekm-ctext grob CXY (cdr d))))
-    (ly:stencil-add
-      (if show
-        segno
-        (ly:make-stencil "" (ly:stencil-extent segno X) '(0 . 0)))
-      (ly:stencil-translate-axis
-        (ly:stencil-combine-at-edge bar X LEFT bar kern)
-        (* 1/2 kern)
-        X))))
-
-#(define ((make-ekm-segno-bar-line type show) is-span grob extent)
-  ((make-ekm-old-segno-bar-line type show) grob extent))
-
-#(define (ekm-segno-init)
-  (if (ly:version? < '(2 25))
-    (begin
-      (add-bar-glyph-print-procedure "S" (make-ekm-old-segno-bar-line 0 #t))
-      (add-bar-glyph-print-procedure "s" (make-ekm-old-segno-bar-line 1 #t))
-      (add-bar-glyph-print-procedure "$" (make-ekm-old-segno-bar-line 2 #t))
-      (add-bar-glyph-print-procedure "=" (make-ekm-old-segno-bar-line 0 #f))
-      (add-bar-glyph-print-procedure "#" (make-ekm-old-segno-bar-line 2 #f)))
-    (begin
-      (add-bar-glyph-print-procedure "S" (make-ekm-segno-bar-line 0 #t))
-      (add-bar-glyph-print-procedure "s" (make-ekm-segno-bar-line 1 #t))
-      (add-bar-glyph-print-procedure "$" (make-ekm-segno-bar-line 2 #t))
-      (add-bar-glyph-print-procedure "=" (make-ekm-segno-bar-line 0 #f))
-      (add-bar-glyph-print-procedure "#" (make-ekm-segno-bar-line 2 #f))))
-  (define-bar-line "s" "||" "s" "=")
-  (define-bar-line "s-|" "|" "s" "=")
-  (define-bar-line "s-s" "s" #f "=")
-  (define-bar-line ":|.s" ":|." "s" " |.")
-  (define-bar-line ":|.s-s" ":|.s" "" " |.")
-  (define-bar-line "s.|:" "|" "s.|:" " .|")
-  (define-bar-line "s.|:-s" "s" ".|:" " .|")
-  (define-bar-line ":|.s.|:" ":|." "s.|:" " |. .|")
-  (define-bar-line ":|.s.|:-s" ":|.s" ".|:" " |. .|")
-  (define-bar-line "$" "||" "$" "#")
-  (define-bar-line "$-|" "|" "$" "#")
-  (define-bar-line "$-$" "$" #f "#")
-  (define-bar-line ":|.$" ":|." "$" " |.")
-  (define-bar-line ":|.$-$" ":|.$" "" " |.")
-  (define-bar-line "$.|:" "|" "$.|:" " .|")
-  (define-bar-line "$.|:-$" "$" ".|:" " .|")
-  (define-bar-line ":|.$.|:" ":|." "$.|:" " |. .|")
-  (define-bar-line ":|.$.|:-$" ":|.$" ".|:" " |. .|"))
+#(define (ekm-bar-init type)
+  (for-each (lambda (e)
+    (if (char? (car e))
+      (add-bar-glyph-print-procedure (string (car e))
+        (if (ly:version? < '(2 25))
+          (make-ekm-old-bar-line type (car e))
+          (make-ekm-bar-line type (car e))))
+      (apply define-bar-line e)))
+    (ekm-assid type #f)))
 
 
 %% Percent repeat
@@ -1454,7 +1425,7 @@ ekmBreathing =
               (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
                   text)))
           (make-ekm-char-markup
-            (ekm-asst (assq-ref ekm-types 'tremolo) style cnt dir))))
+            (ekm-asst 'tremolo style cnt dir))))
       (cons 0 y))))
 
 ekmTremolo =
@@ -1803,7 +1774,7 @@ ekmPlayWith =
   (let* ((i (string-index name #\space))
          (style (if (and i (< 0 i)) (string->symbol (string-take name i)) 'd))
          (key (if (and i (< 0 i)) (string-drop name (1+ i)) name))
-         (d (ekm-asst (assq-ref ekm-types 'accordion) style key DOWN)))
+         (d (ekm-asst 'accordion style key DOWN)))
     (if (ekm-cp? d)
       (ekm-center 1 (ekm:char layout props d))
       (let* ((reg (ekm:char layout props (car d)))
@@ -1851,7 +1822,7 @@ ekmStemRicochet =
 
 #(define (ekm-assb grob style dir)
   (let ((log (ly:grob-property (ly:grob-parent grob X) 'duration-log 2)))
-    (ekm-asst (assq-ref ekm-types 'brass) style (max (min log 2) 0) dir)))
+    (ekm-asst 'brass style (max (min log 2) 0) dir)))
 
 ekmBendAfter =
 #(define-event-function (style dir)
@@ -2769,6 +2740,15 @@ ekmMetronome =
   (2/3 . #xE09B)
   ))
 
+  (colon (#t
+    (#\: . #xE043)
+  ))
+
+  (segno (#t
+    (#\S #xE04A #t 0.5)
+    (#\= #xE04A #f 0.5)
+  ))
+
   (shared (#t #t
   (" " . ,(markup #:hspace 1))
   ("____" . ,(markup #:hspace 4)) ; EMSP
@@ -3554,12 +3534,9 @@ ekmSmuflOn =
       \override TrillPitchParentheses.stencils = #ekm-calc-parenthesis-stencils
     #})
     (if (or all (memq 'segno typ))
-      (ekm-segno-init))
+      (ekm-bar-init 'segno))
     (if (or all (memq 'colon typ))
-      (add-bar-glyph-print-procedure ":"
-        (if (ly:version? < '(2 25))
-          make-ekm-old-colon-bar-line
-          make-ekm-colon-bar-line)))
+      (ekm-bar-init 'colon))
     (on 'percent #{
       \override RepeatSlash.stencil = #(ekm-percent 1)
       \override DoubleRepeatSlash.stencil = #(ekm-percent 2)
