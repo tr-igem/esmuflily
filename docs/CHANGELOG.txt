@@ -468,3 +468,11 @@ January 2021 - May 2021:
   and "(ekm-tuplet-frac)".
 - Change "(ekm-tuplet-number)" and "(ekm-tuplet-number::non-default-fraction-with-notes)"
   to accept extext and "word-space" property instead of space chars.
+
+2025-09-22:
+- Add tables barline, separator, grace, mmrest.
+- Change "\ekm-mmr" using metadata "hBarThickness" instead of U+E4F0.
+- Change to accept extext: "\ekm-number", "\ekmStaffDivider",
+  "ekmSlashSeparator", "(ekm-dots)", "(ekm-flag)", "\ekm-mmr",
+  "\ekm-rest-by-number".
+- Change "\ekm-note-by-number" supporting dot style.

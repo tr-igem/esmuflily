@@ -34,7 +34,7 @@ possibly of different directions.
     ekm-types (
       (TYPE
         (STYLE
-          SYM-ENTRY
+          SYMBOL-ENTRY
           ...
         )
         (STYLE . INDEX-TABLE)
@@ -49,24 +49,20 @@ possibly of different directions.
 
 *   STYLE (symbol or #t):
     Style of musical symbols. At least one style is predefined.
-    The first style of a type is the default.
+    The first STYLE of a type is the default.
 
     `#t` names an identifier table or a token table.
     `ekm` is used internally (eg. arrow, beater).
 
-*   SYM-ENTRY (pair):
+*   SYMBOL-ENTRY (pair):
 
-        (KEY . SYM)
-        (KEY SYM)
-        (KEY SYM-DOWN . SYM-UP)
-        (KEY SYM ...)
+        (KEY . SYMBOL)
+        (KEY SYMBOL)
+        (KEY SYMBOL-DOWN . SYMBOL-UP)
 
-    The first form is used if SYM is a single CP,
-    or if TYPE does not distinguish directions.
-    Else the second or third form is used.
-    The last form is not used.
-
-    The last entry of a style is the default.
+    The first form can be used instead of the second if SYMBOL is
+    a single CP (ie. not a list).
+    The last SYMBOL-ENTRY of a style is the default.
 
 *   KEY (number, string, symbol):
     The key depends on TYPE, usually:
@@ -85,9 +81,13 @@ possibly of different directions.
     A single CP means consecutive code points CP + index.
     The order of the symbols depends on TYPE.
 
-*   SYM:
-    Data to draw a musical symbol.
-    The structure depends on TYPE, usually CP or EXTEXT.
+*   SYMBOL:
+
+        CP
+        LIST
+
+    Data to draw a musical symbol. LIST can be any data.
+    The actual structure depends on TYPE.
 
 *   EXTEXT (integer, string, list):
 
@@ -107,14 +107,14 @@ A type table can have one or more style tables.
 
     (TYPE
       (STYLE
-        SYM-ENTRY
+        SYMBOL-ENTRY
         ...
       )
       ...
     )
 
 *   TYPE: notehead, flag, rest, delimiter, spanner, finger, ottavation,
-    tremolo, laissezvibrer, cluster, accordion, brass, number, parens,
+    tremolo, lvtie, cluster, accordion, brass, number, parens,
     arrow, beater.
 
 
@@ -126,7 +126,7 @@ identifier table.
 
     (TYPE
       (#t
-        SYM-ENTRY
+        SYMBOL-ENTRY
         ...
       )
     )
@@ -145,7 +145,7 @@ draws the corresponding musical symbols stacked in a line.
 
     (TYPE
       (#t #t
-        (TOKEN . SYM)
+        (TOKEN . SYMBOL)
         ...
       )
     )
@@ -157,7 +157,7 @@ draws the corresponding musical symbols stacked in a line.
     must be arranged after them, ie. the correct order is "abc", "ab", "a".
     Else the other keys will be ignored.
 
-*   SYM (EXTEXT or #f):
+*   SYMBOL (EXTEXT or #f):
     Musical symbol.
     `#f` ignores TOKEN in DEFINITION strings.
 
@@ -167,33 +167,39 @@ The type `shared` defines additional tokens that are always applicable
 in DEFINITION strings.
 The predefined shared token table defines spaces:
 
-    " "       \hspace #1      SP
-    "____"    \hspace #4      EMSP
-    "___"     \hspace #2      ENSP
-    "__"      \hspace #0.78   THSP
-    "_"       \hspace #0.17   HSP
+    " "       \hspace #1        SP
+    "____"    \hspace #4        EMSP
+    "___"     \hspace #2        ENSP
+    "__"      \hspace #0.78     THSP
+    "_"       \hspace #0.17     HSP
 
 
 ### Number table
 
-Type table `number` with index-tables.
+Type table `number` that defines digits with index-tables and complete
+numbers with normal style tables.
 
     (number
-      (STYLE . DIG0)
+      (STYLE . DIGIT)
       (STYLE . #(DIG0 DIG1 DIG2 DIG3 DIG4 DIG5 DIG6 DIG7 DIG8 DIG9))
       (STYLE
-        (NUMBER . SYM-NUM)
+        (NUMBER . SYMBOL-NUM)
         ...
       )
       ...
     )
 
-*   DIG0 - DIG9 (CP):
-    Digit symbol.
+*   STYLE (symbol):
+    time, tuplet, finger, fbass, func, string, ...
 
-*   SYM-NUM (EXTEXT):
+*   DIGIT (CP):
+    Symbol for digit 0.
+
+*   DIG0 - DIG9 (EXTEXT):
+    Symbol for digit 0 - 9.
+
+*   SYMBOL-NUM (EXTEXT):
     Symbol for NUMBER (not a digit).
-    Used in style `string` and `scale`.
 
 
 ### Orientation table
@@ -265,7 +271,7 @@ Type table with index-tables.
 
 *   (ekm-number->list STYLE NUMBER)
 
-    Return a list with the digit symbols or with SYM-NUM for NUMBER
+    Return a list with the digit symbols or with SYMBOL-NUM for NUMBER
     according to the number table STYLE in the type table `number`.
 
 *   (ekm-assq TABLE KEY)
@@ -280,19 +286,30 @@ Type table with index-tables.
 
 *   (ekm-sym VAL DIR)
 
-    Return the part of VAL according to DIR (default is DOWN):
+    Return the part (SYMBOL) of VAL according to DIR.
+    SYMBOL is CP or LIST = (X ...).
 
-        SYM-ENTRY             < 0     >= 0    #f
-        ---------------------------------------------------
-        (KEY . SYM)           SYM     SYM     SYM
-        (KEY SYM)             SYM     SYM     (SYM)
-        (KEY SYM1 . SYM2)     SYM1    SYM2    (SYM1 . SYM2)
-        (KEY SYM ...)         SYM     (...)   (SYM ...)
+    Types that do not distinguish directions use DIR = `#f`:
 
-*   (ekm-symex SYM)
+        SYMBOL-ENTRY            #f
+        ----------------------------
+        (KEY . CP)              CP
+        (KEY CP)                (CP)
+        (KEY . LIST)            LIST
+        (KEY X ...)             LIST
 
-    Return SYM extended to a pair with cdr #f if SYM is an EXTEXT
-    without further data.
+    Types that distinguish directions use DIR < 0 or >= 0:
+    Entries may have one or two symbols.
+
+        SYMBOL-ENTRY            < 0       >= 0
+        ---------------------------------------
+        (KEY . CP)              CP        CP
+        (KEY CP)                CP        CP
+        (KEY . (LIST))          LIST      LIST
+        (KEY LIST)              LIST      LIST
+        (KEY CP1 . CP2)         CP1       CP2
+        (KEY LIST1 . LIST2)     LIST1     LIST2
+        (KEY LIST1 X2 ...)      LIST1     LIST2
 
 
 
@@ -313,13 +330,13 @@ Note heads
 *   NOTEHEAD-ENTRY:
 
         (LOG . NH)
-        (LOG SYM)
-        (LOG SYM-DOWN . SYM-UP)
+        (LOG SYMBOL)
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
 
 *   LOG (integer):
     Duration log, usually in the range -1 to 2.
 
-*   SYM:
+*   SYMBOL:
 
         NH
         (NH . NH-EMPTY)
@@ -398,13 +415,13 @@ See lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html
 
 *   CLUSTER-ENTRY:
 
-        (LOG SYM)
-        (LOG SYM-DOWN . SYM-UP)
+        (LOG SYMBOL)
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
 
 *   LOG (integer):
     Duration log, usually in the range -1 to 2.
 
-*   SYM:
+*   SYMBOL:
 
         (NH-1 NH-2 NH-3 NH-TOP NH-MID NH-BOTTOM STEM-POS)
 
@@ -440,7 +457,7 @@ Flags
 *   LOG (integer):
     Duration log in the range 3 to 10.
 
-*   FLAG (CP):
+*   FLAG (EXTEXT):
     Flag symbol.
 
 
@@ -504,8 +521,30 @@ Rests
 
 *   REST-LEDGERED (CP):
     Rest symbol with ledger line.
-    Note: This is SYM-2 which is the symbol for UP in other tables.
+    Note: This is SYMBOL-2 which is the symbol for UP in other tables.
     REST-ENTRY could be changed to (LOG (REST . REST-LEDGERED)).
+
+
+
+Augmentation dots
+-----------------
+
+    (dots
+      (STYLE DOT PAD-3 PAD-4 PAD-5)
+      ...
+    )
+
+*   STYLE (symbol):
+    default, note, metronome, ...
+
+*   DOT (EXTEXT):
+    Augmentation dot symbol.
+
+*   PAD-3, PAD-4, PAD-5 (number):
+    Padding between a note of duration log 3, 4, 5, and the dot
+    in units of the dot width. PAD-5 applies also to higher logs.
+
+PAD and styles other than default and note are used only by `\ekm-note-by-number`.
 
 
 
@@ -519,14 +558,14 @@ Scripts - Expressive marks
 
 *   SCRIPT-ENTRY:
 
-        (NAME SYM)
-        (NAME SYM-DOWN . SYM-UP)
+        (NAME SYMBOL)
+        (NAME SYMBOL-DOWN . SYMBOL-UP)
 
 *   NAME (string):
     "sforzato", "dmarcato", "trill", "dfermata", ...
     This is the car of the `script-stencil` property.
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Expressive mark.
 
 
@@ -572,8 +611,8 @@ A new font-specific clef can be added to the list of supported clefs.
 
 *   CLEF-MOD-ENTRY:
 
-        (NAME . SYM)
-        (PARENS SYM-LEFT . SYM-RIGHT)
+        (NAME . SYMBOL)
+        (PARENS SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   NAME (string):
     "8", "15", ...
@@ -583,7 +622,7 @@ A new font-specific clef can be added to the list of supported clefs.
         parenthesized
         bracketed
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Clef modifier/parens symbol.
 
 
@@ -605,12 +644,12 @@ Number table with style `time`.
 
 *   TIME-ENTRY:
 
-        (NAME . SYM)
+        (NAME . SYMBOL)
 
 *   NAME (string):
     "C", "+", "/+", "X", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Special time or cadenza signature symbol.
 
 
@@ -623,12 +662,12 @@ Number table with style `time`.
 
 *   TIME-SUB-ENTRY:
 
-        (FRACTION . SYM)
+        (FRACTION . SYMBOL)
 
 *   FRACTION (rational):
     Value of a sub-fraction to be part of a numerator.
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Precomposed fraction symbol.
 
 
@@ -676,8 +715,6 @@ Bar glyphs and Bar lines
 
 *   BAR-ENTRY:
 
-        (NAME . CP)
-        (NAME BAR)
         (NAME BAR SHOW SCALE)
         (BAR-NAME EOL-NAME BOL-NAME SPAN-NAME)
 
@@ -689,17 +726,63 @@ Bar glyphs and Bar lines
 
 *   SHOW (boolean):
     `#f` draws an empty glyph with the X-extent of BAR.
-    `#t` is the default.
 
 *   SCALE (number or #f):
     Scaling factor for the property `segno-kern`.
-    `#f` draws BAR without bar lines (usually colon). This is the default.
+    `#f` draws BAR without bar lines (usually colon).
 
 *   BAR-NAME, EOL-NAME, BOL-NAME, SPAN-NAME (string):
     Name of bar line normal, eol, bol, and span bar.
     `#t` draws BAR-NAME. `#f` draws nothing.
 
 See scm/bar-line.scm
+
+
+
+Staff dividers
+--------------
+
+    (barline (#t
+      BARLINE-ENTRY
+      ...
+    ))
+
+*   BARLINE-ENTRY:
+
+        (DIR DIVIDER)
+
+*   DIR (integer):
+    CENTER, DOWN, UP
+
+*   DIVIDER (EXTEXT):
+    Staff divider symbol.
+
+See lsr.di.unimi.it/LSR/Item?id=650
+
+
+
+System separator marks
+----------------------
+
+    (separator
+      (STYLE
+        SEPARATOR-ENTRY
+        ...
+      )
+    )
+
+*   STYLE (symbol):
+    default (usually the only style)
+
+*   SEPARATOR-ENTRY:
+
+        (LIMIT SEPARATOR)
+
+*   LIMIT (number):
+    The first entry with the specified size < LIMIT is selected.
+
+*   SEPARATOR (EXTEXT):
+    System separator mark.
 
 
 
@@ -861,13 +944,13 @@ The following components are drawn:
 
 *   DELIMITER-ENTRY:
 
-        (LIMIT SYM)
-        (LIMIT SYM-LEFT . SYM-RIGHT)
+        (LIMIT SYMBOL)
+        (LIMIT SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   LIMIT (number):
     The first entry with RH < LIMIT is selected.
 
-*   SYM:
+*   SYMBOL:
 
         (DELIMITER)
         (DELIMITER SCALE)
@@ -899,6 +982,24 @@ The following components are drawn:
 *   LEFT, RIGHT (number or #f):
     X extent of the fitting segment.
     `#f` uses the `thickness` property whose default is 0.45 for brackets.
+
+
+
+Multi-measure rests
+-------------------
+
+    (mmrest
+      (STYLE HBAR-LEFT . HBAR-RIGHT)
+      ...
+    )
+
+*   STYLE (symbol):
+    Rest style: default, ...
+
+*   HBAR (EXTEXT):
+    Edge symbol of horizontal bar.
+
+The thickness of the horizontal bar is metadata `hBarThickness`.
 
 
 
@@ -942,7 +1043,7 @@ Fingering
 
     (finger
       (STYLE
-        (NAME . SYM)
+        (NAME . SYMBOL)
         ...
       )
       ...
@@ -954,7 +1055,7 @@ Fingering
 *   NAME (string):
     "1", "2", "th", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Fingering symbol.
 
 The fingering symbols p, i, m, a, x are used by the `StrokeFinger` grob.
@@ -965,13 +1066,13 @@ Piano pedals
 ------------
 
     (pedal (#t #t
-      (TOKEN . SYM)
+      (TOKEN . SYMBOL)
     ))
 
 *   TOKEN (string):
     "Ped.", "Sost.", "*", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Piano pedal symbol.
 
 
@@ -980,13 +1081,13 @@ Harp pedals
 -----------
 
     (harp (#t #t
-      (TOKEN . SYM)
+      (TOKEN . SYMBOL)
     ))
 
 *   TOKEN (string):
     "^", "-", "v", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Harp pedal symbol.
 
 
@@ -995,14 +1096,14 @@ Ottavation
 ----------
 
     (ottava (#t #t
-      (TOKEN . SYM)
+      (TOKEN . SYMBOL)
       ...
     ))
 
 *   TOKEN (string):
     "8", "8va", "15", "15ma", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Ottavation symbol.
 
 
@@ -1051,12 +1152,12 @@ Number table with style `tuplet`.
 
 *   TUPLET-ENTRY:
 
-        (NAME . SYM)
+        (NAME . SYMBOL)
 
 *   NAME (string):
     ":"
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Special tuplet symbol.
 
 See output-lib.scm
@@ -1088,8 +1189,8 @@ Tremolo marks
 
 
 
-Stem decoration
----------------
+Stem decorations
+----------------
 
     (stem (#t
       STEM-ENTRY
@@ -1098,20 +1199,52 @@ Stem decoration
 
 *   STEM-ENTRY:
 
-        (NAME . SYM)
+        (NAME . SYMBOL)
 
 *   NAME (string):
     "sprechgesang", "sussurando", "buzzroll", "unmeasured", ...
 
-*   SYM (EXTEXT):
+*   SYMBOL (EXTEXT):
     Stem decoration symbol or tremolo mark.
+
+
+
+Grace note slashes
+------------------
+
+    (grace
+      (STYLE
+        GRACE-ENTRY
+        ...
+      )
+    )
+
+*   STYLE (symbol):
+    Flag style: default, ...
+
+*   GRACE-ENTRY:
+
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
+
+*   LOG (integer):
+    Duration log in the range 3 to 10.
+
+*   SYMBOL:
+
+        (GRACE OFFSET-X . OFFSET-Y)
+
+*   OFFSET (number):
+    Offset for the grace note slash. Is scaled by font-size.
+
+*   GRACE (EXTEXT):
+    Grace note slash.
 
 
 
 Laissez vibrer
 --------------
 
-    (laissezvibrer
+    (lvtie
       (STYLE
         LV-ENTRY
         ...
@@ -1128,7 +1261,7 @@ Laissez vibrer
 *   LIMIT (number):
     The first entry with the specified size < LIMIT is selected.
 
-*   LV (CP):
+*   LV (EXTEXT):
     Laissez vibrer symbol.
 
 
@@ -1213,13 +1346,13 @@ Parentheses
 
 *   PARENS-ENTRY:
 
-        (NAME SYM-LEFT . SYM-RIGHT)
+        (NAME SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   NAME (symbol):
     Intended scope of the parentheses.
     a (accidental), h (dynamics hairpin), t (normal text), ...
 
-*   SYM:
+*   SYMBOL:
 
         PARENS
         (#t Y-ALIGN SIZE PARENS)
@@ -1381,28 +1514,6 @@ Percussion Beaters
 *   BTR (CP):
     Percussion beater.
     Single BTR: CP + 0 to 3  ->  BTR-N BTR-S BTR-NE BTR-NW
-
-
-
-Augmentation dots
------------------
-
-    (dots
-      (STYLE DOT PAD-3 PAD-4 PAD-5)
-      ...
-    )
-
-*   STYLE (symbol):
-    default, note, metronome, straight, short, beamed
-
-*   DOT (EXTEXT):
-    Augmentation dot symbol.
-
-*   PAD-3, PAD-4, PAD-5 (number):
-    Padding between a note of duration log 3, 4, 5, and the dot
-    in units of the dot width. PAD-5 applies also to higher logs.
-
-Used by `\note-by-number`.
 
 
 
