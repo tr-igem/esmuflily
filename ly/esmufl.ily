@@ -231,17 +231,14 @@
 
 %% Table access
 
+#(define MAIN -1)
+
 #(define (ekm-sel f) (if f UP DOWN))
 
-#(define* (ekm-sym val #:optional (dir DOWN))
+#(define (ekm-sym val dir)
   (if (or (not-pair? val) (not dir))
     val
     (if (or (null? (cdr val)) (< dir 0)) (car val) (cdr val))))
-
-#(define (ekm-symex sym)
-  (if (pair? sym)
-    (if (null? (cdr sym)) (cons (car sym) #f) sym)
-    (cons sym #f)))
 
 #(define (ekm-assq tab key)
   (or (assq-ref tab key) (cdar tab)))
@@ -324,7 +321,7 @@
 #(define-markup-command (ekm-number layout props style num)
   (symbol? integer?)
   (interpret-markup layout props
-    (make-ekm-chars-markup (ekm-number->list style num))))
+    (make-ekm-concat-markup (ekm-number->list style num))))
 
 
 %% Metadata access
@@ -448,7 +445,7 @@
 #(define (ekm-init-clef)
   (let iter-s ((t (ekm-assid 'clef #f)))
     (if (null? t) #t
-    (let ((sym (ekm-sym (cdar t))))
+    (let ((sym (ekm-sym (cdar t) MAIN)))
       (if (not (string-prefix? "clefs." (caar t)))
         (if (or (not-pair? sym) (null? (cdr sym)))
           (add-new-clef (caar t) (caar t) 0 0 0)
@@ -462,7 +459,8 @@
          (ch (string-suffix? "_change" name))
          (val (ekm-assid 'clef (if ch (string-drop-right name 7) name)))
          (sym (ekm-sym val (ekm-sel ch)))
-         (mk (make-ekm-char-markup (ekm-sym (or sym (ekm-sym val))))))
+         (mk (make-ekm-char-markup
+              (ekm-sym (or sym (ekm-sym val MAIN)) MAIN))))
     (grob-interpret-markup grob
       (if ch
         (make-fontsize-markup
@@ -642,7 +640,7 @@ ekmCadenzaOn =
 
 ekmStaffDivider =
 #(define-music-function (dir)
-  (number?)
+  (ly:dir?)
   #{
     \once \override Staff.BarLine.stencil =
     #(lambda (grob)
@@ -654,10 +652,7 @@ ekmStaffDivider =
             '(0 . 0) '(0 . 0)
             (make-general-align-markup
               Y (- dir)
-              (make-ekm-char-markup
-                (if (= 0 dir) #xE00D
-                (if (< 0 dir) #xE00C
-                #xE00B))))))
+              (make-ekm-text-markup (ekm-assid 'barline dir)))))
         0))
     \break
   #})
@@ -668,7 +663,7 @@ ekmSlashSeparator =
       \center-align
       \vcenter
       \override #'(font-size . -5)
-      \ekm-char #(+ #xE007 (max 0 (min 2 size)))
+      \ekm-text #(ekm-asslim 'separator 'default size #f)
     }
  #})
 
@@ -780,7 +775,7 @@ ekmMakeClusters =
 #(define (ekm-dots grob)
   (ekm-cat-dots
     (ly:grob-property grob 'dot-count)
-    (ekm-cchar grob 0 #xE1E7)))
+    (ekm-ctext grob 0 (car (ekm-assns 'dots 'default)))))
 
 
 %% Flag / Grace note slash
@@ -821,17 +816,16 @@ ekmMakeClusters =
          (style (ly:grob-property grob 'style))
          (len (list-ref (ekm-assq ekm-stemlength-tab style) (- log 2)))
          (flg (grob-interpret-markup grob
-                (make-ekm-char-markup (ekm-asst ekm-flag-tab style log dir)))))
+                (make-ekm-text-markup (ekm-asst ekm-flag-tab style log dir)))))
     (ly:stencil-translate
       (if (equal? "grace" (ly:grob-property grob 'stroke-style))
-        (ly:stencil-add
-          flg
-          (grob-interpret-markup grob
-            (make-translate-scaled-markup
-              (if (< dir 0)
-                '(-0.596 . 2.168)
-                '(-0.644 . -2.456))
-              (make-ekm-char-markup (if (< dir 0) #xE565 #xE564)))))
+        (let ((sym (ekm-asst 'grace style log dir)))
+          (ly:stencil-add
+            flg
+            (grob-interpret-markup grob
+              (make-translate-scaled-markup
+                (cdr sym)
+                (make-ekm-text-markup (car sym))))))
         flg)
       (cons
         (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
@@ -853,18 +847,16 @@ ekmFlag =
   (ekm-mmr layout props style oneline ledgered measures limit width space)
   (symbol? boolean? boolean? index? integer? number? number?)
   (if (> measures limit)
-    (let* ((hbar (ekm:char layout props #xE4F0))
-           (lbar (ekm:char layout props #xE4EF))
-           (rbar (ekm:char layout props #xE4F1))
-           (edge (ekm-extent lbar X)))
+    (let* ((sym (ekm-assns 'mmrest style))
+           (lbar (ekm:text layout props (ekm-sym sym LEFT)))
+           (rbar (ekm:text layout props (ekm-sym sym RIGHT)))
+           (edge (ekm-extent lbar X)) ; to overlap with bar
+           (hbar (* 0.5 (ekm-md 'hBarThickness)))
+           (hbar (make-filled-box-stencil
+                  (cons 0 (- width (* edge 1.5))) (cons (- hbar) hbar))))
       (stack-stencil-line
-        (- (* edge 0.25)) ;; overlap edge and bar
-        (list
-          lbar
-          (make-filled-box-stencil
-            (cons 0 (- width (* edge 1.5)))
-            (ly:stencil-extent hbar Y))
-          rbar)))
+        (- (* edge 0.25))
+        (list lbar hbar rbar)))
     (let* ((ssp (ly:output-def-lookup layout 'staff-space))
            (cts
              (let cnt ((m measures) (d '(8 4 2 1)) (c '()))
@@ -944,10 +936,11 @@ ekmFlag =
   (let* ((ledgered (memv log ledgers))
          (rest (ekm-center 2 (ekm:char layout props
                  (ekm-asst ekm-rest-tab style log (ekm-sel ledgered)))))
-         (dot (and (> dot-count 0) (ekm:char layout props #xE1E7)))
-         (dots (and dot (ekm-cat-dots dot-count dot))))
+         (dot (and (> dot-count 0)
+                   (ekm:text layout props (car (ekm-assns 'dots 'note))))))
     (if dot
-      (ly:stencil-stack rest X RIGHT dots
+      (ly:stencil-stack rest X RIGHT
+        (ekm-cat-dots dot-count dot)
         (* (ekm-extent dot X)
            (if (and ledgered (<= -1 log 1)) 2
            (if (> log 2) (/ (- 10 log) 7)
@@ -1312,10 +1305,10 @@ ekmPitchedTrill =
 #(define (ekm-lvtie grob)
   (let* ((p (fourth (ly:grob-property grob 'control-points)))
          (size (cdr (ly:grob-property grob 'minimum-X-extent '(0 . 0))))
-         (val (ekm-asslim 'laissezvibrer 'default size
+         (sym (ekm-asslim 'lvtie 'default size
                 (ly:grob-property grob 'direction))))
     (ly:stencil-translate
-      (ekm-cchar grob 0 val)
+      (ekm-ctext grob 0 sym)
       (cons (- (car p) 1.2) (cdr p)))))
 
 ekmLaissezVibrer =
@@ -1341,10 +1334,10 @@ ekmBreathing =
 %% Bar line
 
 #(define ((make-ekm-old-bar-line type name) grob extent)
-  (let* ((sym (ekm-symex (ekm-assid type name)))
-         (scale (if (cdr sym) (third sym) #f))
+  (let* ((sym (ekm-assid type name))
+         (scale (third sym))
          (sil (ekm-ctext grob (if scale CXY CY) (car sym)))
-         (sil (if (and (cdr sym) (second sym))
+         (sil (if (second sym)
                 sil (ly:make-stencil "" (ly:stencil-extent sil X) '(0 . 0)))))
     (if scale ; segno
       (let* ((th (layout-line-thickness grob))
@@ -1398,13 +1391,13 @@ ekmBreathing =
              (l (ly:paper-column::break-align-width lb (car sp)))
              (r (ly:paper-column::break-align-width rb (cdr sp))))
         (ly:stencil-translate-axis
-          (ekm-cchar grob 3 #xE500)
+          (ekm-cchar grob CXY #xE500)
           (+ (* 0.5 (- (car r) (cdr l)))
             (- (cdr l) (ly:grob-relative-coordinate grob refp X)))
           X)))
     (else
       ;; double slash/percent
-      (ekm-cchar grob (if (= 2 type) 0 3) #xE501))))
+      (ekm-cchar grob (if (= 2 type) 0 CXY) #xE501))))
 
 
 %% Tremolo mark
@@ -2170,10 +2163,10 @@ ekmFuncList =
   (let* ((note (interpret-markup layout props
                  (ekm-note style log dir)))
          (val (ekm-assns 'dots style))
-         (dt (ekm:text layout props (car val)))
-         (dts (ekm-cat-dots dots dt)))
-    (ly:stencil-stack note X RIGHT dts
-      (* (ekm-extent dt X)
+         (dot (ekm:text layout props (car val))))
+    (ly:stencil-stack note X RIGHT
+      (ekm-cat-dots dots dot)
+      (* (ekm-extent dot X)
          (if (and (<= 3 log) (< 0 dir))
            (list-ref val (- (min log 5) 2)) 1)))))
 
@@ -2647,6 +2640,16 @@ ekmMetronome =
     (10 . #xE4ED))
   )
 
+  (dots
+  (default   #xE1E7 0 0 0)
+  (note      #xE1E7 -0.2 0.7 0.7)
+  (metronome #xECB7 0.2 0.7 0.7)
+  (straight  #xE1E7 -0.8 -0.8 0.3)
+  (short     #xE1E7 -0.8 -0.8 0.5)
+  (beamed    #xE1E7 -1.4 -1.4 -1.4)
+  (text      #xE1FC 0 0 0)
+  )
+
   (script (#t
   ("sforzato" #xE4A1 . #xE4A0) ; accent
   ("espr" #xED41 . #xED40) ; espressivo
@@ -2744,13 +2747,26 @@ ekmMetronome =
   ))
 
   (colon (#t
-    (#\: . #xE043)
+    (#\: #xE043 #t #f)
   ))
 
   (segno (#t
     (#\S #xE04A #t 0.5)
     (#\= #xE04A #f 0.5)
   ))
+
+  (barline (#t
+    (-1 . #xE00B)
+    (1  . #xE00C)
+    (0  . #xE00D)
+  ))
+
+  (separator
+  (default
+    (1 . #xE007)
+    (2 . #xE008)
+    (+inf.0 . #xE009))
+  )
 
   (shared (#t #t
   (" " . ,(markup #:hspace 1))
@@ -2799,6 +2815,10 @@ ekmMetronome =
     (+inf.0 #xE000 . #xE001))
   (bracket
     (+inf.0 (#f -1020/1000 #f #xE004 #xE003 0 #f))) ; -4 * 255 = -1020
+  )
+
+  (mmrest
+  (default #xE4EF . #xE4F1)
   )
 
   (spanner
@@ -3009,6 +3029,50 @@ ekmMetronome =
     (":" . #xE88A)
   ))
 
+  (number
+  (time .
+    #xE080)
+  (time-turned .
+    #xECE0)
+  (time-reversed .
+    #xECF0)
+  (tuplet .
+    #xE880)
+  (finger .
+    #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
+  (finger-italic .
+    #xED80)
+  (fbass .
+    #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
+  (func .
+    #xEA70)
+  (string
+    (0  . #xE833)
+    (1  . #xE834)
+    (2  . #xE835)
+    (3  . #xE836)
+    (4  . #xE837)
+    (5  . #xE838)
+    (6  . #xE839)
+    (7  . #xE83A)
+    (8  . #xE83B)
+    (9  . #xE83C)
+    (10 . #xE84A)
+    (11 . #xE84B)
+    (12 . #xE84C)
+    (13 . #xE84D))
+  (scale
+    (1 . #xEF00)
+    (2 . #xEF01)
+    (3 . #xEF02)
+    (4 . #xEF03)
+    (5 . #xEF04)
+    (6 . #xEF05)
+    (7 . #xEF06)
+    (8 . #xEF07)
+    (9 . #xEF08))
+  )
+
   (tremolo
   (beam-like
     (1 . #xE220)
@@ -3052,7 +3116,12 @@ ekmMetronome =
   ("turnRightLeft" . #xE80B)
   ))
 
-  (laissezvibrer
+  (grace
+  (default
+    (3 (#xE565 -0.596 . 2.168) . (#xE564 -0.644 . -2.456)))
+  )
+
+  (lvtie
   (default
     (+inf.0 #xE4BB . #xE4BA))
   )
@@ -3196,50 +3265,6 @@ ekmMetronome =
     (0 (#xE5DC #t) . (#xE5EE #f))
     (1 (#xE5DB #t) . (#xE5ED #f))
     (2 (#xE5DA #t) . (#xE5EC #f)))
-  )
-
-  (number
-  (time .
-    #xE080)
-  (time-turned .
-    #xECE0)
-  (time-reversed .
-    #xECF0)
-  (tuplet .
-    #xE880)
-  (finger .
-    #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
-  (finger-italic .
-    #xED80)
-  (fbass .
-    #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
-  (func .
-    #xEA70)
-  (string
-    (0  . #xE833)
-    (1  . #xE834)
-    (2  . #xE835)
-    (3  . #xE836)
-    (4  . #xE837)
-    (5  . #xE838)
-    (6  . #xE839)
-    (7  . #xE83A)
-    (8  . #xE83B)
-    (9  . #xE83C)
-    (10 . #xE84A)
-    (11 . #xE84B)
-    (12 . #xE84C)
-    (13 . #xE84D))
-  (scale
-    (1 . #xEF00)
-    (2 . #xEF01)
-    (3 . #xEF02)
-    (4 . #xEF03)
-    (5 . #xEF04)
-    (6 . #xEF05)
-    (7 . #xEF06)
-    (8 . #xEF07)
-    (9 . #xEF08))
   )
 
   (parens
@@ -3438,16 +3463,6 @@ ekmMetronome =
   (fist . #(#xE7E5))
   (fingernails . #(#xE7E6))
   )
-
-  (dots
-  (default   #xE1E7 0 0 0)
-  (note      #xE1E7 -0.2 0.7 0.7)
-  (metronome #xECB7 0.2 0.7 0.7)
-  (straight  #xE1E7 -0.8 -0.8 0.3)
-  (short     #xE1E7 -0.8 -0.8 0.5)
-  (beamed    #xE1E7 -1.4 -1.4 -1.4)
-  )
-
 ))
 
 #(define (ekm-merge-type type tab)
