@@ -1369,35 +1369,37 @@ ekmBreathing =
 
 %% Percent repeat
 
-#(define ((ekm-percent type) grob)
-  (case type
-    ((1)
-      ;; slash
-      (let ((cnt (ly:event-property (event-cause grob) 'slash-count)))
-        (ly:stencil-combine-at-edge
-          point-stencil
-          X RIGHT
-          (grob-interpret-markup grob
-            (make-ekm-chars-markup (make-list cnt #xE504)))
-          1.3)))
-    ((3)
-      ;; percent (see measure-counter-stencil in output-lib.scm)
-      (let* ((lb (ly:spanner-bound grob LEFT))
-             (rb (ly:spanner-bound grob RIGHT))
-             (refp (ly:grob-common-refpoint lb rb X))
-             (sp (ly:grob-property grob
-                   'spacing-pair
-                   '(break-alignment . break-alignment)))
-             (l (ly:paper-column::break-align-width lb (car sp)))
-             (r (ly:paper-column::break-align-width rb (cdr sp))))
-        (ly:stencil-translate-axis
-          (ekm-cchar grob CXY #xE500)
-          (+ (* 0.5 (- (car r) (cdr l)))
-            (- (cdr l) (ly:grob-relative-coordinate grob refp X)))
-          X)))
-    (else
-      ;; double slash/percent
-      (ekm-cchar grob (if (= 2 type) 0 CXY) #xE501))))
+#(define (ekm-repeat grob)
+  (let ((sym (ekm-assid 'percent "/"))
+        (cnt (ly:event-property (event-cause grob) 'slash-count)))
+    (ly:stencil-combine-at-edge
+      point-stencil
+      X RIGHT
+      (grob-interpret-markup grob
+        (make-ekm-concat-markup (make-list cnt sym)))
+      1.3)))
+
+#(define (ekm-doublerepeat grob)
+  (ekm-ctext grob 0 (ekm-assid 'percent "//")))
+
+#(define (ekm-percent grob)
+  (let* ((sym (ekm-assid 'percent "%"))
+         (lb (ly:spanner-bound grob LEFT))
+         (rb (ly:spanner-bound grob RIGHT))
+         (refp (ly:grob-common-refpoint lb rb X))
+         (sp (ly:grob-property grob
+               'spacing-pair
+               '(break-alignment . break-alignment)))
+         (l (ly:paper-column::break-align-width lb (car sp)))
+         (r (ly:paper-column::break-align-width rb (cdr sp))))
+    (ly:stencil-translate-axis
+      (ekm-ctext grob CXY sym)
+      (+ (* 0.5 (- (car r) (cdr l)))
+        (- (cdr l) (ly:grob-relative-coordinate grob refp X)))
+      X)))
+
+#(define (ekm-doublepercent grob)
+  (ekm-ctext grob CXY (ekm-assid 'percent "%%")))
 
 
 %% Tremolo mark
@@ -1417,7 +1419,7 @@ ekmBreathing =
             (make-ekm-ctext-markup STEMCXY
               (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
                   text)))
-          (make-ekm-char-markup
+          (make-ekm-text-markup
             (ekm-asst 'tremolo style cnt dir))))
       (cons 0 y))))
 
@@ -1463,7 +1465,7 @@ ekmStem =
 #(define-markup-command (ekm-scoop layout props dir)
   (ly:dir?)
   (let* ((sil (interpret-markup layout props
-                (make-ekm-char-markup (if (<= 0 dir) #xE5D0 #xE5E0))))
+                (make-ekm-text-markup (ekm-asst 'brass 'scoop 0 dir))))
          (xext (ly:stencil-extent sil X))
          (h (ekm-extent sil Y)))
     (ly:stencil-outline sil
@@ -1500,20 +1502,41 @@ ekmScoop =
 %% Arpeggio
 
 #(define (ekm-arpeggio grob)
-  (let* ((pos (ly:grob-property grob 'positions))
-         (cnt (inexact->exact (ceiling (interval-length pos))))
-         (dir (ly:grob-property grob 'arpeggio-direction)))
+  (let* ((style (ly:grob-property grob 'style 'default))
+         (dir (ly:grob-property grob 'arpeggio-direction 0))
+         (sym (ekm-asst 'arpeggio style dir dir))
+         (bot (make-ekm-text-markup (first sym)))
+         (top (make-ekm-text-markup (third sym)))
+         (pos (ly:grob-property grob 'positions))
+         (cnt (inexact->exact (round
+                (- (interval-length pos) (ekm-dim grob bot X) (ekm-dim grob top X))))))
     (ly:stencil-translate
       (ly:stencil-rotate
         (grob-interpret-markup grob
-          (make-ekm-chars-markup
-            (case dir
-              ((1) (append! (make-list (- cnt 2) #xEAA9) '(#xEAAD))) ;up
-              ((-1) (cons* #xEAAE (make-list (- cnt 2) #xEAAA))) ;down
-              (else (make-list cnt #xEAA9)))))
+          (make-ekm-concat-markup
+            (append!
+              (list bot)
+              (make-list (max cnt 0) (second sym))
+              (list top))))
         90 -1 0)
       ;; for left bearing -60 upm
-      (cons 0.25 (- (car pos) 0.4)))))
+      (cons 0.3 (- (car pos) 0.4)))))
+
+ekmArpeggioArrowUp = {
+  \revert Arpeggio.X-extent
+  \override Arpeggio.arpeggio-direction = #UP
+}
+ekmArpeggioArrowDown = {
+  \revert Arpeggio.X-extent
+  \override Arpeggio.arpeggio-direction = #DOWN
+}
+ekmArpeggioNormal = {
+  \revert Arpeggio.stencil
+  \revert Arpeggio.X-extent
+  \revert Arpeggio.arpeggio-direction
+  \revert Arpeggio.dash-definition
+  \override Arpeggio.stencil = #ekm-arpeggio
+}
 
 
 %% Ottavation
@@ -1817,8 +1840,9 @@ ekmStemRicochet =
 %% Fall / Doit
 
 #(define (ekm-assb grob style dir)
-  (let ((log (ly:grob-property (ly:grob-parent grob X) 'duration-log 2)))
-    (ekm-asst 'brass style (max (min log 2) 0) dir)))
+  (let* ((log (ly:grob-property (ly:grob-parent grob X) 'duration-log 2))
+         (sym (ekm-asst 'brass style (max log 0) dir)))
+    (if (pair? sym) sym (cons sym #f))))
 
 ekmBendAfter =
 #(define-event-function (style dir)
@@ -1830,19 +1854,19 @@ ekmBendAfter =
         ,ly:spanner::set-spacing-rods)
       (minimum-length .
         ,(lambda (grob)
-          (let* ((d (ekm-assb grob style dir))
+          (let* ((sym (ekm-assb grob style dir))
                  (w (interval-length (ly:grob-property (ly:grob-parent grob X) 'X-extent)))
-                 (mk (make-ekm-text-markup (car d))))
+                 (mk (make-ekm-text-markup (car sym))))
             (+ 0.6 w (ekm-dim grob mk X)))))
       (stencil .
         ,(lambda (grob)
-          (let* ((d (ekm-assb grob style dir))
+          (let* ((sym (ekm-assb grob style dir))
                  (w (interval-length (ly:grob-property (ly:grob-parent grob X) 'X-extent)))
-                 (mk (make-ekm-text-markup (car d))))
+                 (mk (make-ekm-text-markup (car sym))))
             (grob-interpret-markup grob
               (make-translate-markup
                 (cons (+ w 0.2) 0)
-                (if (second d) (make-general-align-markup Y UP mk) mk)))))))))
+                (if (cdr sym) (make-general-align-markup Y UP mk) mk)))))))))
 
 
 %% Figured bass
@@ -3126,6 +3150,15 @@ ekmMetronome =
     (+inf.0 #xE4BB . #xE4BA))
   )
 
+  (arpeggio
+  (default
+    (0 (0 #xEAAA 0) . (0 #xEAA9 0))
+    (1 (#xEAAE #xEAAA 0) . (0 #xEAA9 #xEAAD)))
+  (swash
+    (0 (0 #xEAAA #xEAAC) . (#xEAAB #xEAA9 0))
+    (1 (#xEAAE #xEAAA #xEAAC) . (#xEAAB #xEAA9 #xEAAD)))
+  )
+
   (cluster
   (default
     (-1 (#xE0A0 #xE124 #xE128 #xE12C #xE12D #xE12E 0))
@@ -3149,6 +3182,14 @@ ekmMetronome =
     (2 (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3) .
        (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3)))
   )
+
+  (percent (#t
+  ("/" . #xE504)
+  ("//" . #xE501)
+  ("%" . #xE500)
+  ("%%" . #xE501)
+  ;("%%%%" . #xE502) ; not used
+  ))
 
   (harp (#t #t
   ("^"  . #xE680)
@@ -3254,17 +3295,19 @@ ekmMetronome =
 
   (brass
   (bend
-    (0 (#xE5D9 #f) . (#xE5D6 #f))
-    (1 (#xE5D8 #f) . (#xE5D5 #f))
-    (2 (#xE5D7 #f) . (#xE5D4 #f)))
+    (0 #xE5D9 . #xE5D6)
+    (1 #xE5D8 . #xE5D5)
+    (2 #xE5D7 . #xE5D4))
   (rough
-    (0 (#xE5DF #t) . (#xE5D3 #f))
-    (1 (#xE5DE #t) . (#xE5D2 #f))
-    (2 (#xE5DD #t) . (#xE5D1 #f)))
+    (0 (#xE5DF . #t) . #xE5D3)
+    (1 (#xE5DE . #t) . #xE5D2)
+    (2 (#xE5DD . #t) . #xE5D1))
   (smooth
-    (0 (#xE5DC #t) . (#xE5EE #f))
-    (1 (#xE5DB #t) . (#xE5ED #f))
-    (2 (#xE5DA #t) . (#xE5EC #f)))
+    (0 (#xE5DC . #t) . #xE5EE)
+    (1 (#xE5DB . #t) . #xE5ED)
+    (2 (#xE5DA . #t) . #xE5EC))
+  (scoop
+    (0 #xE5E0 . #xE5D0))
   )
 
   (parens
@@ -3560,10 +3603,10 @@ ekmSmuflOn =
     (if (or all (memq 'colon typ))
       (ekm-bar-init 'colon))
     (on 'percent #{
-      \override RepeatSlash.stencil = #(ekm-percent 1)
-      \override DoubleRepeatSlash.stencil = #(ekm-percent 2)
-      \override PercentRepeat.stencil = #(ekm-percent 3)
-      \override DoublePercentRepeat.stencil = #(ekm-percent 4)
+      \override RepeatSlash.stencil = #ekm-repeat
+      \override DoubleRepeatSlash.stencil = #ekm-doublerepeat
+      \override PercentRepeat.stencil = #ekm-percent
+      \override DoublePercentRepeat.stencil = #ekm-doublepercent
     #})
     (on 'tremolo #{
       \override StemTremolo.stencil = #ekm-repeat-tremolo
