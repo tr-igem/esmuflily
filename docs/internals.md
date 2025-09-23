@@ -61,7 +61,7 @@ possibly of different directions.
         (KEY SYMBOL-DOWN . SYMBOL-UP)
 
     The first form can be used instead of the second if SYMBOL is
-    a single CP (ie. not a list).
+    a single simple type (CP, string, ...) ie. not a list.
     The last SYMBOL-ENTRY of a style is the default.
 
 *   KEY (number, string, symbol):
@@ -259,7 +259,7 @@ Type table with index-tables.
 *   (ekm-assid TYPE KEY)
 
     Return the value of KEY in the identifier table in the type table TYPE,
-    or the whole identifier table if KEY is `#f`, where it skips
+    or the whole identifier table if KEY is `#f`. In this case it skips
     the first entry `#t` (token table).
 
 *   (ekm-token-list TABLE DEF TOKENS)
@@ -441,7 +441,7 @@ Flags
 
     (flag
       (STYLE
-        FLAG-ENTRY
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
         ...
       )
       ...
@@ -450,14 +450,10 @@ Flags
 *   STYLE (symbol):
     default, short, straight, ...
 
-*   FLAG-ENTRY:
-
-        (LOG FLAG-DOWN . FLAG-UP)
-
 *   LOG (integer):
     Duration log in the range 3 to 10.
 
-*   FLAG (EXTEXT):
+*   SYMBOL (EXTEXT):
     Flag symbol.
 
 
@@ -611,7 +607,7 @@ A new font-specific clef can be added to the list of supported clefs.
 
 *   CLEF-MOD-ENTRY:
 
-        (NAME . SYMBOL)
+        (NAME SYMBOL)
         (PARENS SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   NAME (string):
@@ -623,7 +619,7 @@ A new font-specific clef can be added to the list of supported clefs.
         bracketed
 
 *   SYMBOL (EXTEXT):
-    Clef modifier/parens symbol.
+    Clef modifier or modifier parenthesis symbol.
 
 
 
@@ -638,13 +634,9 @@ Number table with style `time`.
 ### Special symbols
 
     (time (#t
-      TIME-ENTRY
+      (NAME SYMBOL)
       ...
     ))
-
-*   TIME-ENTRY:
-
-        (NAME . SYMBOL)
 
 *   NAME (string):
     "C", "+", "/+", "X", ...
@@ -656,13 +648,9 @@ Number table with style `time`.
 ### Sub-fractions
 
     (time-sub (#t
-      TIME-SUB-ENTRY
+      (FRACTION SYMBOL)
       ...
     ))
-
-*   TIME-SUB-ENTRY:
-
-        (FRACTION . SYMBOL)
 
 *   FRACTION (rational):
     Value of a sub-fraction to be part of a numerator.
@@ -743,18 +731,14 @@ Staff dividers
 --------------
 
     (barline (#t
-      BARLINE-ENTRY
+      (DIR SYMBOL)
       ...
     ))
-
-*   BARLINE-ENTRY:
-
-        (DIR DIVIDER)
 
 *   DIR (integer):
     CENTER, DOWN, UP
 
-*   DIVIDER (EXTEXT):
+*   SYMBOL (EXTEXT):
     Staff divider symbol.
 
 See lsr.di.unimi.it/LSR/Item?id=650
@@ -766,7 +750,7 @@ System separator marks
 
     (separator
       (STYLE
-        SEPARATOR-ENTRY
+        (LIMIT SYMBOL)
         ...
       )
     )
@@ -774,14 +758,10 @@ System separator marks
 *   STYLE (symbol):
     default (usually the only style)
 
-*   SEPARATOR-ENTRY:
-
-        (LIMIT SEPARATOR)
-
 *   LIMIT (number):
     The first entry with the specified size < LIMIT is selected.
 
-*   SEPARATOR (EXTEXT):
+*   SYMBOL (EXTEXT):
     System separator mark.
 
 
@@ -790,18 +770,14 @@ Dynamics
 --------
 
     (dynamic (#t
-      DYNAMIC-ENTRY
+      (NAME . SYMBOL)
       ...
     )
-
-*   DYNAMIC-ENTRY:
-
-        (NAME . DYNAMIC)
 
 *   NAME (string):
     "p", "m", "f", "r", "s", "z", "n", "mp", ...
 
-*   DYNAMIC (CP):
+*   SYMBOL (CP):
     Absolute dynamic symbol.
 
 Note: This identifier table is also used as a token table, but only
@@ -994,7 +970,8 @@ Multi-measure rests
     )
 
 *   STYLE (symbol):
-    Rest style: default, ...
+    default, ...
+    This is the rest style.
 
 *   HBAR (EXTEXT):
     Edge symbol of horizontal bar.
@@ -1020,8 +997,8 @@ Multi-segment spanner
 *   SPANNER-ENTRY:
 
         (text TEXT-LEFT . TEXT-RIGHT)
-        (0 . SEGMENT-MAIN)
-        (TEMPO SEGMENT-FASTER . SEGMENT-SLOWER)
+        (0 . MAIN)
+        (TEMPO FASTER . SLOWER)
 
 *   TEXT-LEFT, TEXT-RIGHT (CP):
     Left and right symbol to be placed on each spanner piece.
@@ -1030,10 +1007,10 @@ Multi-segment spanner
 *   TEMPO (index):
     Absolute tempo.
 
-*   SEGMENT-MAIN (CP):
+*   MAIN (CP):
     Main (medium) extender line segment for tempo 0.
 
-*   SEGMENT-FASTER, SEGMENT-SLOWER (CP):
+*   FASTER, SLOWER (CP):
     Faster (narrower) and slower (wider) extender line segment for TEMPO.
 
 
@@ -1043,7 +1020,7 @@ Fingering
 
     (finger
       (STYLE
-        (NAME . SYMBOL)
+        (NAME SYMBOL)
         ...
       )
       ...
@@ -1066,7 +1043,7 @@ Piano pedals
 ------------
 
     (pedal (#t #t
-      (TOKEN . SYMBOL)
+      (TOKEN SYMBOL)
     ))
 
 *   TOKEN (string):
@@ -1081,7 +1058,7 @@ Harp pedals
 -----------
 
     (harp (#t #t
-      (TOKEN . SYMBOL)
+      (TOKEN SYMBOL)
     ))
 
 *   TOKEN (string):
@@ -1096,7 +1073,7 @@ Ottavation
 ----------
 
     (ottava (#t #t
-      (TOKEN . SYMBOL)
+      (TOKEN SYMBOL)
       ...
     ))
 
@@ -1146,13 +1123,9 @@ Number table with style `tuplet`.
 ### Special symbols
 
     (tuplet (#t
-      TUPLET-ENTRY
+      (NAME SYMBOL)
       ...
     ))
-
-*   TUPLET-ENTRY:
-
-        (NAME . SYMBOL)
 
 *   NAME (string):
     ":"
@@ -1169,7 +1142,7 @@ Tremolo marks
 
     (tremolo
       (STYLE
-        TREMOLO-ENTRY
+        (FLAGS SYMBOL)
         ...
       )
     )
@@ -1177,14 +1150,10 @@ Tremolo marks
 *   STYLE (symbol):
     beam-like, fingered
 
-*   TREMOLO-ENTRY:
-
-        (FLAGS . TREMOLO)
-
 *   FLAGS (integer):
     Number of flags for subdivision, usually 1 to 5.
 
-*   TREMOLO (CP):
+*   SYMBOL (EXTEXT):
     Tremolo symbol.
 
 
@@ -1193,13 +1162,9 @@ Stem decorations
 ----------------
 
     (stem (#t
-      STEM-ENTRY
+      (NAME SYMBOL)
       ...
     )
-
-*   STEM-ENTRY:
-
-        (NAME . SYMBOL)
 
 *   NAME (string):
     "sprechgesang", "sussurando", "buzzroll", "unmeasured", ...
@@ -1214,17 +1179,14 @@ Grace note slashes
 
     (grace
       (STYLE
-        GRACE-ENTRY
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
         ...
       )
     )
 
 *   STYLE (symbol):
-    Flag style: default, ...
-
-*   GRACE-ENTRY:
-
-        (LOG SYMBOL-DOWN . SYMBOL-UP)
+    default
+    This is the flag style.
 
 *   LOG (integer):
     Duration log in the range 3 to 10.
@@ -1246,7 +1208,7 @@ Laissez vibrer
 
     (lvtie
       (STYLE
-        LV-ENTRY
+        (LIMIT SYMBOL-DOWN . SYMBOL-UP)
         ...
       )
     )
@@ -1254,15 +1216,56 @@ Laissez vibrer
 *   STYLE (symbol):
     default (usually the only style)
 
-*   LV-ENTRY:
-
-        (LIMIT LV-DOWN . LV-UP)
-
 *   LIMIT (number):
     The first entry with the specified size < LIMIT is selected.
 
-*   LV (EXTEXT):
+*   SYMBOL (EXTEXT):
     Laissez vibrer symbol.
+
+
+
+Arpeggios
+---------
+
+    (arpeggio
+      (STYLE
+        (DIR SYMBOL-DOWN . SYMBOL-UP)
+        ...
+      )
+    )
+
+*   STYLE (symbol):
+    default, swash
+
+*   DIR (integer):
+    0 (no direction): Simple arpeggio SYMBOL-UP (DOWN is not used).
+    1 (or any other value): Arpeggio with arrow.
+
+*   SYMBOL:
+
+        (BOTTOM MID TOP)
+
+*   BOTTOM, MID, TOP (EXTEXT):
+    Arpeggio line segments. MID is drawn zero or more times.
+    BOTTOM and TOP are always drawn.
+
+
+
+Percent repeats
+---------------
+
+    (percent (#t
+      (NAME SYMBOL)
+      ...
+    ))
+
+*   NAME (string):
+    "/", "//", "%", "%%"
+
+*   SYMBOL (EXTEXT):
+    Percent repeat symbol.
+
+See measure-counter-stencil in output-lib.scm
 
 
 
@@ -1307,26 +1310,29 @@ Falls and doits
 
     (brass
       (STYLE
-        BRASS-ENTRY
+        (LOG SYMBOL-DOWN . SYMBOL-UP)
         ...
       )
     )
 
 *   STYLE (symbol):
-    bend, rough, smooth
-
-*   BRASS-ENTRY:
-
-        (LOG (BRASS-DOWN ALIGN) . (BRASS-UP ALIGN))
+    bend, rough, smooth, scoop
+    `scoop` is used by `\ekm-scoop`.
 
 *   LOG (integer):
     Duration log in the range 0 to 2.
 
-*   ALIGN (boolean):
-    `#t` aligns the symbol up. Usually for rough and smooth down.
+*   SYMBOL:
+
+        BRASS
+        (BRASS . ALIGN)
 
 *   BRASS (EXTEXT):
-    Fall or doit (lift) symbol.
+    Fall/doit (lift) or scoop/plop symbol.
+    A single BRASS must be CP.
+
+*   ALIGN (boolean):
+    `#t` aligns the symbol up. Usually for rough and smooth down.
 
 
 
@@ -1335,7 +1341,7 @@ Parentheses
 
     (parens
       (STYLE
-        PARENS-ENTRY
+        (NAME SYMBOL-LEFT . SYMBOL-RIGHT)
         ...
       )
       ...
@@ -1343,10 +1349,6 @@ Parentheses
 
 *   STYLE (symbol):
     default, bracket, ...
-
-*   PARENS-ENTRY:
-
-        (NAME SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   NAME (symbol):
     Intended scope of the parentheses.
@@ -1376,28 +1378,28 @@ Number table with style `fbass`.
 ### Combining and precomposed symbols
 
     (fbass (#t
-      (NAME . COMBINE)
+      (NAME SYMBOL)
       ...
     ))
 
 *   NAME (string):
     "\\+", "\\\\", "/", "2\\+", ...
 
-*   COMBINE (EXTEXT):
+*   SYMBOL (EXTEXT):
     Combining symbol or precomposed bass figure for augmented/diminished.
 
 
 ### Accidentals
 
     (fbass-acc (#t
-      (ALTERATION . ACCIDENTAL)
+      (ALTERATION SYMBOL)
       ...
     ))
 
 *   ALTERATION (rational):
     0, 1/2, 1, 3/2, -1/2, ...
 
-*   ACCIDENTAL (EXTEXT):
+*   SYMBOL (EXTEXT):
     Bass figure accidental.
 
 
@@ -1406,14 +1408,14 @@ Lyrics
 ------
 
     (lyric (#t
-      (TOKEN . LYRIC)
+      (TOKEN SYMBOL)
       ...
     ))
 
 *   TOKEN (char):
     ~ _ % ...
 
-*   LYRIC (EXTEXT):
+*   SYMBOL (EXTEXT):
     Special lyric symbol.
 
 
@@ -1422,14 +1424,14 @@ Analytics
 ---------
 
     (analytics (#t #t
-      (TOKEN . ANALYTICS)
+      (TOKEN SYMBOL)
       ...
     ))
 
 *   TOKEN (string):
     "H", "CH", "N", ...
 
-*   ANALYTICS (EXTEXT):
+*   SYMBOL (EXTEXT):
     Analytics symbol.
 
 
@@ -1438,14 +1440,14 @@ Function theory
 ---------------
 
     (func (#t #t
-      (TOKEN . FUNC)
+      (TOKEN SYMBOL)
       ...
     ))
 
 *   TOKEN (string):
     "D", "DD", "/D", "S", ...
 
-*   FUNC (EXTEXT):
+*   SYMBOL (EXTEXT):
     Function theory symbol.
 
 See [LSR/Item?id=967](https://lsr.di.unimi.it/LSR/Item?id=967)
@@ -1513,7 +1515,7 @@ Percussion Beaters
 
 *   BTR (CP):
     Percussion beater.
-    Single BTR: CP + 0 to 3  ->  BTR-N BTR-S BTR-NE BTR-NW
+    Single BTR: CP + 0 to 3  =>  BTR-N BTR-S BTR-NE BTR-NW
 
 
 

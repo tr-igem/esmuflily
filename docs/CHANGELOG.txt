@@ -476,3 +476,10 @@ January 2021 - May 2021:
   "ekmSlashSeparator", "(ekm-dots)", "(ekm-flag)", "\ekm-mmr",
   "\ekm-rest-by-number".
 - Change "\ekm-note-by-number" supporting dot style.
+
+2025-09-23:
+- Add tables percent, arpeggio.
+- Add "(ekm-repeat)", "(ekm-doublerepeat)", "(ekm-doublepercent)"
+  replacing "(ekm-percent)" for separate percent repeats.
+- Change to accept extext: "\ekm-scoop", "\ekmBendAfter", "(ekm-arpeggio)".
+- Add "\ekmArpeggioArrowUp", "\ekmArpeggioArrowDown", "\ekmArpeggioNormal".
