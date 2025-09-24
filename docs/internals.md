@@ -182,9 +182,11 @@ numbers with normal style tables.
     (number
       (STYLE . DIGIT)
       (STYLE . #(DIG0 DIG1 DIG2 DIG3 DIG4 DIG5 DIG6 DIG7 DIG8 DIG9))
+      (STYLE . PROC)
       (STYLE
         (NUMBER . SYMBOL-NUM)
         ...
+        (default . PROC)
       )
       ...
     )
@@ -197,6 +199,9 @@ numbers with normal style tables.
 
 *   DIG0 - DIG9 (EXTEXT):
     Symbol for digit 0 - 9.
+
+*   PROC (procedure):
+    Markup procedure applied on the decimal digit string of a number.
 
 *   SYMBOL-NUM (EXTEXT):
     Symbol for NUMBER (not a digit).
@@ -268,11 +273,6 @@ Type table with index-tables.
     the tokens in the string DEF, according to the token table TABLE.
     The first element of the list is a list of the tokens in DEF
     if TOKENS is true (used only by ekm-harp-pedal), else it is '().
-
-*   (ekm-number->list STYLE NUMBER)
-
-    Return a list with the digit symbols or with SYMBOL-NUM for NUMBER
-    according to the number table STYLE in the type table `number`.
 
 *   (ekm-assq TABLE KEY)
 
@@ -1266,6 +1266,49 @@ Percent repeats
     Percent repeat symbol.
 
 See measure-counter-stencil in output-lib.scm
+
+
+
+Fret diagrams
+-------------
+
+    (fret (#t
+      FRET-ENTRY
+      ...
+    ))
+
+*   FRET-ENTRY:
+
+        (NAME SYMBOL)
+        (FRETS FRETBOARD . FRETBOARD-NUT)
+
+*   NAME (string):
+    ".", "x", "o"
+
+*   SYMBOL (EXTEXT):
+    Mark for normal, muted, or open string.
+
+*   FRETS (integer):
+    Number of frets, usually in the range 3 - 6.
+
+*   FRETBOARD (EXTEXT):
+    Fret board symbol with normal or thick top fret line.
+
+
+### Markup properties
+
+*   fret-diagram-details (alist):
+    The following keys are supportet:
+
+    +   top-fret-thickness (number):
+        A value > 1 draws a fret board with thick top fret line. Default is 3.
+
+    +   finger-code (symbol):
+        Type (position) of fingering indications.
+        `below-string` (default), `none`.
+
+    +   finger-style (symbol):
+        Number style of fingering indications. Default is `sans`.
 
 
 

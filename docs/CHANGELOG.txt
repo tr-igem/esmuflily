@@ -483,3 +483,12 @@ January 2021 - May 2021:
   replacing "(ekm-percent)" for separate percent repeats.
 - Change to accept extext: "\ekm-scoop", "\ekmBendAfter", "(ekm-arpeggio)".
 - Add "\ekmArpeggioArrowUp", "\ekmArpeggioArrowDown", "\ekmArpeggioNormal".
+
+2025-09-24:
+- Change to accept extext: "\ekm-harp-change", "\ekm-fret-diagram-terse",
+  "(ekm-time-num)".
+- Add table fret. Support fretboard without nut.
+- Extend "\ekm-number" and table "number" for normal text styles and default numbers.
+- Remove "(ekm-number->list)".
+- Change "\ekm-string-number" and add "\ekm-default-string-number"
+  for default numbers.
