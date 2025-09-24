@@ -233,7 +233,7 @@
 
 #(define MAIN -1)
 
-#(define (ekm-sel f) (if f UP DOWN))
+#(define (ekm-mv f) (if f 1 MAIN))
 
 #(define (ekm-sym val dir)
   (if (or (not-pair? val) (not dir))
@@ -304,24 +304,27 @@
 
 %% Number
 
-#(define (ekm-number->list style num)
-  (let ((tab (ekm-assns 'number style)))
-    (if (not tab)
-      '()
-    (if (pair? tab)
-      (let ((sym (assv-ref tab num)))
-        (if sym (list sym) '()))
-    (let digit ((f (not num)) (n num) (l '()))
-      (if f l
-      (digit
-        (< n 10)
-        (quotient n 10)
-        (cons* ((if (vector? tab) vector-ref +) tab (remainder n 10)) l))))))))
-
 #(define-markup-command (ekm-number layout props style num)
   (symbol? integer?)
   (interpret-markup layout props
-    (make-ekm-concat-markup (ekm-number->list style num))))
+    (let ((tab (ekm-assns 'number style)))
+      (cond
+      ((not tab)
+        (number->string num 10))
+      ((pair? tab)
+        (let ((sym (or (assv-ref tab num) (assv-ref tab 'default))))
+          (if (procedure? sym)
+            (sym (number->string num 10))
+            (make-ekm-text-markup sym))))
+      ((procedure? tab)
+        (tab (number->string num 10)))
+      (else
+        (let digit ((f (not num)) (n num) (l '()))
+          (if f (make-ekm-concat-markup l)
+          (digit
+            (< n 10)
+            (quotient n 10)
+            (cons* ((if (vector? tab) vector-ref +) tab (remainder n 10)) l)))))))))
 
 
 %% Metadata access
@@ -458,7 +461,7 @@
   (let* ((name (ly:grob-property grob 'glyph-name))
          (ch (string-suffix? "_change" name))
          (val (ekm-assid 'clef (if ch (string-drop-right name 7) name)))
-         (sym (ekm-sym val (ekm-sel ch)))
+         (sym (ekm-sym val (ekm-mv ch)))
          (mk (make-ekm-char-markup
               (ekm-sym (or sym (ekm-sym val MAIN)) MAIN))))
     (grob-interpret-markup grob
@@ -493,7 +496,7 @@
       ((pair? (car l))
         (make-ekm-concat-markup
           (list
-            (ekm-number->list 'time (caar l))
+            (make-ekm-number-markup 'time (caar l))
             (ekm-time-subnum (cdar l)))))
       ((integer? (car l))
         (make-ekm-number-markup 'time (car l)))
@@ -871,7 +874,7 @@ ekmFlag =
                (let con ((c ct) (s sil))
                  (if (zero? c) s
                  (let ((r (ekm:char layout props
-                            (ekm-asst ekm-rest-tab style log (ekm-sel ledgered)))))
+                            (ekm-asst ekm-rest-tab style log (ekm-mv ledgered)))))
                    (con (1- c)
                         (cons*
                           (if ((if oneline = <) log 0) r
@@ -935,7 +938,7 @@ ekmFlag =
                 (style '()))
   (let* ((ledgered (memv log ledgers))
          (rest (ekm-center 2 (ekm:char layout props
-                 (ekm-asst ekm-rest-tab style log (ekm-sel ledgered)))))
+                 (ekm-asst ekm-rest-tab style log (ekm-mv ledgered)))))
          (dot (and (> dot-count 0)
                    (ekm:text layout props (car (ekm-assns 'dots 'note))))))
     (if dot
@@ -1663,16 +1666,18 @@ ekmPlayWith =
 
 %% String number
 
+#(define-markup-command (ekm-default-string-number layout props txt)
+  (string?)
+  (interpret-markup layout props
+    (make-circle-markup (make-fontsize-markup -6 txt))))
+
 #(define-markup-command (ekm-string-number layout props txt)
   (number-or-string?)
-  (let* ((num (if (number? txt) txt (string->number txt 10)))
-         (sym (and num (ekm-number->list 'string (round num)))))
+  (let ((num (if (number? txt) txt (string->number txt 10))))
     (interpret-markup layout props
-      (if (null? sym)
-        (if num
-          (make-circle-markup (make-fontsize-markup -3 (number->string num 10)))
-          (make-italic-markup txt))
-        (make-fontsize-markup 3 (make-ekm-chars-markup sym))))))
+      (if num
+        (make-fontsize-markup 3 (make-ekm-number-markup 'string (round num)))
+        (make-italic-markup txt)))))
 
 #(define (ekm-stringnumber grob)
   (grob-interpret-markup grob
@@ -1711,25 +1716,31 @@ ekmPlayWith =
     (stack-stencil-line 0
       (interpret-markup-list layout props (cdr p)))))
 
-#(define-markup-command (ekm-harp-change layout props cp dir)
-  (ekm-cp? number?)
+#(define-markup-command (ekm-harp-change layout props txt dir)
+  (ekm-extext? number?)
   (interpret-markup layout props
     (markup
       #:combine
-        #:ekm-char cp
+        #:ekm-text txt
         #:override '(x-padding . -0.6)
         #:override '(y-padding . -0.1)
         #:translate-scaled (cons 0 dir)
-        #:ellipse #:transparent #:ekm-char #xE681)))
+        #:ellipse #:transparent #:ekm-text (assoc-ref (ekm-assid 'harp #f) "-"))))
 
 
 %% Fret diagram
 
 #(define-markup-command (ekm-fret-diagram-terse layout props def)
   (string?)
-  (let* ((defl (string-split def #\73))
+  #:properties ((fret-diagram-details '()))
+  (let* ((defl (string-split def #\x3B))
          (cnt (1- (max 4 (min 7 (length defl)))))
-         (board (ekm:char layout props (+ (* cnt 2) #xE84B)))
+         (tab (ekm-assid 'fret #f))
+         (board (ekm:text layout props (ekm-sym (assoc-ref tab cnt)
+                  (ekm-mv (> (or (assq-ref fret-diagram-details 'top-fret-thickness) 3) 1)))))
+         (finger (or (assq-ref fret-diagram-details 'finger-code) #t))
+         (finger (if (eq? 'none finger) #f
+                  (or (assq-ref fret-diagram-details 'finger-style) 'sans)))
          (thick (ly:output-def-lookup layout 'line-thickness))
          (w (/ (- (ekm-extent board X) 0.064) (1- cnt)))
          (h (ly:stencil-extent board Y))
@@ -1745,17 +1756,16 @@ ekmPlayWith =
                      (x (+ (* w i) 0.032)))
                 (set! i (1+ i))
                 (if (<= i cnt)
-                  (cond
-                    ((string=? "o" (car pos)) (list #xE85A x ymark #f))
-                    ((string=? "x" (car pos)) (list #xE859 x ymark #f))
-                    (else
+                  (let ((mark (assoc-ref tab (car pos))))
+                    (if mark
+                      (list mark x ymark #f)
                       (let ((y (+ (* h (- 4 (max 1 (min 4
                                  (or (string->number (car pos)) 1))))) 0.44)))
                         (if (> (length pos) 2)
                           (cond
                             ((string=? "(" (third pos)) (set! bow-beg (cons x y)))
                             ((string=? ")" (third pos)) (set! bow-end (cons x y)))))
-                        (list #xE858 x y (if num (max 1 (min 9 num)) #f)))))
+                        (list (assoc-ref tab ".") x y (if num (max 1 (min 9 num)) #f)))))
                   #f)))
               defl)))
     (fold
@@ -1766,14 +1776,13 @@ ekmPlayWith =
             (ly:stencil-translate
               (ekm:char layout props (car d))
               (cons (second d) (third d)))
-            (if (fourth d)
+            (if (and finger (fourth d))
               (ly:stencil-translate
                 (centered-stencil
                   (interpret-markup layout props
                     (make-whiteout-markup
                       (make-fontsize-markup -7
-                        ;(make-ekm-char-markup (+ (fourth d) #xE833))
-                        (make-sans-markup (number->string (fourth d)))))))
+                        (make-ekm-number-markup finger (fourth d))))))
                 (cons (second d) ynum))
               point-stencil))
           sil))
@@ -3070,6 +3079,12 @@ ekmMetronome =
     #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
   (func .
     #xEA70)
+  (sans .
+    ,make-sans-markup)
+  (roman .
+    ,make-roman-markup)
+  (typewriter .
+    ,make-typewriter-markup)
   (string
     (0  . #xE833)
     (1  . #xE834)
@@ -3084,7 +3099,8 @@ ekmMetronome =
     (10 . #xE84A)
     (11 . #xE84B)
     (12 . #xE84C)
-    (13 . #xE84D))
+    (13 . #xE84D)
+    (default . ,make-ekm-default-string-number-markup))
   (scale
     (1 . #xEF00)
     (2 . #xEF01)
@@ -3094,7 +3110,8 @@ ekmMetronome =
     (6 . #xEF05)
     (7 . #xEF06)
     (8 . #xEF07)
-    (9 . #xEF08))
+    (9 . #xEF08)
+    (default . ""))
   )
 
   (tremolo
@@ -3200,6 +3217,16 @@ ekmMetronome =
   ("o-" ,(markup #:ekm-harp-change #xE681 0))
   ("ov" ,(markup #:ekm-harp-change #xE682 -0.93))
   (" "  . #f)
+  ))
+
+  (fret (#t
+  ("." . #xE858)
+  ("x" . #xE859)
+  ("o" . #xE85A)
+  (3 #xE850 . #xE851)
+  (4 #xE852 . #xE853)
+  (5 #xE854 . #xE855)
+  (6 #xE856 . #xE857)
   ))
 
   (accordion
