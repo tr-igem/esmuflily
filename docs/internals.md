@@ -13,14 +13,6 @@ It can be merged with a font-specific table provided in the `types`
 sub-table of the metadata cache file.
 The font-specific characters and styles either extend or replace
 existing characters/styles.
-A few symbols are not yet in the table but hard-coded in some commands.
-
-The following markup commands still use [Ekmelos](https://github.com/tr-igem/ekmelos)
-specific glyphs:
-
-    \ekm-midi
-    \ekm-eyeglasses
-    \ekm-metronome
 
 
 
@@ -29,7 +21,8 @@ Table structues
 
 The table `ekm-types` is an alist of type tables, each containing
 an alist of style tables, each defining related musical symbols,
-possibly of different directions.
+possibly of two different forms (DOWN/UP, LEFT/RIGHT, main/variant,
+slower/faster).
 
     ekm-types (
       (TYPE
@@ -55,14 +48,28 @@ possibly of different directions.
     `ekm` is used internally (eg. arrow, beater).
 
 *   SYMBOL-ENTRY (pair):
-
-        (KEY . SYMBOL)
-        (KEY SYMBOL)
-        (KEY SYMBOL-DOWN . SYMBOL-UP)
-
-    The first form can be used instead of the second if SYMBOL is
-    a single simple type (CP, string, ...) ie. not a list.
     The last SYMBOL-ENTRY of a style is the default.
+
+    If TYPE does not distinguish two forms the entry has a single SYMBOL:
+
+        SYMBOL-ENTRY            DIR = #f
+        --------------------------------
+        (KEY . SIMPLE)          SIMPLE
+        (KEY SIMPLE)            (SIMPLE)
+        (KEY . LIST)            LIST
+        (KEY LIST-ELEM ...)     LIST
+
+    If TYPE distinguishes two forms the entry has one or two SYMBOLs:
+
+        SYMBOL-ENTRY                    DIR < 0     DIR >= 0
+        ----------------------------------------------------
+        (KEY . SIMPLE)                  SIMPLE      SIMPLE
+        (KEY SIMPLE)                    SIMPLE      SIMPLE
+        (KEY . (LIST))                  LIST        LIST
+        (KEY LIST)                      LIST        LIST
+        (KEY SIMPLE-1 . SIMPLE-2)       SIMPLE-1    SIMPLE-2
+        (KEY LIST-1 . LIST-2)           LIST-1      LIST-2
+        (KEY LIST-1 LIST-2-ELEM ...)    LIST-1      LIST-2
 
 *   KEY (number, string, symbol):
     The key depends on TYPE, usually:
@@ -83,18 +90,27 @@ possibly of different directions.
 
 *   SYMBOL:
 
-        CP
+        SIMPLE
         LIST
 
-    Data to draw a musical symbol. LIST can be any data.
+    Data to draw a musical symbol.
     The actual structure depends on TYPE.
+
+*   SIMPLE:
+
+        CP
+        STRING
+
+*   LIST:
+
+        (ELEM ...)
 
 *   EXTEXT (integer, string, list):
 
         CP
+        STRING
         (CP FEATURE ...)
-        (CP1 CP2 ...)
-        "STRING"
+        (CP-1 CP-2 ...)
         (markup ...)
 
 *   CP (integer >= 0):
@@ -113,10 +129,6 @@ A type table can have one or more style tables.
       ...
     )
 
-*   TYPE: notehead, flag, rest, delimiter, spanner, finger, ottavation,
-    tremolo, lvtie, cluster, accordion, brass, number, parens,
-    arrow, beater.
-
 
 ### Identifier table
 
@@ -130,8 +142,6 @@ identifier table.
         ...
       )
     )
-
-*   TYPE: script, clef, clef-mod, dynamic, stem, fbass, fbass-acc, lyric.
 
 
 ### Token table
@@ -256,10 +266,10 @@ Type table with index-tables.
 
 *   (ekm-asslim TYPE STYLE SIZE DIR)
 
-    Return the value according to DIR of the first entry with a key > SIZE
+    Return the value according to DIR of the first entry with a key >= SIZE
     in the style table STYLE in the type table TYPE.
     Return 0 if STYLE is not found or if no key > SIZE found.
-    The last entry in the style table should have the key `+inf.0`.
+    The last entry in the style table usually has the key `+inf.0`.
 
 *   (ekm-assid TYPE KEY)
 
@@ -286,30 +296,11 @@ Type table with index-tables.
 
 *   (ekm-sym VAL DIR)
 
-    Return the part (SYMBOL) of VAL according to DIR.
-    SYMBOL is CP or LIST = (X ...).
+    Return the part (symbol) of VAL according to DIR (#f, < 0, >= 0).
 
-    Types that do not distinguish directions use DIR = `#f`:
+*   (ekm-mv VAR)
 
-        SYMBOL-ENTRY            #f
-        ----------------------------
-        (KEY . CP)              CP
-        (KEY CP)                (CP)
-        (KEY . LIST)            LIST
-        (KEY X ...)             LIST
-
-    Types that distinguish directions use DIR < 0 or >= 0:
-    Entries may have one or two symbols.
-
-        SYMBOL-ENTRY            < 0       >= 0
-        ---------------------------------------
-        (KEY . CP)              CP        CP
-        (KEY CP)                CP        CP
-        (KEY . (LIST))          LIST      LIST
-        (KEY LIST)              LIST      LIST
-        (KEY CP1 . CP2)         CP1       CP2
-        (KEY LIST1 . LIST2)     LIST1     LIST2
-        (KEY LIST1 X2 ...)      LIST1     LIST2
+    Return 1 (for variant symbol) if VAR is true, else MAIN.
 
 
 
@@ -334,7 +325,7 @@ Note heads
         (LOG SYMBOL-DOWN . SYMBOL-UP)
 
 *   LOG (integer):
-    Duration log, usually in the range -1 to 2.
+    Duration log, usually -1 to 2.
 
 *   SYMBOL:
 
@@ -366,21 +357,21 @@ Note heads
 
 #### Convert note head metadata
 
-        bBoxNE        --------------   o - - - - -
-                     /      :       \
-                    /       :        \           y-up
-      stemUpSE     /        :         o  - - -
-                  /         :          |    uy
-             0   | - - - - -:- - - - - | - - - - -
-                 |          :         /     dy
-    stemDownNW    o         :        /   - - -
-                   \        :       /            y-down
-                    \       :      /
-        bBoxSW   o   --------------      - - - - -
-                 ::         :         ::
-                 ::    dx   :   ux    ::
-                 :                     :
-                 :       x-right       :
+    |     bBoxNE        --------------   o - - - - -
+    |                  /      :       \
+    |                 /       :        \           y-up
+    |   stemUpSE     /        :         o  - - -
+    |               /         :          |    uy
+    |          0   | - - - - -:- - - - - | - - - - -
+    |              |          :         /     dy
+    | stemDownNW    o         :        /   - - -
+    |                \        :       /            y-down
+    |                 \       :      /
+    |     bBoxSW   o   --------------      - - - - -
+    |              ::         :         ::
+    |              ::    dx   :   ux    ::
+    |              :                     :
+    |              :       x-right       :
 
     x-ext = (0 . x-right)
     y-ext = (y-down . y-up)
@@ -419,7 +410,7 @@ See lilypond.1069038.n5.nabble.com/Cowell-clusters-td237881.html
         (LOG SYMBOL-DOWN . SYMBOL-UP)
 
 *   LOG (integer):
-    Duration log, usually in the range -1 to 2.
+    Duration log, usually -1 to 2.
 
 *   SYMBOL:
 
@@ -451,7 +442,7 @@ Flags
     default, short, straight, ...
 
 *   LOG (integer):
-    Duration log in the range 3 to 10.
+    Duration log, usually 3 to 10.
 
 *   SYMBOL (EXTEXT):
     Flag symbol.
@@ -510,7 +501,7 @@ Rests
         (LOG REST . REST-LEDGERED)
 
 *   LOG (integer):
-    Duration log in the range -3 to 10.
+    Duration log, usually -3 to 10.
 
 *   REST (CP):
     Normal rest symbol.
@@ -544,8 +535,8 @@ PAD and styles other than default and note are used only by `\ekm-note-by-number
 
 
 
-Scripts - Expressive marks
---------------------------
+Scripts, Expressive marks
+-------------------------
 
     (script (#t
       SCRIPT-ENTRY
@@ -707,7 +698,7 @@ Bar glyphs and Bar lines
         (BAR-NAME EOL-NAME BOL-NAME SPAN-NAME)
 
 *   NAME (char)
-    Name of bar glyph. Must be an ASCII character.
+    Name of a bar glyph. Must be an ASCII character.
 
 *   BAR (EXTEXT)
     Bar glyph.
@@ -759,7 +750,7 @@ System separator marks
     default (usually the only style)
 
 *   LIMIT (number):
-    The first entry with the specified size < LIMIT is selected.
+    The first entry with LIMIT >= the specified size is selected.
 
 *   SYMBOL (EXTEXT):
     System separator mark.
@@ -782,7 +773,7 @@ Dynamics
 
 Note: This identifier table is also used as a token table, but only
 for the single-letter names.
-`\ekm-dynamic` draws either a single symbol for the whole name
+`\ekm-dynamic` draws either a single symbol for the whole NAME
 or a concatenation of symbols for each letter.
 This is different from the usual interpretation of DEFINITION strings.
 
@@ -924,7 +915,7 @@ The following components are drawn:
         (LIMIT SYMBOL-LEFT . SYMBOL-RIGHT)
 
 *   LIMIT (number):
-    The first entry with RH < LIMIT is selected.
+    The first entry with LIMIT >= RH is selected.
 
 *   SYMBOL:
 
@@ -1099,7 +1090,7 @@ Ottavation
         (OCTAVE . DEFINITION)
         (OCTAVE DEFINITION-DOWN . DEFINITION-UP)
 
-*   OCTAVE (integer):
+*   OCTAVE (index):
     Absolute octave number.
 
 *   DEFINITION (string):
@@ -1167,10 +1158,10 @@ Stem decorations
     )
 
 *   NAME (string):
-    "sprechgesang", "sussurando", "buzzroll", "unmeasured", ...
+    "buzzroll", "sprechgesang", "sussurando", "ricochet2", ...
 
 *   SYMBOL (EXTEXT):
-    Stem decoration symbol or tremolo mark.
+    Stem decoration symbol (tremolo mark, accordion ricochet).
 
 
 
@@ -1189,7 +1180,7 @@ Grace note slashes
     This is the flag style.
 
 *   LOG (integer):
-    Duration log in the range 3 to 10.
+    Duration log, usually 3 to 10.
 
 *   SYMBOL:
 
@@ -1217,7 +1208,7 @@ Laissez vibrer
     default (usually the only style)
 
 *   LIMIT (number):
-    The first entry with the specified size < LIMIT is selected.
+    The first entry with LIMIT >= the specified size is selected.
 
 *   SYMBOL (EXTEXT):
     Laissez vibrer symbol.
@@ -1289,7 +1280,7 @@ Fret diagrams
     Mark for normal, muted, or open string.
 
 *   FRETS (integer):
-    Number of frets, usually in the range 3 - 6.
+    Number of frets, usually 3 to 6.
 
 *   FRETBOARD (EXTEXT):
     Fret board symbol with normal or thick top fret line.
@@ -1316,11 +1307,17 @@ Accordion registers
 -------------------
 
     (accordion
+      (ekm
+        (#f . 0))
+      (dot . ACCREG-DOT)
       (STYLE
         ACCORDION-ENTRY
         ...
       )
     )
+
+*   ACCREG-DOT (EXTEXT):
+    Combining accordion dot symbol.
 
 *   STYLE (symbol):
     d (discant), sb (standard bass),
@@ -1329,20 +1326,20 @@ Accordion registers
 
 *   ACCORDION-ENTRY:
 
-        (NAME . ACCREG)
-        (NAME (ACCREG-EMPTY (DOT-X . DOT-Y) ...))
+        (NAME ACCREG)
+        (NAME ACCREG-EMPTY (DOT-X . DOT-Y) ...)
 
 *   NAME (string):
     "1", "10", "1+0", "Soprano", "Alto", ...
 
-*   ACCREG (CP):
+*   ACCREG (EXTEXT):
     Accordion register symbol.
 
-*   ACCREG-EMPTY (CP):
-    Empty accordion register symbol.
+*   ACCREG-EMPTY (EXTEXT):
+    Combining empty accordion register symbol.
 
 *   DOT-X, DOT-Y (integer):
-    Position of a dot in percent of the extent of ACCREG-EMPTY.
+    Position of ACCREG-DOT in percent of the extent of ACCREG-EMPTY.
 
 Note: The module `(scm accreg)` is not required.
 
@@ -1363,7 +1360,7 @@ Falls and doits
     `scoop` is used by `\ekm-scoop`.
 
 *   LOG (integer):
-    Duration log in the range 0 to 2.
+    Duration log, usually 0 to 2.
 
 *   SYMBOL:
 
@@ -1394,13 +1391,14 @@ Parentheses
     default, bracket, ...
 
 *   NAME (symbol):
-    Intended scope of the parentheses.
     a (accidental), h (dynamics hairpin), t (normal text), ...
 
 *   SYMBOL:
 
         PARENS
-        (#t Y-ALIGN SIZE PARENS)
+        (PARENS Y-ALIGN SIZE)
+
+    The first form can only be used if PARENS is a CP.
 
 *   PARENS (EXTEXT):
     Parenthesis symbol.
@@ -1493,8 +1491,7 @@ Function theory
 *   SYMBOL (EXTEXT):
     Function theory symbol.
 
-See [LSR/Item?id=967](https://lsr.di.unimi.it/LSR/Item?id=967)
-for `\\ekmFunc`.
+See [LSR/Item?id=967](https://lsr.di.unimi.it/LSR/Item?id=967) for `\\ekmFunc`.
 
 
 
@@ -1514,7 +1511,7 @@ Arrows and arrow heads
     )
 
 *   STYLE (symbol):
-    black, white, open, ...
+    `black`, `white`, `open`, ...
 
 *   INDEX-TABLE:
 
@@ -1527,11 +1524,11 @@ Arrows and arrow heads
 
 *   AR (CP):
     Arrow or arrow head.
-    Single AR: CP + 0 to 7  ->  AR-N AR-NE AR-E ... AR-NW
+    Single AR: CP + 0 to 7  =>  AR-N AR-NE AR-E ... AR-NW
 
 
 
-Percussion Beaters
+Percussion beaters
 ------------------
 
     (beater
@@ -1547,7 +1544,7 @@ Percussion Beaters
     )
 
 *   STYLE (symbol):
-    xyl-soft, xyl-medium, timpani-soft, stick, ...
+    `xyl-soft`, `timpani-soft`, `stick`, ...
 
 *   INDEX-TABLE:
 
@@ -1559,6 +1556,64 @@ Percussion Beaters
 *   BTR (CP):
     Percussion beater.
     Single BTR: CP + 0 to 3  =>  BTR-N BTR-S BTR-NE BTR-NW
+
+
+
+Level display
+-------------
+
+Electronic music symbols: Volume level, MIDI controller
+
+    (level
+      (STYLE
+        SUBSTITUTE-ENTRY
+        (LEVEL SYMBOL)
+        ...
+        (+inf.0 . #f)
+      )
+      ...
+    )
+
+*   STYLE (symbol):
+    `fader`, `midi`
+
+*   SUBSTITUTE-ENTRY:
+
+        (-1 . PRECISION)
+        (-1 EMPTY . THUMB)
+
+*   PRECISION (number):
+    Rounding factor for the specified level, usually 20.
+    Select the first entry with LEVEL >= the specified level rounded
+    to the nearest mutliple of PRECISION.
+
+*   EMPTY, THUMB (EXTEXT):
+    Combining empty display symbol and thumb symbol.
+    Select the entry with LEVEL = the specifed level, else use EMPTY and THUMB.
+
+*   LEVEL (number):
+    0 (first entry), 100 (last entry).
+
+*   SYMBOL (EXTEXT):
+    Level display symbol.
+
+
+
+Miscellaneous symbols
+---------------------
+
+    (misc (#t
+      MISC-ENTRY
+      ...
+    ))
+
+*   MISC-ENTRY:
+
+        (KEY SYMBOL)
+        (KEY SYMBOL-1 . SYMBOL-2)
+
+*   KEY (symbol, string)
+    `eyeglasses`, `metronome`
 
 
 

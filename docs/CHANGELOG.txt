@@ -487,8 +487,16 @@ January 2021 - May 2021:
 2025-09-24:
 - Change to accept extext: "\ekm-harp-change", "\ekm-fret-diagram-terse",
   "(ekm-time-num)".
-- Add table fret. Support fretboard without nut.
+- Add table "fret". Support fretboard without nut.
 - Extend "\ekm-number" and table "number" for normal text styles and default numbers.
 - Remove "(ekm-number->list)".
 - Change "\ekm-string-number" and add "\ekm-default-string-number"
   for default numbers.
+
+2025-09-26:
+- Change "\ekm-accordion" to accept extext.
+- Fix table "accordion" holding only symbols without direction.
+- Add accordion ricochet symbols to tables "script" and "stem".
+- Fix table "parens" for transformation values.
+- Add tables "level", "misc".
+- Change to accept extext: "(ekm-control)", "\ekm-eyeglasses", "\ekm-metronome".
