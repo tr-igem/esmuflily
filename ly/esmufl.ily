@@ -268,7 +268,7 @@
 #(define (ekm-asslim type style size dir)
   (let ((e (let sel ((t (ekm-assns type style)))
               (if (or (not t) (null? t)) 0
-              (if (< size (caar t)) (cdar t)
+              (if (<= size (caar t)) (cdar t)
               (sel (cdr t)))))))
     (ekm-sym e dir)))
 
@@ -997,14 +997,14 @@ ekmFlag =
 
 #(define (ekm-parens-align val dir)
   (let ((sym (ekm-sym val dir)))
-    (if (and (pair? sym) (eq? #t (car sym)))
+    (if (ekm-cp? sym)
+      (markup #:ekm-char sym)
       (markup #:general-align Y (second sym)
         #:fontsize (third sym)
-        #:ekm-text (fourth sym))
-      (markup #:ekm-text sym))))
+        #:ekm-text (first sym)))))
 
-#(define (ekm-parens style use)
-  (let* ((p (ekm-asst 'parens style use #f)))
+#(define (ekm-parens style name)
+  (let* ((p (ekm-asst 'parens style name #f)))
     (cons
       (ekm-parens-align p LEFT)
       (ekm-parens-align p RIGHT))))
@@ -1802,11 +1802,12 @@ ekmPlayWith =
   (let* ((i (string-index name #\space))
          (style (if (and i (< 0 i)) (string->symbol (string-take name i)) 'd))
          (key (if (and i (< 0 i)) (string-drop name (1+ i)) name))
-         (d (ekm-asst 'accordion style key DOWN)))
+         (d (ekm-asst 'accordion style key #f)))
     (if (ekm-cp? d)
-      (ekm-center 1 (ekm:char layout props d))
-      (let* ((reg (ekm:char layout props (car d)))
-             (dot (ekm-center 3 (ekm:char layout props #xE8CA)))
+      (ekm-center CX (ekm:char layout props d))
+      (let* ((reg (ekm:text layout props (car d)))
+             (dot (ekm-center CXY (ekm:text layout props
+                    (ekm-assns 'accordion 'dot))))
              (sz (/ (magstep font-size) 100))
              (w (* sz (ekm-extent reg X)))
              (h (* sz (ekm-extent reg Y))))
@@ -1834,13 +1835,13 @@ ekmRicochet =
 #(define-music-function (num)
   (integer?)
   (make-articulation 'accent
-    'tweaks `((details . ,(+ #xE8CB (if (<= 2 num 6) num 2))))))
+    'tweaks `((details . ,(ekm-assid 'script (format #f "ricochet~d" num))))))
 
 ekmStemRicochet =
 #(define-music-function (num music)
   (integer? ly:music?)
   #{
-    \override Stem.stencil = #(ekm-stem (+ #xE8D0 (if (<= 2 num 6) num 2)))
+    \override Stem.stencil = #(ekm-stem (format #f "ricochet~d" num))
     $music
     \revert Stem.stencil
   #})
@@ -2119,20 +2120,23 @@ ekmFuncList =
 
 %% Electronic music symbol
 
-#(define (ekm-control precp ctrlcp thumbcp level fmt)
-  (let* ((lv (inexact->exact (min 100 (round
-                (if (< level 0) (* (exp (* level 0.05 (log 10))) 100) level)))))
-         (pre (zero? (remainder lv 20))))
+#(define (ekm-control style level fmt)
+  (let* ((lv (inexact->exact (min 100
+              (if (negative? level) (* (exp (* level 0.05 (log 10))) 100) level))))
+         (sub (ekm-asst 'level style -1 #f))
+         (pre (if (pair? sub)
+                (ekm-asst 'level style lv #f)
+                (ekm-asslim 'level style (* (round (/ lv sub)) sub) #f))))
     (list
-      (make-ekm-char-markup (if pre (+ precp (round (/ lv 20))) ctrlcp))
-      (if pre #f (make-ekm-char-markup thumbcp))
+      (make-ekm-text-markup (or pre (car sub)))
+      (if pre #f (make-ekm-text-markup (cdr sub)))
       lv
-      (format #f (or fmt (if (< level 0) "~adB" "~a%")) level))))
+      (format #f (or fmt (if (negative? level) "~adB" "~a%")) level))))
 
 #(define-markup-command (ekm-fader layout props level orient)
   (number? boolean-or-number?)
   #:properties ((label-format))
-  (let ((cl (ekm-control #xEB2E #xEB2C #xEB2D level label-format)))
+  (let ((cl (ekm-control 'fader level label-format)))
     (interpret-markup layout props
       (make-ekm-label-markup orient
         (fourth cl)
@@ -2154,7 +2158,7 @@ ekmFuncList =
   ;; Assumes the original thumb pointing upward = 50%, whole range = 270 deg
   (number? boolean-or-number?)
   #:properties ((label-format))
-  (let ((cl (ekm-control #xEB36 #xF6D2 #xF6D3 level label-format)))
+  (let ((cl (ekm-control 'midi level label-format)))
     (interpret-markup layout props
       (make-ekm-label-markup orient
         (fourth cl)
@@ -2185,12 +2189,6 @@ ekmFuncList =
                  (ekm-assid 'script "dfermata"))))
     (ekm:text layout props (ekm-sym val direction))))
 
-
-#(define-markup-command (ekm-eyeglasses layout props dir)
-  (ly:dir?)
-  (ekm:char layout props (if (< 0 dir) #xF65F #xEC62)))
-
-
 #(define-markup-command (ekm-note-by-number layout props style log dots dir)
   (symbol? integer? integer? ly:dir?)
   (let* ((note (interpret-markup layout props
@@ -2203,14 +2201,22 @@ ekmFuncList =
          (if (and (<= 3 log) (< 0 dir))
            (list-ref val (- (min log 5) 2)) 1)))))
 
+#(define-markup-command (ekm-misc layout props key dir)
+  (symbol? ly:dir?)
+  (ekm:text layout props (ekm-sym (or (ekm-assid 'misc key) 0) dir)))
 
-#(define-markup-command (ekm-metronome layout props cnt)
+#(define-markup-command (ekm-eyeglasses layout props dir)
+  (ly:dir?)
+  (ekm:text layout props (ekm-sym (ekm-assid 'misc 'eyeglasses) dir)))
+
+#(define-markup-command (ekm-metronome layout props count)
   (integer?)
   #:properties ((word-space))
   (ly:stencil-aligned-to
     (stack-stencil-line word-space
-      (make-list cnt
-        (ekm:char layout (cons '((font-size . -3)) props) #xF614)))
+      (make-list count
+        (ekm:text layout (cons '((font-size . -3)) props)
+          (ekm-assid 'misc 'metronome))))
     X CENTER))
 
 ekmMetronome =
@@ -2219,9 +2225,9 @@ ekmMetronome =
   (for-some-music
     (lambda (m)
       (let* ((mom (ly:music-length m))
-             (cnt (ceiling
-                    (* (ly:moment-main-numerator mom)
-                       (/ 4 (ly:moment-main-denominator mom))))))
+             (count (ceiling
+                      (* (ly:moment-main-numerator mom)
+                         (/ 4 (ly:moment-main-denominator mom))))))
         (if (music-is-of-type? m 'multi-measure-rest)
           (begin
             (ly:music-set-property!
@@ -2230,7 +2236,7 @@ ekmMetronome =
                 (make-music
                   'MultiMeasureTextEvent
                   'direction UP
-                  'text (markup #:ekm-metronome cnt))
+                  'text (markup #:ekm-metronome count))
                 (ly:music-property m 'articulations)))
             #t)
         (if (or (music-is-of-type? m 'note-event)
@@ -2241,7 +2247,7 @@ ekmMetronome =
               #m - \tweak parent-alignment-X #CENTER
                  - \tweak extra-spacing-width #'(-0.8 . 0.8)
                  % - \tweak extra-spacing-height #'(-inf.0 . +inf.0)
-                 ^ \markup \ekm-metronome #cnt
+                 ^ \markup \ekm-metronome #count
               #})
             #t)
         #f))))
@@ -2729,6 +2735,11 @@ ekmMetronome =
   ("segno" . #xE047)
   ("coda" . #xE048)
   ("varcoda" . #xE049)
+  ("ricochet2" . #xE8CD)
+  ("ricochet3" . #xE8CE)
+  ("ricochet4" . #xE8CF)
+  ("ricochet5" . #xE8D0)
+  ("ricochet6" . #xE8D1)
   ))
 
   (clef (#t
@@ -2796,8 +2807,8 @@ ekmMetronome =
 
   (separator
   (default
-    (1 . #xE007)
-    (2 . #xE008)
+    (0 . #xE007)
+    (1 . #xE008)
     (+inf.0 . #xE009))
   )
 
@@ -3155,6 +3166,12 @@ ekmMetronome =
   ("turnRight" . #xE809)
   ("turnLeft" . #xE80A)
   ("turnRightLeft" . #xE80B)
+  ;; accordion ricochet
+  ("ricochet2" . #xE8D2)
+  ("ricochet3" . #xE8D3)
+  ("ricochet4" . #xE8D4)
+  ("ricochet5" . #xE8D5)
+  ("ricochet6" . #xE8D6)
   ))
 
   (grace
@@ -3230,37 +3247,40 @@ ekmMetronome =
   ))
 
   (accordion
+  (ekm
+    (#f . 0))
+  (dot . #xE8CA)
   ;; \discant
   (d
     ("1" . #xE8A4)
     ("10" . #xE8A1)
     ("11" . #xE8AB)
     ("1+0" . #xE8A2)
-    ("1+1" (#xE8C6 (76 . 50) (50 . 18)))
+    ("1+1" #xE8C6 (76 . 50) (50 . 18))
     ("1-0" . #xE8A3)
-    ("1-1" (#xE8C6 (24 . 50) (50 . 18)))
+    ("1-1" #xE8C6 (24 . 50) (50 . 18))
     ("20" . #xE8AE)
     ("21" . #xE8AF)
     ("2+0" . #xE8A6)
     ("2+1" . #xE8AC)
-    ("2-0" (#xE8C6 (24 . 50) (50 . 50)))
-    ("2-1" (#xE8C6 (24 . 50) (50 . 50) (50 . 18)))
+    ("2-0" #xE8C6 (24 . 50) (50 . 50))
+    ("2-1" #xE8C6 (24 . 50) (50 . 50) (50 . 18))
     ("30" . #xE8A8)
     ("31" . #xE8B1)
     ("100" . #xE8A0)
     ("101" . #xE8A9)
     ("110" . #xE8A5)
     ("111" . #xE8AA)
-    ("11+0" (#xE8C6 (50 . 82) (76 . 50)))
-    ("11+1" (#xE8C6 (50 . 82) (76 . 50) (50 . 18)))
-    ("11-0" (#xE8C6 (50 . 82) (24 . 50)))
-    ("11-1" (#xE8C6 (50 . 82) (24 . 50) (50 . 18)))
+    ("11+0" #xE8C6 (50 . 82) (76 . 50))
+    ("11+1" #xE8C6 (50 . 82) (76 . 50) (50 . 18))
+    ("11-0" #xE8C6 (50 . 82) (24 . 50))
+    ("11-1" #xE8C6 (50 . 82) (24 . 50) (50 . 18))
     ("120" . #xE8B0)
     ("121" . #xE8AD)
     ("12+0" . #xE8A7)
-    ("12+1" (#xE8C6 (50 . 82) (50 . 50) (76 . 50) (50 . 18)))
-    ("12-0" (#xE8C6 (50 . 82) (24 . 50) (50 . 50)))
-    ("12-1" (#xE8C6 (50 . 82) (24 . 50) (50 . 50) (50 . 18)))
+    ("12+1" #xE8C6 (50 . 82) (50 . 50) (76 . 50) (50 . 18))
+    ("12-0" #xE8C6 (50 . 82) (24 . 50) (50 . 50))
+    ("12-1" #xE8C6 (50 . 82) (24 . 50) (50 . 50) (50 . 18))
     ("130" . #xE8B2)
     ("131" . #xE8B3))
   ;; \stdBass
@@ -3276,31 +3296,31 @@ ekmMetronome =
   (sb4
     ("Soprano" . #xE8B4)
     ("Alto" . #xE8B5)
-    ("Tenor" (#xE8C7 (50 . 87) (50 . 38)))
-    ("Master" (#xE8C7 (50 . 87) (50 . 62) (50 . 38) (50 . 14)))
-    ("Soft Bass" (#xE8C7 (50 . 62) (50 . 38) (50 . 14)))
+    ("Tenor" #xE8C7 (50 . 87) (50 . 38))
+    ("Master" #xE8C7 (50 . 87) (50 . 62) (50 . 38) (50 . 14))
+    ("Soft Bass" #xE8C7 (50 . 62) (50 . 38) (50 . 14))
     ("Bass/Alto" . #xE8BA)
-    ("Soft Bass/Alto" (#xE8C7 (50 . 62) (50 . 14)))
+    ("Soft Bass/Alto" #xE8C7 (50 . 62) (50 . 14))
     ("Soft Tenor" . #xE8B9))
   ;; \stdBassV
   (sb5
     ("Bass/Alto" . #xE8BA)
-    ("Soft Bass/Alto" (#xE8C7 (50 . 62) (50 . 14)))
-    ("Alto" (#xE8C7 (38 . 85) (62 . 85) (50 . 62)))
-    ("Tenor" (#xE8C7 (38 . 85) (62 . 85) (50 . 38)))
-    ("Master" (#xE8C7 (38 . 85) (62 . 85) (50 . 62) (50 . 38) (50 . 14)))
-    ("Soft Bass" (#xE8C7 (50 . 62) (50 . 38) (50 . 14)))
+    ("Soft Bass/Alto" #xE8C7 (50 . 62) (50 . 14))
+    ("Alto" #xE8C7 (38 . 85) (62 . 85) (50 . 62))
+    ("Tenor" #xE8C7 (38 . 85) (62 . 85) (50 . 38))
+    ("Master" #xE8C7 (38 . 85) (62 . 85) (50 . 62) (50 . 38) (50 . 14))
+    ("Soft Bass" #xE8C7 (50 . 62) (50 . 38) (50 . 14))
     ("Soft Tenor" . #xE8B9)
     ("Soprano" . #xE8B4)
-    ("Sopranos" (#xE8C7 (38 . 85) (62 . 85)))
-    ("Solo Bass" (#xE8C7 (50 . 14))))
+    ("Sopranos" #xE8C7 (38 . 85) (62 . 85))
+    ("Solo Bass" #xE8C7 (50 . 14)))
   ;; \stdBassVI
   (sb6
     ("Soprano" . #xE8B4)
-    ("Alto" (#xE8C7 (50 . 62)))
+    ("Alto" #xE8C7 (50 . 62))
     ("Soft Tenor" . #xE8B9)
     ("Master" . #xE8B7)
-    ("Alto/Soprano" (#xE8C7 (50 . 87) (26 . 62)))
+    ("Alto/Soprano" #xE8C7 (50 . 87) (26 . 62))
     ("Bass/Alto" . #xE8BA)
     ("Soft Bass" . #xE8B8))
   ;; \freeBass
@@ -3340,12 +3360,10 @@ ekmMetronome =
   (parens
   (default
     (a #xE26A . #xE26B)
-    (h #xE542 . #xE543)
-    (t "(" . ")"))
+    (h #xE542 . #xE543))
   (bracket
     (a #xE26C . #xE26D)
-    (h #xE544 . #xE545)
-    (t "[" . "]"))
+    (h #xE544 . #xE545))
   )
 
   (fbass (#t
@@ -3533,6 +3551,32 @@ ekmMetronome =
   (fist . #(#xE7E5))
   (fingernails . #(#xE7E6))
   )
+
+  (level
+  (fader
+    (-1 #xEB2C . #xEB2D)
+    (0 . #xEB2E)
+    (20 . #xEB2F)
+    (40 . #xEB30)
+    (60 . #xEB31)
+    (80 . #xEB32)
+    (100 . #xEB33)
+    (+inf.0 . #f))
+  (midi
+    (-1 . 20)
+    (0 . #xEB36)
+    (20 . #xEB37)
+    (40 . #xEB38)
+    (60 . #xEB39)
+    (80 . #xEB3A)
+    (100 . #xEB3B)
+    (+inf.0 . #f))
+  )
+
+  (misc (#t
+    (eyeglasses . #xEC62)
+    (metronome . ,(markup #:filled-box '(0 . 0.3) '(-0.7 . 0.7) 0.15))
+  ))
 ))
 
 #(define (ekm-merge-type type tab)
