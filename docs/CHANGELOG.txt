@@ -500,3 +500,8 @@ January 2021 - May 2021:
 - Fix table "parens" for transformation values.
 - Add tables "level", "misc".
 - Change to accept extext: "(ekm-control)", "\ekm-eyeglasses", "\ekm-metronome".
+
+2025-09-27:
+- Add command "\ekm-misc".
+- Fix "(ekm-repeat-tremolo)" and "\ekmTremolo" to pass extext to stencil.
+- Fix tables "arrow" and "beater" with a default style as first entry.

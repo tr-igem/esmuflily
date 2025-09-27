@@ -5,7 +5,7 @@ Descriptions and comments on some internals of [Esmuflily](https://github.com/tr
 
 The musical symbols supported by Esmuflily are SMuFL-compliant glyphs
 given with their Unicode code point.
-The symbols are assembled in a single table `ekm-types`
+All symbols are assembled in a single table `ekm-types`
 arranged according to ther usage for a specific type and style.
 
 The predefined table contains SMuFL recommended characters.
@@ -50,7 +50,8 @@ slower/faster).
 *   SYMBOL-ENTRY (pair):
     The last SYMBOL-ENTRY of a style is the default.
 
-    If TYPE does not distinguish two forms the entry has a single SYMBOL:
+    If TYPE does not distinguish two forms (DIR = `#f`)
+    SYMBOL-ENTRY has a single SYMBOL:
 
         SYMBOL-ENTRY            DIR = #f
         --------------------------------
@@ -59,7 +60,8 @@ slower/faster).
         (KEY . LIST)            LIST
         (KEY LIST-ELEM ...)     LIST
 
-    If TYPE distinguishes two forms the entry has one or two SYMBOLs:
+    If TYPE distinguishes two forms (DIR < 0 or DIR >= 0),
+    SYMBOL-ENTRY has either one SYMBOL for both forms or two SYMBOLs:
 
         SYMBOL-ENTRY                    DIR < 0     DIR >= 0
         ----------------------------------------------------
@@ -93,22 +95,13 @@ slower/faster).
         SIMPLE
         LIST
 
-    Data to draw a musical symbol.
-    The actual structure depends on TYPE.
-
-*   SIMPLE:
-
-        CP
-        STRING
-
-*   LIST:
-
-        (ELEM ...)
+    Data to draw a musical symbol: either a simple value (CP, string),
+    or a list (one or more EXTEXT, or EXTEXT with additional data).
 
 *   EXTEXT (integer, string, list):
 
         CP
-        STRING
+        "..."
         (CP FEATURE ...)
         (CP-1 CP-2 ...)
         (markup ...)
@@ -186,15 +179,15 @@ The predefined shared token table defines spaces:
 
 ### Number table
 
-Type table `number` that defines digits with index-tables and complete
-numbers with normal style tables.
+Type table `number` that defines digits with index-tables
+and complete numbers with normal style tables.
 
     (number
       (STYLE . DIGIT)
       (STYLE . #(DIG0 DIG1 DIG2 DIG3 DIG4 DIG5 DIG6 DIG7 DIG8 DIG9))
       (STYLE . PROC)
       (STYLE
-        (NUMBER . SYMBOL-NUM)
+        (NUMBER . SYMBOL)
         ...
         (default . PROC)
       )
@@ -211,10 +204,10 @@ numbers with normal style tables.
     Symbol for digit 0 - 9.
 
 *   PROC (procedure):
-    Markup procedure applied on the decimal digit string of a number.
+    Markup procedure applied on the decimal digit string of the specified number.
 
-*   SYMBOL-NUM (EXTEXT):
-    Symbol for NUMBER (not a digit).
+*   SYMBOL (EXTEXT):
+    Symbol (not digit) for NUMBER.
 
 
 ### Orientation table
