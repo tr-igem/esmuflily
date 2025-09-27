@@ -1407,21 +1407,20 @@ ekmBreathing =
 
 %% Tremolo mark
 
-#(define (ekm-repeat-tremolo grob)
+#(define ((ekm-repeat-tremolo text) grob)
   (let* ((style (ly:grob-property grob 'shape))
          (cnt (min (ly:grob-property grob 'flag-count) 5))
          (stm (ly:grob-parent grob X))
          (dir (ly:grob-property stm 'direction))
-         (y (if (eq? 'beam-like style)
-              (* (1- cnt) -0.4 dir)
-              (* (- (interval-length (ly:grob-property stm 'Y-extent)) 1.96) -0.5 dir))))
+         (y (if (eq? 'ekm style)
+              (* (- (interval-length (ly:grob-property stm 'Y-extent)) 1.96) -0.5 dir)
+              (* (1- cnt) -0.4 dir))))
     (ly:stencil-translate
       (grob-interpret-markup grob
-        (if (eq? 'ekm style)
-          (let ((text (ly:grob-property grob 'text)))
-            (make-ekm-ctext-markup STEMCXY
-              (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
-                  text)))
+        (if text
+          (make-ekm-ctext-markup STEMCXY
+            (or (and (string? text) (ekm-sym (ekm-assid 'stem text) dir))
+                text))
           (make-ekm-text-markup
             (ekm-asst 'tremolo style cnt dir))))
       (cons 0 y))))
@@ -1431,10 +1430,10 @@ ekmTremolo =
   (ekm-extext? ly:music?)
   #{
     \override StemTremolo.shape = #'ekm
-    \override StemTremolo.text = #text
+    \override StemTremolo.stencil = #(ekm-repeat-tremolo text)
     $music
     \revert StemTremolo.shape
-    \revert StemTremolo.text
+    \revert StemTremolo.stencil
   #})
 
 
@@ -3485,6 +3484,7 @@ ekmMetronome =
   ))
 
   (arrow
+  (black . #xEB60)
   (ekm
     (0 0 1 2 3 4 5 6 7)
     (1 0)
@@ -3492,7 +3492,6 @@ ekmMetronome =
     (4 0 2 4 6)
     (-1 . #(0 (0 . -45) (0 . -90) (1 . ,Y) (0 . ,Y) (7 . ,Y) (2 . ,X) (1 . ,X)
             0 (8 . -45) (8 . -90) (9 . ,Y))))
-  (black . #xEB60)
   (white . #xEB68)
   (open . #xEB70)
   (black-head . #xEB78)
@@ -3501,6 +3500,7 @@ ekmMetronome =
   )
 
   (beater
+  (xyl-soft . #xE770)
   (ekm
     (0 0 4 1 7)
     (1 0)
@@ -3508,7 +3508,6 @@ ekmMetronome =
     (4 0 4 1 7)
     (-1 . #(0 (0 . -30) (0 . -90) (1 . ,Y) (0 . ,Y) (7 . ,Y) (2 . ,X) (1 . ,X)
             0 (8 . -30) (8 . -90) (9 . ,Y))))
-  (xyl-soft . #xE770)
   (xyl-medium . #xE774)
   (xyl-hard . #xE778)
   (xyl-wood . #xE77C)
@@ -3680,7 +3679,7 @@ ekmSmuflOn =
       \override DoublePercentRepeat.stencil = #ekm-doublepercent
     #})
     (on 'tremolo #{
-      \override StemTremolo.stencil = #ekm-repeat-tremolo
+      \override StemTremolo.stencil = #(ekm-repeat-tremolo #f)
     #})
     (on 'arpeggio #{
       \override Arpeggio.stencil = #ekm-arpeggio
