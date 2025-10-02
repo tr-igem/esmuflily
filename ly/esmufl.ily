@@ -145,13 +145,13 @@
       txt))))
 
 #(define-markup-command (ekm-concat layout props args)
-  (pair?)
+  (cheap-list?)
   (stack-stencil-line 0
     (interpret-markup-list layout props
       (map (lambda (s) (make-ekm-text-markup s)) args))))
 
 #(define-markup-command (ekm-line layout props args)
-  (pair?)
+  (cheap-list?)
   #:properties ((word-space)
                 (text-direction RIGHT))
   (let* ((al (map (lambda (s)
@@ -347,7 +347,8 @@
                           (/ (cdr (third d)) (abs (car h)))))))
           (assv-set! ekmd:glyphs cp c)
           c))
-      '(#t (1 . 0) (-1 . 0)))))
+      '(#t (-1 . 0) (1 . 0))
+    )))
 
 
 %% Orientation
@@ -997,8 +998,8 @@ ekmFlag =
 
 #(define (ekm-parens-align val dir)
   (let ((sym (ekm-sym val dir)))
-    (if (ekm-cp? sym)
-      (markup #:ekm-char sym)
+    (if (not-pair? sym)
+      (markup #:ekm-text sym)
       (markup #:general-align Y (second sym)
         #:fontsize (third sym)
         #:ekm-text (first sym)))))
@@ -1119,15 +1120,15 @@ ekmFlag =
 ekmParensDyn =
 #(define-event-function (style dyn)
   (symbol? ly:event?)
-  (let ((p (ekm-parens style 't)))
+  (let ((p (ekm-parens style 'd)))
     (make-music 'AbsoluteDynamicEvent
       'text
       (markup #:concat (
-        #:normal-text #:italic (car p)
+        (car p)
         #:hspace 0.3
         #:ekm-dynamic (ly:music-property dyn 'text)
         #:hspace 0.3
-        #:normal-text #:italic (cdr p))))))
+        (cdr p))))))
 
 ekmParensHairpin =
 #(define-music-function (style)
@@ -1715,7 +1716,7 @@ ekmPlayWith =
     (stack-stencil-line 0
       (interpret-markup-list layout props (cdr p)))))
 
-#(define-markup-command (ekm-harp-change layout props txt dir)
+#(define-markup-command (ekm-harp-change layout props txt y)
   (ekm-extext? number?)
   (interpret-markup layout props
     (markup
@@ -1723,7 +1724,7 @@ ekmPlayWith =
         #:ekm-text txt
         #:override '(x-padding . -0.6)
         #:override '(y-padding . -0.1)
-        #:translate-scaled (cons 0 dir)
+        #:translate-scaled (cons 0 y)
         #:ellipse #:transparent #:ekm-text (assoc-ref (ekm-assid 'harp #f) "-"))))
 
 
@@ -2601,21 +2602,6 @@ ekmMetronome =
     (8  #xECB2 . #xECB1)
     (9  #xECB4 . #xECB3)
     (10 #xECB6 . #xECB5))
-  (straight
-    (-1 . #xE1D0)
-    (0 . #xE1D2)
-    (1 . #xE1D3)
-    (2 . #xE1D5))
-  (short
-    (-1 . #xE1D0)
-    (0 . #xE1D2)
-    (1 . #xE1D3)
-    (2 . #xE1D5))
-  (beamed
-    (-1 . #xE1D0)
-    (0 . #xE1D2)
-    (1 . #xE1D3)
-    (2 . #xE1D5))
   )
 
   (flag
@@ -3066,6 +3052,22 @@ ekmMetronome =
     (1 "8vb" . "8va")
     (2 "15mb" . "15ma")
     (3 "22mb" . "22ma"))
+  (ordinals-b
+    (1 "8vb" . "8^va")
+    (2 "15mb" . "15^ma")
+    (3 "22mb" . "22^ma"))
+  (ordinals-bassa
+    (1 "8va__bassa" . "8^va")
+    (2 "15ma__bassa" . "15^ma")
+    (3 "22ma__bassa" . "22^ma"))
+  (ordinals-ba
+    (1 "8ba" . "8^va")
+    (2 "15ba" . "15^ma")
+    (3 "22ba" . "22^ma"))
+  (numbers-ba
+    (1 "8ba" . "8")
+    (2 "15ba" . "15")
+    (3 "22ba" . "22"))
   )
 
   (tuplet (#t
@@ -3359,10 +3361,16 @@ ekmMetronome =
   (parens
   (default
     (a #xE26A . #xE26B)
+    (d ("(" -0.5 -2) . (")" -0.5 -2))
     (h #xE542 . #xE543))
   (bracket
     (a #xE26C . #xE26D)
+    (d ("[" -0.5 -2) . ("]" -0.5 -2))
     (h #xE544 . #xE545))
+  (brace
+    (d ("{" -0.5 -2) . ("}" -0.5 -2)))
+  (angle
+    (d ("<" -0.5 -2) . (">" -0.5 -2)))
   )
 
   (fbass (#t
