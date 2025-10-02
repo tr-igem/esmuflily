@@ -505,3 +505,12 @@ January 2021 - May 2021:
 - Add command "\ekm-misc".
 - Fix "(ekm-repeat-tremolo)" and "\ekmTremolo" to pass extext to stencil.
 - Fix tables "arrow" and "beater" with a default style as first entry.
+
+2025-09-28:
+- Remove styles "straight", "short", "beamed" from table "notehead".
+- Add name "d" to all styles of table "parens".
+- Fix "\ekmParensDyn" using "d" instead of normal text.
+
+2025-10-02:
+- Fix "\ekm-concat", "\ekm-line" to accept "cheap-list?".
+- Fix "(ekm-md-glyph)" default stem-attachment.
