@@ -5,26 +5,34 @@ Descriptions and comments on some internals of [Esmuflily](https://github.com/tr
 
 The musical symbols supported by Esmuflily are SMuFL-compliant glyphs
 given with their Unicode code point.
-All symbols are assembled in a single table `ekm-types`
-arranged according to ther usage for a specific type and style.
 
-The predefined table contains SMuFL recommended characters.
-It can be merged with a font-specific table provided in the `types`
-sub-table of the metadata cache file.
-The font-specific characters and styles either extend or replace
-existing characters/styles.
+All symbols are assembled in a single internal table `ekm:types`
+arranged according to type (usage), where some types correspond to
+LilyPond's graphical objects, like note heads, flags, rests, clefs.
+
+The predefined internal table contains SMuFL recommended characters.
+Further (external) tables can be merged into the internal table,
+i.e. new styles, names, and tokens are added, and already existing ones
+are replaced.
+
+An external table can be:
+
+*   the font-specific table provided in the `types` sub-table
+    of the metadata cache file "ekmd-FNAME.scm".
+
+*   A table specified with the command \ekmMergeType.
 
 
 
 Table structues
 ---------------
 
-The table `ekm-types` is an alist of type tables, each containing
+The table `ekm:types` is an alist of type tables, each containing
 an alist of style tables, each defining related musical symbols,
 possibly of two different forms (DOWN/UP, LEFT/RIGHT, main/variant,
 slower/faster).
 
-    ekm-types (
+    (
       (TYPE
         (STYLE
           SYMBOL-ENTRY
@@ -76,9 +84,9 @@ slower/faster).
 *   KEY (number, string, symbol):
     The key depends on TYPE, usually:
 
-    +   LOG (integer): Duration log
     +   NAME (string, symbol): Identifier
     +   TOKEN (string): Token for definition strings
+    +   LOG (integer): Duration log
     +   LIMIT (number): Maximum size
 
 *   INDEX-TABLE:
@@ -244,54 +252,54 @@ Type table with index-tables.
 
 ### Table access procedures
 
-*   (ekm-asst TYPE-OR-TABLE STYLE KEY DIR)
+*   (ekm:asst TYPE-OR-TABLE STYLE KEY DIR)
 
     Return the value according to DIR of KEY in the style table STYLE
     in the type table TYPE or in TABLE,
     or in the style table TABLE if STYLE is `#f`.
     Return the value of the last entry if KEY is not found.
 
-*   (ekm-assld TABLE GROB LOG DIR)
+*   (ekm:assld TABLE GROB LOG DIR)
 
-    Like `(ekm-asst)` but for the GROB properties `style`, `duration-log`,
+    Like `(ekm:asst)` but for the GROB properties `style`, `duration-log`,
     and `Stem.direction`, or for LOG or DIR if true.
     If GROB is not a grob it must be a style, and LOG and DIR must be true.
 
-*   (ekm-asslim TYPE STYLE SIZE DIR)
+*   (ekm:asslim TYPE STYLE SIZE DIR)
 
     Return the value according to DIR of the first entry with a key >= SIZE
     in the style table STYLE in the type table TYPE.
     Return 0 if STYLE is not found or if no key > SIZE found.
     The last entry in the style table usually has the key `+inf.0`.
 
-*   (ekm-assid TYPE KEY)
+*   (ekm:assid TYPE KEY)
 
     Return the value of KEY in the identifier table in the type table TYPE,
     or the whole identifier table if KEY is `#f`. In this case it skips
     the first entry `#t` (token table).
 
-*   (ekm-token-list TABLE DEF TOKENS)
+*   (ekm:tokens TABLE DEF TOKENS)
 
     Return a markup list of the musical symbols corresponding to
     the tokens in the string DEF, according to the token table TABLE.
     The first element of the list is a list of the tokens in DEF
     if TOKENS is true (used only by ekm-harp-pedal), else it is '().
 
-*   (ekm-assq TABLE KEY)
+*   (ekm:assq TABLE KEY)
 
     Return the value of KEY in TABLE, or the value of the first entry
     if KEY is not found.
 
-*   (ekm-assns TYPE STYLE)
+*   (ekm:asstl TYPE STYLE)
 
     Return the style table STYLE in the type table TYPE,
     or `#f` if STYLE is not found.
 
-*   (ekm-sym VAL DIR)
+*   (ekm:sym VAL DIR)
 
     Return the part (symbol) of VAL according to DIR (#f, < 0, >= 0).
 
-*   (ekm-mv VAR)
+*   (ekm:mv VAR)
 
     Return 1 (for variant symbol) if VAR is true, else MAIN.
 
@@ -1384,14 +1392,12 @@ Parentheses
     default, bracket, ...
 
 *   NAME (symbol):
-    a (accidental), h (dynamics hairpin), t (normal text), ...
+    a (accidental), d (dynamics), h (dynamics hairpin), t (normal text), ...
 
 *   SYMBOL:
 
-        PARENS
+        PARENS-SIMPLE
         (PARENS Y-ALIGN SIZE)
-
-    The first form can only be used if PARENS is a CP.
 
 *   PARENS (EXTEXT):
     Parenthesis symbol.
