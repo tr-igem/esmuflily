@@ -1,39 +1,66 @@
-Internals SMuFL metadata
-========================
+Internals Metadata
+==================
 
-Provide font-specific metadata for use in Esmuflily.
-This should include:
-
-*   font name and version
-*   engravingDefaults
-*   stem attachment of noteheads
-*   stem length of notes with flag
+Description of the maintenance of metadata in [Esmuflily](https://github.com/tr-igem/esmuflily)
+provided by a [SMuFL](https://github.com/w3c/smufl) compliant,
+font-specific [JSON](https://www.json.org/json-en.html) file.
 
 
 
-Tables
-------
+Metadata location
+-----------------
 
-### Metadata table
+### JSON file
 
-A tree with all metadata for Esmuflily.
+See SMuFL 3.11. Font-specific metadata locations
+and "bravura-installer.iss".
 
-    (
-      (fontName . "FONTNAME")
-      (fontVersion . "FONTVERSION")
-      (defaults
-        (DEFKEY . DEFVALUE)
-        ...
-      )
-      (glyphs
-        (CP ...)
-        ...
-      )
-    )
+    MD_DIR/MD_NAME
 
-Created from the font-specific metadata JSON file.
-Assumes that glyphs are given with their canonical glyph name,
-not with the Unicode code point.
+    MD_DIR        1.  PRIVATE_DIR
+                  2.  USER_DIR/SMUFL_DIR
+                  3.  SYSTEM_DIR/SMUFL_DIR
+
+    PRIVATE_DIR   from variable `ekmMetadata`
+
+    USER_DIR      Linux:    $XDG_DATA_HOME
+                  Windows:  %LOCALAPPDATA%
+                  macOS:    ~/Library/Application Support
+
+    SYSTEM_DIR    Linux:    $XDG_DATA_DIRS
+                  Windows:  %CommonProgramFiles%
+                            %CommonProgramFiles(x86)%
+                  macOS:    /Library/Application Support
+
+    SMUFL_DIR     SMuFL/Fonts/FONTNAME
+
+    MD_NAME       1.  FNAME_metadata.json
+                  2.  FNAME.json
+                  3.  metadata.json
+
+    FONTNAME      font name in normal spelling, eg. "Bravura"
+
+    FNAME         font name in all lowercase, eg. "bravura"
+
+
+### Cache file
+
+    EKMD_DIR/ekmd-FNAME.scm
+    EKMD_DIR/ekmd-template.scm
+
+    EKMD_DIR      a LilyPond include directory
+
+
+
+Metadata tables
+---------------
+
+### JSON file
+
+Glyphs must be given with their canonical glyph name, not with
+the Unicode code point.
+
+Metadata of interest for Esmuflily:
 
     {
       "fontName": "FONTNAME",
@@ -64,11 +91,38 @@ not with the Unicode code point.
     }
 
 
+### Metadata table
+
+A tree with all metadata for Esmuflily, created from the JSON file
+and stored in a font-specific cache file "ekmd-FNAME.scm".
+
+The optional sub-table `types` is merged into the table `ekm:types`.
+It must be added manually to the metadata. It's data cannot be derived
+from the JSON file. See "internals.md".
+
+    (
+      (fontName . "FONTNAME")
+      (fontVersion . "FONTVERSION")
+      (defaults
+        (DEFKEY . DEFVALUE)
+        ...
+      )
+      (glyphs
+        (CP ...)
+        ...
+      )
+      (types
+        TYPE-ENTRY
+        ...
+      )
+    )
+
+
 ### Template metadata table
 
-A tree similar to the final metadata table, but
-without `fontName` and `fontVersion` (actually they are ignored),
-and with GLYPHNAME instead of CP.
+A metadata table, with the sub-tables `defaults` and `glyphs`
+(other sub-tables are actually ignored), and with glyph names
+instead of code points, stored in the file "ekmd-template.scm".
 
     (
       (defaults
@@ -84,66 +138,14 @@ and with GLYPHNAME instead of CP.
 
 ### Glyphnames table
 
-An alist of code points mapped onto glyph names (symbols).
+An alist of code points mapped onto glyph names (symbols),
+created from "glyphnames.json" provided by SMuFL, and defined as
+`ekmd:glyphnames` in the file "ekmd.scm".
 
     (
       (GLYPHNAME . CP)
       ...
     )
-
-Created from "glyphnames.json" as it is provided by
-[SMuFL](https://github.com/w3c/smufl).
-
-    {
-      "GLYPHNAME": {
-        "codepoint": "U+HEX_CP",
-        ...
-      },
-      ...
-    }
-
-
-
-Metadata location
------------------
-
-### JSON file
-
-See SMuFL 3.11. Font-specific metadata locations
-and "bravura-installer.iss".
-
-    MD_DIR/FNAME.json
-
-    MD_DIR        1.  PRIVATE_DIR
-                  2.  USER_DIR/SMUFL_DIR
-                  3.  SYS_DIR/SMUFL_DIR
-
-    PRIVATE_DIR   from variable `ekmMetadata`
-
-    USER_DIR      Linux:    $XDG_DATA_HOME
-                  Windows:  %LOCALAPPDATA%
-                  macOS:    ~/Library/Application Support
-
-    SYS_DIR       Linux:    $XDG_DATA_DIRS
-                  Windows:  %CommonProgramFiles%
-                            %CommonProgramFiles(x86)%
-                  macOS:    /Library/Application Support
-
-    SMUFL_DIR     SMuFL/Fonts/FONTNAME
-
-    FONTNAME      font name in normal spelling, eg. "Bravura"
-
-    FNAME         font name in all lowercase, eg. "bravura",
-                  though Bravura provides the file "bravura_metadata" (?)
-
-
-### Scheme file
-
-    EKMD_DIR/metadata-FNAME.scm
-
-    EKMD_DIR    a LilyPond include directory
-
-    FNAME       font name in all lowercase, eg. "bravura"
 
 
 
@@ -152,57 +154,39 @@ Process
 
 *   Read the command-line option `ekmfont`
     or the variable `ekmFont` and initialize `ekm:font-name`.
-    The default is "Bravura" (currently "Ekmelos").
+    The default is "Ekmelos" (should be changed to "Bravura").
 
 *   Read the command-line option `ekmmetadata`
     or the variable `ekmMetadata` for the metadata location PRIVATE_DIR.
     The default is #f.
 
-*   If the metadata file "EKMD_DIR/metadata-FNAME.scm"
-    for the selected font exists,
-    load the metadata table from the file
-    and set the variables `ekmd:defaults` and `ekmd:glyphs`
-    to the values (sub-tables) of the keys `defaults` and `glyphs`.
+*   If the cache file "ekmd-FNAME.scm" exists, load it and set the
+    variables `ekmd:defaults` and `ekmd:glyphs` to the sub-tables
+    of the keys `defaults` and `glyphs`, and merge the sub-table `types`
+    into the table `ekm:types`.
 
 *   Else create a new metadata table with the following steps.
 
-*   Load the glyphnames table from the file
-    "EKMD_DIR/glyphnames.scm".
-
-*   Load the template metadata table from the file
-    "EKMD_DIR/metadata-template.scm"
+*   Load the template metadata table from the file "ekmd-template.scm"
     and set the variables `ekmd:defaults` and `ekmd:glyphs` as above.
 
-*   Parse the file "MD_DIR/FNAME.json".
-    Select and store members according to the mask, in particular:
-
-        fontName
-        fontVersion
-        engravingDefaults
-        glyphsWithAnchors/note*
-        optionalGlyphs/codepoint
+*   Parse the JSON file. Select and store members of interest for Esmuflily.
 
 *   Replace the values in `ekmd:defaults` and `ekmd:glyphs`,
-    and add new elements according to the template
-    for keys not defined in `glyphs` of the template metadata table.
+    and add new elements for keys not defined in `glyphs` in the
+    template metadata table.
 
 *   Replace the glyph names in `ekmd:glyphs` with their code points
-    defined in the glyphnames table and in `optionalGlyphs`.
+    defined in `ekmd:glyphnames` and in `optionalGlyphs` in the JSON file.
 
 *   Create a new metadata table from `ekm:font-name`, `ekm:font-version`,
     `ekmd:defaults`, and `ekmd:glyphs`.
-    Save the table in the file "EKMD_DIR/metadata-FNAME.scm".
-    EKMD_DIR is the same as for "metadata-template.scm".
+    Save the table in the cache file "ekmd-FNAME.scm".
 
 
 
 JSON parser
 -----------
-
-See [JSON format](https://www.json.org/json-en.html).
-
-See [guile-json](https://github.com/cthom06/guile-json),
-Copyright (c) 2010, Corey Thomasson.
 
 The parsed data are returned as a Scheme tree with the values:
 
@@ -223,14 +207,12 @@ Note: The JSON files for SMuFL are simpler in some respect:
 
 *   The only escapes in value strings are `\uHHHH` and `\"`
     which appear in "description" values of "glyphnames.json".
-    These values are ignored for esmuflily.
+    These values are ignored for Esmuflily.
 
 *   The values `true`, `false`, and `null` do not appear.
 
 
-
-Mask
-----
+### Mask
 
 A tree with (KEY . VALUE) elements that specify
 how to process object members of a JSON file.
@@ -279,12 +261,10 @@ VALUE specifies how to store members:
     Used for "stemDown*" and "stemUp*" members of note heads and flags.
 
 
-
-Template
---------
+### Template
 
 An alist with (KEY . VALUE) elements for keys not defined in `glyphs`
-of the template metadata table.
+in the template metadata table.
 
 KEY selects a template:
 
@@ -293,4 +273,3 @@ KEY selects a template:
 *   "STRING"  for each key with prefix STRING
 
 VALUE is the template for the new element.
-

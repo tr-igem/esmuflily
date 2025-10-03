@@ -1,14 +1,14 @@
 Internals
 =========
 
-Descriptions and comments on some internals of [Esmuflily](https://github.com/tr-igem/esmuflily).
+Description of some internals in [Esmuflily](https://github.com/tr-igem/esmuflily).
 
 The musical symbols supported by Esmuflily are SMuFL-compliant glyphs
 given with their Unicode code point.
 
 All symbols are assembled in a single internal table `ekm:types`
 arranged according to type (usage), where some types correspond to
-LilyPond's graphical objects, like note heads, flags, rests, clefs.
+LilyPond's graphical objects like note heads, flags, rests, clefs.
 
 The predefined internal table contains SMuFL recommended characters.
 Further (external) tables can be merged into the internal table,
@@ -20,7 +20,7 @@ An external table can be:
 *   the font-specific table provided in the `types` sub-table
     of the metadata cache file "ekmd-FNAME.scm".
 
-*   A table specified with the command \ekmMergeType.
+*   a table for a single type specified with the command \ekmMergeType.
 
 
 
