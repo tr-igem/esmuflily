@@ -17,8 +17,9 @@ are replaced.
 
 An external table can be:
 
-*   the font-specific table provided in the `types` sub-table
-    of the metadata cache file "ekmd-FNAME.scm".
+*   a `types` sub-table defined in a font-specific cache file "ekmd-FNAME.scm".
+
+*   a table defined in a font-specific file "types-FNAME.scm".
 
 *   a table for a single type specified with the command \ekmMergeType.
 
@@ -185,37 +186,19 @@ The predefined shared token table defines spaces:
     "_"       \hspace #0.17     HSP
 
 
-### Number table
+### Limit table
 
-Type table `number` that defines digits with index-tables
-and complete numbers with normal style tables.
+Special style table whose keys are maximum numbers to select an entry.
+The entries must be in ascending order of LIMIT.
+The last entry should have the LIMIT `+inf.0`.
 
-    (number
-      (STYLE . DIGIT)
-      (STYLE . #(DIG0 DIG1 DIG2 DIG3 DIG4 DIG5 DIG6 DIG7 DIG8 DIG9))
-      (STYLE . PROC)
+    (TYPE
       (STYLE
-        (NUMBER . SYMBOL)
+        (LIMIT ...)
         ...
-        (default . PROC)
       )
       ...
     )
-
-*   STYLE (symbol):
-    time, tuplet, finger, fbass, func, string, ...
-
-*   DIGIT (CP):
-    Symbol for digit 0.
-
-*   DIG0 - DIG9 (EXTEXT):
-    Symbol for digit 0 - 9.
-
-*   PROC (procedure):
-    Markup procedure applied on the decimal digit string of the specified number.
-
-*   SYMBOL (EXTEXT):
-    Symbol (not digit) for NUMBER.
 
 
 ### Orientation table
@@ -269,8 +252,7 @@ Type table with index-tables.
 
     Return the value according to DIR of the first entry with a key >= SIZE
     in the style table STYLE in the type table TYPE.
-    Return 0 if STYLE is not found or if no key > SIZE found.
-    The last entry in the style table usually has the key `+inf.0`.
+    Return 0 if STYLE is not found or if no key >= SIZE found.
 
 *   (ekm:assid TYPE KEY)
 
@@ -302,6 +284,70 @@ Type table with index-tables.
 *   (ekm:mv VAR)
 
     Return 1 (for variant symbol) if VAR is true, else MAIN.
+
+
+
+Types
+-----
+
+S = Style tables
+I = Identifier table
+T = Token table
+L = Limit tables
+O = Orientation table
+
+Forms of symbols in the table entries:
+X = LEFT and RIGHT
+Y = DOWN and UP
+M = main and variant
+W = smaller and wider (slower and faster)
+N = do not distinguish forms
+
+    notehead        S     Y     Note heads
+    cluster         S     Y     Note clusters
+    flag            S     Y     Flags
+    rest            S     M     Rests (normal, ledgered)
+    mmrest          S     X     Multi-measure rests
+    dots            S     N     Augmentation dots
+    script          I     Y     Scripts, Expressive marks
+    clef            I     M     Clefs (normal, change)
+    clef-mod        I     X,N   Clef modifiers
+    time            I     N     Special time/cadenza signatures
+    time-sub        I     N     Time signature sub-fractions
+    colon           I     N     Bar glyphs and Bar lines for colon
+    segno           I     N     Bar glyphs and Bar lines for segno
+    barline         I     N     Staff dividers
+    separator       L     N     System separator marks
+    dynamic         T     N     Dynamics
+    delimiter       L     X     System start delimiter
+    spanner         S     X,W   Multi-segment spanner
+    finger          S     N     Fingering
+    pedal           T     N     Piano pedals
+    harp            T     N     Harp pedals
+    ottava          T     N     Ottavation
+    ottavation      S     Y     Ottavation styles
+    tuplet          I     N     Tuplet number special symbols
+    tremolo         S     N     Tremolo marks
+    stem            I     N     Stem decorations
+    grace           S     Y     Grace note slash
+    lvtie           L     Y     Laissez vibrer
+    arpeggio        S     Y     Arpeggios
+    percent         I     N     Percent repeats
+    fret            I     M     Fret diagrams
+    accordion       S     N     Accordion registers
+    brass           S     Y     Falls and doits
+    fbass           I     N     Figured bass
+    fbass-acc       I     N     Figured bass accidentals
+    lyric           I     N     Lyrics
+    analytics       T     N     Analytics
+    func            T     N     Function theory
+    arrow           O     N     Arrows and arrow heads
+    beater          O     N     Percussion beaters
+    level           S,L   N,M   Level display (M = empty, thumb)
+    misc            I     X,N   Miscellaneous symbols
+    number          S     N     Numbers, Digits
+    parens          S     X     Parentheses
+    shared          T     N     Shared token table
 
 
 
@@ -511,6 +557,25 @@ Rests
     Rest symbol with ledger line.
     Note: This is SYMBOL-2 which is the symbol for UP in other tables.
     REST-ENTRY could be changed to (LOG (REST . REST-LEDGERED)).
+
+
+
+Multi-measure rests
+-------------------
+
+    (mmrest
+      (STYLE HBAR-LEFT . HBAR-RIGHT)
+      ...
+    )
+
+*   STYLE (symbol):
+    default, ...
+    This is the rest style.
+
+*   HBAR (EXTEXT):
+    Edge symbol of horizontal bar.
+
+The thickness of the horizontal bar is metadata `hBarThickness`.
 
 
 
@@ -762,23 +827,22 @@ Dynamics
 --------
 
     (dynamic (#t
-      (NAME . SYMBOL)
+      (TOKEN . SYMBOL)
       ...
     )
 
-*   NAME (string):
+*   TOKEN (string):
     "p", "m", "f", "r", "s", "z", "n", "mp", ...
 
 *   SYMBOL (CP):
     Absolute dynamic symbol.
 
-Note: This identifier table is also used as a token table, but only
-for the single-letter names.
-`\ekm-dynamic` draws either a single symbol for the whole NAME
-or a concatenation of symbols for each letter.
+Note: This is actually an identifier table, not a token table.
+`\ekm-dynamic` draws either a single symbol for a TOKEN or a
+concatenation of symbols for each letter.
 This is different from the usual interpretation of DEFINITION strings.
 
-`\ekmParensHairpin` after lsr.di.unimi.it/LSR/Item?id=771.
+For `\ekmParensHairpin` see lsr.di.unimi.it/LSR/Item?id=771.
 
 
 
@@ -950,25 +1014,6 @@ The following components are drawn:
 *   LEFT, RIGHT (number or #f):
     X extent of the fitting segment.
     `#f` uses the `thickness` property whose default is 0.45 for brackets.
-
-
-
-Multi-measure rests
--------------------
-
-    (mmrest
-      (STYLE HBAR-LEFT . HBAR-RIGHT)
-      ...
-    )
-
-*   STYLE (symbol):
-    default, ...
-    This is the rest style.
-
-*   HBAR (EXTEXT):
-    Edge symbol of horizontal bar.
-
-The thickness of the horizontal bar is metadata `hBarThickness`.
 
 
 
@@ -1377,36 +1422,6 @@ Falls and doits
 
 
 
-Parentheses
------------
-
-    (parens
-      (STYLE
-        (NAME SYMBOL-LEFT . SYMBOL-RIGHT)
-        ...
-      )
-      ...
-    )
-
-*   STYLE (symbol):
-    default, bracket, ...
-
-*   NAME (symbol):
-    a (accidental), d (dynamics), h (dynamics hairpin), t (normal text), ...
-
-*   SYMBOL:
-
-        PARENS-SIMPLE
-        (PARENS Y-ALIGN SIZE)
-
-*   PARENS (EXTEXT):
-    Parenthesis symbol.
-
-*   Y-ALIGN, SIZE (number):
-    Transformation values applied to PARENS.
-
-
-
 Figured bass
 ------------
 
@@ -1613,6 +1628,71 @@ Miscellaneous symbols
 
 *   KEY (symbol, string)
     `eyeglasses`, `metronome`
+
+
+
+Numbers, Digits
+---------------
+
+Defines digits with index-tables and complete numbers with normal
+style tables.
+
+    (number
+      (STYLE . DIGIT)
+      (STYLE . #(DIG0 DIG1 DIG2 DIG3 DIG4 DIG5 DIG6 DIG7 DIG8 DIG9))
+      (STYLE . PROC)
+      (STYLE
+        (NUMBER . SYMBOL)
+        ...
+        (default . PROC)
+      )
+      ...
+    )
+
+*   STYLE (symbol):
+    time, tuplet, finger, fbass, func, string, ...
+
+*   DIGIT (CP):
+    Symbol for digit 0.
+
+*   DIG0 - DIG9 (EXTEXT):
+    Symbol for digit 0 - 9.
+
+*   PROC (procedure):
+    Markup procedure applied on the decimal digit string of the specified number.
+
+*   SYMBOL (EXTEXT):
+    Symbol (not digit) for NUMBER.
+
+
+
+Parentheses
+-----------
+
+    (parens
+      (STYLE
+        (NAME SYMBOL-LEFT . SYMBOL-RIGHT)
+        ...
+      )
+      ...
+    )
+
+*   STYLE (symbol):
+    default, bracket, ...
+
+*   NAME (symbol):
+    a (accidental), d (dynamics), h (dynamics hairpin), t (normal text), ...
+
+*   SYMBOL:
+
+        PARENS-SIMPLE
+        (PARENS Y-ALIGN SIZE)
+
+*   PARENS (EXTEXT):
+    Parenthesis symbol.
+
+*   Y-ALIGN, SIZE (number):
+    Transformation values applied to PARENS.
 
 
 

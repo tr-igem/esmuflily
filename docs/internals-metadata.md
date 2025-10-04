@@ -7,8 +7,8 @@ font-specific [JSON](https://www.json.org/json-en.html) file.
 
 
 
-Metadata location
------------------
+Locations
+---------
 
 ### JSON file
 
@@ -17,43 +17,45 @@ and "bravura-installer.iss".
 
     MD_DIR/MD_NAME
 
-    MD_DIR        1.  PRIVATE_DIR
-                  2.  USER_DIR/SMUFL_DIR
-                  3.  SYSTEM_DIR/SMUFL_DIR
+    MD_DIR          1.  PRIVATE_DIR
+                    2.  USER_DIR/SMUFL_DIR
+                    3.  SYSTEM_DIR/SMUFL_DIR
 
-    PRIVATE_DIR   from variable `ekmMetadata`
+    PRIVATE_DIR     from variable `ekmMetadata`
 
-    USER_DIR      Linux:    $XDG_DATA_HOME
-                  Windows:  %LOCALAPPDATA%
-                  macOS:    ~/Library/Application Support
+    USER_DIR        Linux:    $XDG_DATA_HOME
+                    Windows:  %LOCALAPPDATA%
+                    macOS:    ~/Library/Application Support
 
-    SYSTEM_DIR    Linux:    $XDG_DATA_DIRS
-                  Windows:  %CommonProgramFiles%
-                            %CommonProgramFiles(x86)%
-                  macOS:    /Library/Application Support
+    SYSTEM_DIR      Linux:    $XDG_DATA_DIRS
+                    Windows:  %CommonProgramFiles%
+                              %CommonProgramFiles(x86)%
+                    macOS:    /Library/Application Support
 
-    SMUFL_DIR     SMuFL/Fonts/FONTNAME
+    SMUFL_DIR       SMuFL/Fonts/FONTNAME
 
-    MD_NAME       1.  FNAME_metadata.json
-                  2.  FNAME.json
-                  3.  metadata.json
+    MD_NAME         1.  FNAME_metadata.json
+                    2.  FNAME.json
+                    3.  metadata.json
 
-    FONTNAME      font name in normal spelling, eg. "Bravura"
+    FONTNAME        font name in normal spelling, eg. "Bravura"
 
-    FNAME         font name in all lowercase, eg. "bravura"
-
-
-### Cache file
-
-    EKMD_DIR/ekmd-FNAME.scm
-    EKMD_DIR/ekmd-template.scm
-
-    EKMD_DIR      a LilyPond include directory
+    FNAME           font name in all lowercase, eg. "bravura"
 
 
+### Scheme files
 
-Metadata tables
----------------
+    EKMD_DIR/ekmd-FNAME.scm         Metadata table (cache file)
+    EKMD_DIR/ekmd-template.scm      Template metadata table
+    EKMD_DIR/types-FNAME.scm        Types table
+
+    EKMD_DIR        1.  a LilyPond include directory
+                    2.  MD_DIR
+
+
+
+Tables
+------
 
 ### JSON file
 
@@ -95,10 +97,7 @@ Metadata of interest for Esmuflily:
 
 A tree with all metadata for Esmuflily, created from the JSON file
 and stored in a font-specific cache file "ekmd-FNAME.scm".
-
-The optional sub-table `types` is merged into the table `ekm:types`.
-It must be added manually to the metadata. It's data cannot be derived
-from the JSON file. See "internals.md".
+The types sub-table is optional.
 
     (
       (fontName . "FONTNAME")
@@ -112,7 +111,6 @@ from the JSON file. See "internals.md".
         ...
       )
       (types
-        TYPE-ENTRY
         ...
       )
     )
@@ -148,6 +146,16 @@ created from "glyphnames.json" provided by SMuFL, and defined as
     )
 
 
+### Types table
+
+A tree with data for Esmuflily additional to the metadata.
+See "internals.md".
+
+It is either stored in a font-specific file "types-FNAME.scm"
+that will be included into a newly created metadata table,
+or it is added manually to an already existing cache file.
+
+
 
 Process
 -------
@@ -170,6 +178,8 @@ Process
 *   Load the template metadata table from the file "ekmd-template.scm"
     and set the variables `ekmd:defaults` and `ekmd:glyphs` as above.
 
+*   Load the types table from the file "types-FNAME.scm".
+
 *   Parse the JSON file. Select and store members of interest for Esmuflily.
 
 *   Replace the values in `ekmd:defaults` and `ekmd:glyphs`,
@@ -180,8 +190,10 @@ Process
     defined in `ekmd:glyphnames` and in `optionalGlyphs` in the JSON file.
 
 *   Create a new metadata table from `ekm:font-name`, `ekm:font-version`,
-    `ekmd:defaults`, and `ekmd:glyphs`.
-    Save the table in the cache file "ekmd-FNAME.scm".
+    `ekmd:defaults`, `ekmd:glyphs`, and the types table.
+    Save the table in the cache file "ekmd-FNAME.scm" in the same
+    directory as the types table or the template metadata table if
+    there is no types table.
 
 
 

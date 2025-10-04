@@ -519,3 +519,8 @@ January 2021 - May 2021:
 - Rename some internals.
 - Add JSON file names to lookup: "FNAME_metadata.json", "metadata.json".
 - Add "\ekmMergeType".
+
+2025-10-04:
+- Add "(ekmd:find-file)" and change "(ekmd:load)" to find json and scm
+  (issue #28).
+- Add "(ekmd:set-dg!)" swapped from "(ekmd:load)".
