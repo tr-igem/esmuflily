@@ -229,17 +229,31 @@
       (if c (set-car! (car g) c))
       (n->c (cdr g))))))
 
-(define-public (ekmd:load name)
-  (let ((fn (ly:find-file name)))
+(define-public (ekmd:find-file dir font name)
+  (or (ly:find-file name)
+      (let loc ((dl (ekmd:loc dir font)))
+        (if (null? dl)
+          #f
+          (let ((fn (string-append (car dl) "/" name)))
+            (if (file-exists? fn)
+              fn
+              (loc (cdr dl))))))))
+
+(define-public (ekmd:load dir font name)
+  (let ((fn (ekmd:find-file dir font name)))
     (if fn
       (let* ((p (open-input-file fn))
              (tab (read p)))
         (close-port p)
         (set! ekmd:dir (dirname fn))
-        (set! ekmd:defaults (or (assq-ref tab 'defaults) '()))
-        (set! ekmd:glyphs (or (assq-ref tab 'glyphs) '()))
         tab)
       #f)))
+
+(define-public (ekmd:set-dg! tab)
+  (if tab
+    (set! ekmd:defaults (or (assq-ref tab 'defaults) '()))
+    (set! ekmd:glyphs (or (assq-ref tab 'glyphs) '())))
+  tab)
 
 (define-public (ekmd:save fn tab)
   (let* ((p (open-output-file fn)))

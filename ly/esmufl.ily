@@ -2406,137 +2406,122 @@ ekmMetronome =
     (1 . #xE0A3)
     (2 . #xE0A4))
   ;; shape noteheads
-  (sol ; round
+  (sol
     (-1 . #xECD0)
     (0 . #xE1B0)
     (1 . #xE1B0)
     (2 . #xE1B1))
-  (solFunk ; round
+  (solFunk
     (-1 . #xECD0)
     (0 . #xE1B0)
     (1 . #xE1B0)
     (2 . #xE1B1))
-  (la ; square
+  (la
     (-1 . #xECD1)
     (0 . #xE1B2)
     (1 . #xE1B2)
     (2 . #xE1B3))
-  (laWalker ; square
+  (laWalker
     (-1 . #xECD1)
     (0 . #xE1B2)
     (1 . #xE1B2)
     (2 . #xE1B3))
-  (laThin ; square thin
+  (laThin
     (-1 . #xECD1)
     (0 . #xE1B2)
     (1 . #xE1B2)
     (2 . #xE1B3))
-  (laFunk ; square small
+  (laFunk
     (-1 . #xECD1)
     (0 . #xE1B2)
     (1 . #xE1B2)
     (2 . #xE1B3))
-  (fa ; triangle right . triangle left
+  (fa
     (-1 #xECD2 . #xECD3)
     (0  #xE1B4 . #xE1B6)
     (1  #xE1B4 . #xE1B6)
     (2  #xE1B5 . #xE1B7))
-  (faThin ; triangle right thin . triangle left thin
+  (faThin
     (-1 #xECD2 . #xECD3)
     (0  #xE1B4 . #xE1B6)
     (1  #xE1B4 . #xE1B6)
     (2  #xE1B5 . #xE1B7))
-  (faFunk ; triangle right small . triangle left small
+  (faFunk
     (-1 #xECD2 . #xECD3)
     (0  #xE1B4 . #xE1B6)
     (1  #xE1B4 . #xE1B6)
     (2  #xE1B5 . #xE1B7))
-  (faWalker ; triangle right small . triangle left small
+  (faWalker
     (-1 #xECD2 . #xECD3)
     (0  #xE1B4 . #xE1B6)
     (1  #xE1B4 . #xE1B6)
     (2  #xE1B5 . #xE1B7))
-  (mi ; diamond
+  (mi
     (-1 . #xECD4)
     (0 . #xE1B8)
     (1 . #xE1B8)
     (2 . #xE1B9))
-  (miThin ; diamond thin
+  (miThin
     (-1 . #xECD4)
     (0 . #xE1B8)
     (1 . #xE1B8)
     (2 . #xE1B9))
-  (miFunk ; diamond rev . diamond
+  (miFunk
     (-1 . #xECD4)
     (0 . #xE1B8)
     (1 . #xE1B8)
     (2 . #xE1B9))
-  (miMirror ; diamond rev
+  (miMirror
     (-1 . #xECD4)
     (0 . #xE1B8)
     (1 . #xE1B8)
     (2 . #xE1B9))
-  (miWalker ; diamond rev
+  (miWalker
     (-1 . #xECD4)
     (0 . #xE1B8)
     (1 . #xE1B8)
     (2 . #xE1B9))
-  (do ; triangle up
+  (do
     (-1 . #xECD5)
     (0 . #xE1BA)
     (1 . #xE1BA)
     (2 . #xE1BB))
-  ;(doThin ; triangle up thin (not used)
-  ;  (-1 . #xECD5)
-  ;  (0 . #xE1BA)
-  ;  (1 . #xE1BA)
-  ;  (2 . #xE1BB))
-  (re ; moon
+  (re
     (-1 . #xECD6)
     (0 . #xE1BC)
     (1 . #xE1BC)
     (2 . #xE1BD))
-  ;(reThin ; moon thin (not used)
-  ;  (-1 . #xECD6)
-  ;  (0 . #xE1BC)
-  ;  (1 . #xE1BC)
-  ;  (2 . #xE1BD))
-  (ti ; triangle round
+  (ti
     (-1 . #xECD7)
     (0 . #xE1BE)
     (1 . #xE1BE)
     (2 . #xE1BF))
-  ;(tiThin ; triangle round thin (not used)
-  ;  (-1 . #xECD7)
-  ;  (0 . #xE1BE)
-  ;  (1 . #xE1BE)
-  ;  (2 . #xE1BF))
-  (doWalker ; keystone inv . keystone
+  (doWalker
     (-1 . #xECD8)
     (0 . #xE1C0)
     (1 . #xE1C0)
     (2 . #xE1C1))
-  (reWalker ; quarter moon rev . quarter moon
+  (reWalker
     (-1 . #xECD9)
     (0 . #xE1C2)
     (1 . #xE1C2)
     (2 . #xE1C3))
-  (tiWalker ; isosceles triangle . isosceles triangle rev
+  (tiWalker
     (-1 . #xECDA)
     (0 . #xE1C4)
     (1 . #xE1C4)
     (2 . #xE1C5))
-  (doFunk ; moon left . moon left rev
+  (doFunk
     (-1 . #xECDB)
     (0 . #xE1C6)
     (1 . #xE1C6)
     (2 . #xE1C7))
-  (reFunk ; arrowhead left . arrowhead left rev
+  (reFunk
     (-1 . #xECDC)
     (0 . #xE1C8)
     (1 . #xE1C8)
     (2 . #xE1C9))
-  (tiFunk ; triangle round left . triangle round left rev
+  (tiFunk
     (-1 . #xECDD)
     (0 . #xE1CA)
     (1 . #xE1CA)
@@ -2574,7 +2559,7 @@ ekmMetronome =
     (0 (#xE156 . #xE1AD))
     (1 (#xE15E . #xE1AE))
     (2 (#xE166 . #xE1AF)))
-  ;; individual notes for note-by-number
+  ;; individual notes
   (note
     (-1 . #xE1D0)
     (0 . #xE1D2)
@@ -2675,7 +2660,7 @@ ekmMetronome =
 
   (script (#t
   ("sforzato" #xE4A1 . #xE4A0) ; accent
-  ("espr" #xED41 . #xED40) ; espressivo
+  ("espr" #xED41 . #xED40)
   ("dmarcato" #xE4AD . #xE4AC)
   ("uportato" #xE4B3 . #xE4B2)
   ("dstaccatissimo" #xE4A7 . #xE4A6)
@@ -2731,7 +2716,7 @@ ekmMetronome =
   ("clefs.GG" #xE055 . #f)
   ("clefs.tenorG" #xE056 . #f)
   ("clefs.C" #xE05C . #xE07B)
-  ("clefs.varC" #xE05C . #xE07B) ; = C
+  ("clefs.varC" #xE05C . #xE07B)
   ("clefs.F" #xE062 . #xE07C)
   ("clefs.percussion" #xE069 . #f)
   ("clefs.varpercussion" #xE06A . #f)
@@ -2798,11 +2783,11 @@ ekmMetronome =
 
   (shared (#t #t
   (" " . ,(markup #:hspace 1))
-  ("____" . ,(markup #:hspace 4)) ; EMSP
-  ("___" . ,(markup #:hspace 2)) ; ENSP
-  ("__" . ,(markup #:hspace 0.78)) ; THSP
-  ("_" . ,(markup #:hspace 0.17)) ; HSP
-  ;("`" . #f) ; ZWSP
+  ("____" . ,(markup #:hspace 4))
+  ("___" . ,(markup #:hspace 2))
+  ("__" . ,(markup #:hspace 0.78))
+  ("_" . ,(markup #:hspace 0.17))
+  ;("`" . #f)
   ))
 
   (dynamic (#t
@@ -2842,7 +2827,7 @@ ekmMetronome =
   (brace
     (+inf.0 #xE000 . #xE001))
   (bracket
-    (+inf.0 (#f -1020/1000 #f #xE004 #xE003 0 #f))) ; -4 * 255 = -1020
+    (+inf.0 (#f ,(* -4 255/1000) #f #xE004 #xE003 0 #f)))
   )
 
   (mmrest
@@ -2850,7 +2835,6 @@ ekmMetronome =
   )
 
   (spanner
-  ;; simple line-spanner
   (line
   )
   (trill
@@ -3166,7 +3150,6 @@ ekmMetronome =
   ("turnRight" . #xE809)
   ("turnLeft" . #xE80A)
   ("turnRightLeft" . #xE80B)
-  ;; accordion ricochet
   ("ricochet2" . #xE8D2)
   ("ricochet3" . #xE8D3)
   ("ricochet4" . #xE8D4)
@@ -3250,7 +3233,6 @@ ekmMetronome =
   (ekm
     (#f . 0))
   (dot . #xE8CA)
-  ;; \discant
   (d
     ("1" . #xE8A4)
     ("10" . #xE8A1)
@@ -3283,7 +3265,6 @@ ekmMetronome =
     ("12-1" #xE8C6 (50 . 82) (24 . 50) (50 . 50) (50 . 18))
     ("130" . #xE8B2)
     ("131" . #xE8B3))
-  ;; \stdBass
   (sb
     ("Soprano" . #xE8B4)
     ("Alto" . #xE8B5)
@@ -3292,7 +3273,6 @@ ekmMetronome =
     ("Soft Bass" . #xE8B8)
     ("Soft Tenor" . #xE8B9)
     ("Bass/Alto" . #xE8BA))
-  ;; \stdBassIV
   (sb4
     ("Soprano" . #xE8B4)
     ("Alto" . #xE8B5)
@@ -3302,7 +3282,6 @@ ekmMetronome =
     ("Bass/Alto" . #xE8BA)
     ("Soft Bass/Alto" #xE8C7 (50 . 62) (50 . 14))
     ("Soft Tenor" . #xE8B9))
-  ;; \stdBassV
   (sb5
     ("Bass/Alto" . #xE8BA)
     ("Soft Bass/Alto" #xE8C7 (50 . 62) (50 . 14))
@@ -3314,7 +3293,6 @@ ekmMetronome =
     ("Soprano" . #xE8B4)
     ("Sopranos" #xE8C7 (38 . 85) (62 . 85))
     ("Solo Bass" #xE8C7 (50 . 14)))
-  ;; \stdBassVI
   (sb6
     ("Soprano" . #xE8B4)
     ("Alto" #xE8C7 (50 . 62))
@@ -3323,7 +3301,6 @@ ekmMetronome =
     ("Alto/Soprano" #xE8C7 (50 . 87) (26 . 62))
     ("Bass/Alto" . #xE8BA)
     ("Soft Bass" . #xE8B8))
-  ;; \freeBass
   (fb
     ("10" . #xE8BB)
     ("1" . #xE8BC)
@@ -3331,7 +3308,6 @@ ekmMetronome =
     ("Master" . #xE8BE)
     ("Master 1" . #xE8BF)
     ("Master 11" . #xE8C0))
-  ;; square
   (sq
     ("1" . #xE8C1)
     ("100" . #xE8C2)
@@ -3384,9 +3360,9 @@ ekmMetronome =
   ("7\\\\" . #xEA5F)
   ("7/"    . #xECC0)
   ("9\\\\" . #xEA62)
-  ("\\\\" . #xEA6E) ; augmented-slash
-  ("\\+" . #xEA6C) ; augmented
-  ("/" . #xEA6D) ; diminished
+  ("\\\\" . #xEA6E)
+  ("\\+" . #xEA6C)
+  ("/" . #xEA6D)
   ))
 
   (fbass-acc (#t
@@ -3401,10 +3377,10 @@ ekmMetronome =
 
   (lyric (#t
   (#\~ . #xE551)
-  (#\n . #xE550) ; elision narrow
-  (#\w . #xE552) ; elision wide
+  (#\n . #xE550)
+  (#\w . #xE552)
   (#\_ . #xE553)
-  (#\x25 . #xE555) ; repeat
+  (#\x25 . #xE555)
   (#\x . 0)
   ))
 
@@ -3814,31 +3790,27 @@ ekmSmuflOff =
 
 %% Initializations
 
-#(let* ((f (or (ly:get-option 'ekmfont) (ly:get-option 'ekmelic-font)))
-        (f (if f (symbol->string f)
-           (if (defined? 'ekmFont) ekmFont
-           (if (defined? 'ekmelicFont) ekmelicFont ""))))
-        (p (string-suffix? "#" f))
-        (f (if p (string-drop-right f 1) f))
-        (f (if (string-null? f) "Ekmelos" f))
+#(let* ((font (or (ly:get-option 'ekmfont) (ly:get-option 'ekmelic-font)))
+        (font (if font (symbol->string font)
+              (if (defined? 'ekmFont) ekmFont "")))
+        (path (string-suffix? "#" font))
+        (font (if path (string-drop-right font 1) font))
+        (font (if (string-null? font) "Ekmelos" font))
+        (f (string-downcase font))
         (dir (ly:get-option 'ekmmetadata))
         (dir (if dir (symbol->string dir)
              (if (defined? 'ekmMetadata) ekmMetadata "")))
         (cr (string-suffix? "%" dir))
         (dir (if cr (string-drop-right dir 1) dir))
-        (name (string-append "ekmd-" (string-downcase f) ".scm"))
-        (tab (ekmd:load name)))
-  (set! ekm:font-name f)
-  (set! ekm:draw-paths (and p (defined? 'ekm-path-stencil)))
-  (for-each (lambda (t)
-    (ekm:merge-type (car t) (cdr t)))
-    (or (and tab (assq-ref tab 'types)) '()))
+        (name (string-append "ekmd-" f ".scm"))
+        (tab (ekmd:set-dg! (ekmd:load dir font name))))
 
   ;; create metadata table
   (if (or cr (not tab))
-    (let* ((tab (ekmd:load "ekmd-template.scm"))
+    (let* ((tpl (ekmd:set-dg! (ekmd:load dir font "ekmd-template.scm")))
+           (types (ekmd:load dir font (string-append "types-" f ".scm")))
            (md (ekmd:read
-                dir f f
+                dir font font
                 '((fontName . #t)
                   (fontVersion . #t)
                   (engravingDefaults (#t . #\d))
@@ -3848,15 +3820,23 @@ ekmSmuflOff =
                   (optionalGlyphs
                     (#t (codepoint . #\c))))
                 '(("flag" (#f . #f) (#f . #f))))))
-      (if (and tab md)
+      (if (and tpl md)
         (begin
           (ekmd:name->cp (append ekmd:glyphnames (or (assq-ref md 'optionalGlyphs) '())))
-          (ekmd:save (string-append ekmd:dir "/" name)
-            (list
-              (cons 'fontName f)
-              (cons 'fontVersion (assq-ref md 'fontVersion))
-              (cons 'defaults ekmd:defaults)
-              (cons 'glyphs ekmd:glyphs))))))))
+          (set! tab (list
+            (cons 'fontName font)
+            (cons 'fontVersion (assq-ref md 'fontVersion))
+            (cons 'defaults ekmd:defaults)
+            (cons 'glyphs ekmd:glyphs)
+            (cons 'types (or types '()))))
+          (ekmd:save (string-append ekmd:dir "/" name) tab)))))
+
+  (set! ekm:font-name font)
+  (set! ekm:draw-paths (and path (defined? 'ekm-path-stencil)))
+
+  (for-each (lambda (t)
+    (ekm:merge-type (car t) (cdr t)))
+    (or (and tab (assq-ref tab 'types)) '())))
 
 %% Symbols for frequently used types
 #(define ekm-notehead-tab (assq-ref ekm:types 'notehead))
