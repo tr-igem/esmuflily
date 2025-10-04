@@ -250,9 +250,9 @@
       #f)))
 
 (define-public (ekmd:set-dg! tab)
-  (if tab
+  (if tab (begin
     (set! ekmd:defaults (or (assq-ref tab 'defaults) '()))
-    (set! ekmd:glyphs (or (assq-ref tab 'glyphs) '())))
+    (set! ekmd:glyphs (or (assq-ref tab 'glyphs) '()))))
   tab)
 
 (define-public (ekmd:save fn tab)
