@@ -56,17 +56,17 @@
 #(define (ekm-cp-or-vector? x)
   (or (ekm-cp? x) (vector? x)))
 
-
 #(define (ekm-extext? x)
-  (or (ekm-cp? x)
-      (string? x)
-      (pair? x)))
-
-#(define (ekm-extext-or-not? x)
   (or (not x)
       (ekm-cp? x)
       (string? x)
       (pair? x)))
+
+%#(define (ekm-extext-or-not? x)
+%  (or (not x)
+%      (ekm-cp? x)
+%      (string? x)
+%      (pair? x)))
 
 
 %% Markup and stencils
@@ -133,16 +133,18 @@
 
 #(define-markup-command (ekm-text layout props txt)
   (ekm-extext?)
-  (interpret-markup layout props
-    (if (ekm-cp? txt)
-      (make-ekm-char-markup txt)
-    (if (pair? txt)
-      (if (ekm-cp? (car txt))
-        (if (ekm-cdr-cp? txt)
-          (make-ekm-chars-markup txt)
-          (make-ekm-charf-markup (car txt) (cdr txt)))
-        txt)
-      txt))))
+  (if (not txt)
+    empty-stencil
+    (interpret-markup layout props
+      (if (ekm-cp? txt)
+        (make-ekm-char-markup txt)
+      (if (pair? txt)
+        (if (ekm-cp? (car txt))
+          (if (ekm-cdr-cp? txt)
+            (make-ekm-chars-markup txt)
+            (make-ekm-charf-markup (car txt) (cdr txt)))
+          txt)
+        txt)))))
 
 #(define-markup-command (ekm-concat layout props args)
   (cheap-list?)
@@ -235,10 +237,13 @@
 
 #(define (ekm:mv f) (if f 1 MAIN))
 
+#(define (ekm:reverse dir)
+  (and dir (if (negative? dir) UP DOWN)))
+
 #(define (ekm:sym val dir)
   (if (or (not-pair? val) (not dir))
     val
-    (if (or (null? (cdr val)) (< dir 0)) (car val) (cdr val))))
+    (if (or (null? (cdr val)) (negative? dir)) (car val) (cdr val))))
 
 #(define (ekm:assq tab key)
   (or (assq-ref tab key) (cdar tab)))
@@ -1154,7 +1159,7 @@ ekmParensHairpin =
     (ekm-ctext grob CX
       (ekm:sym
         (or d (ekm:assid 'script (cadr (ly:grob-property grob 'script-stencil))))
-        dir))))
+        (if d (ekm:reverse dir) dir)))))
 
 ekmScript =
 #(define-music-function (name text)
@@ -1244,7 +1249,7 @@ ekmScriptSmall =
 
 ekmStartSpan =
 #(define-event-function (style tempo text)
-  (symbol? number-or-pair? ekm-extext-or-not?)
+  (symbol? number-or-pair? ekm-extext?)
   (let* ((t (ekm-trill? style))
          (s (symbol->string style))
          (s (if t (string-drop s t) s)))
@@ -1257,7 +1262,7 @@ ekmStartSpan =
 
 ekmStartSpanMusic =
 #(define-music-function (style tempo text music)
-  (symbol? number-or-pair? ekm-extext-or-not? ly:music?)
+  (symbol? number-or-pair? ekm-extext? ly:music?)
   (if (ekm-trill? style)
     #{
       \once \override TrillSpanner.after-line-breaking = #ekm-spanner
@@ -3213,9 +3218,9 @@ ekmMetronome =
   ("-"  . #xE681)
   ("v"  . #xE682)
   ("|"  . #xE683)
-  ("o^" ,(markup #:ekm-harp-change #xE680 0.93))
-  ("o-" ,(markup #:ekm-harp-change #xE681 0))
-  ("ov" ,(markup #:ekm-harp-change #xE682 -0.93))
+  ("o^" . ,(markup #:ekm-harp-change #xE680 0.93))
+  ("o-" . ,(markup #:ekm-harp-change #xE681 0))
+  ("ov" . ,(markup #:ekm-harp-change #xE682 -0.93))
   (" "  . #f)
   ))
 

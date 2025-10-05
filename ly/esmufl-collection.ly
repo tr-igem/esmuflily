@@ -1,7 +1,6 @@
-%%
 %% Collection of commands making use of Esmuflily.
+%% Copyright (c) 2020-2025 Thomas Richter
 %%
-%% Thomas Richter <thomas-richter AT aon.at>
 %% This program is free software. Use, redistribute, and modify it
 %% as you wish.
 %%
@@ -138,8 +137,8 @@ bebungfour = \ekmScript #'downbow #'(#xE66C . #xE66D)
 extrashortfermata = \ekmScript #'veryshortfermata #'(#xF69E . #xF69F) % [E]
 extralongfermata = \ekmScript #'verylongfermata #'(#xF6A0 . #xF6A1) % [E]
 
-comma = #(make-articulation "comma")
-commawedge = #(make-articulation "varcomma")
+comma = #(make-articulation 'comma)
+commawedge = #(make-articulation 'varcomma)
 
 breathe = \ekmBreathing ##xE4CE
 breathewedge = \ekmBreathing ##xF640 % [E]
@@ -157,7 +156,9 @@ caesurasingle = \ekmBreathing #'(#xE4D1 1) % U+F42C
 segnojapanese = \ekmScript #'segno #'((#xE047 1)) % U+F404
 codajapanese = \ekmScript #'coda  #'((#xE048 1)) % U+F405
 
+
 %% these commands set begin-of-line-invisible
+
 DS = {
   \once \override Score.RehearsalMark.break-visibility = #'#(#t #t #f)
   \mark \markup { \small \ekm-char ##xE045 }
