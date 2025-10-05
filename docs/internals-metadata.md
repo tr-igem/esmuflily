@@ -15,24 +15,22 @@ Locations
 See SMuFL 3.11. Font-specific metadata locations
 and "bravura-installer.iss".
 
-    MD_DIR/MD_NAME
+    MD_LOC/MD_NAME
 
-    MD_DIR          1.  PRIVATE_DIR
-                    2.  USER_DIR/SMUFL_DIR
-                    3.  SYSTEM_DIR/SMUFL_DIR
+    MD_LOC          1.  PRIVATE_LOC
+                    2.  USER_LOC/SMuFL/Fonts/FONTNAME
+                    3.  SYSTEM_LOC/SMuFL/Fonts/FONTNAME
 
-    PRIVATE_DIR     from variable `ekmMetadata`
+    PRIVATE_LOC     from variable `ekmMetadata`
 
-    USER_DIR        Linux:    $XDG_DATA_HOME
+    USER_LOC        Linux:    $XDG_DATA_HOME
                     Windows:  %LOCALAPPDATA%
                     macOS:    ~/Library/Application Support
 
-    SYSTEM_DIR      Linux:    $XDG_DATA_DIRS
+    SYSTEM_LOC      Linux:    $XDG_DATA_DIRS
                     Windows:  %CommonProgramFiles%
                               %CommonProgramFiles(x86)%
                     macOS:    /Library/Application Support
-
-    SMUFL_DIR       SMuFL/Fonts/FONTNAME
 
     MD_NAME         1.  FNAME_metadata.json
                     2.  FNAME.json
@@ -45,12 +43,12 @@ and "bravura-installer.iss".
 
 ### Scheme files
 
-    EKMD_DIR/ekmd-FNAME.scm         Metadata table (cache file)
-    EKMD_DIR/ekmd-template.scm      Template metadata table
-    EKMD_DIR/types-FNAME.scm        Types table
+    EKMD_LOC/ekmd-FNAME.scm         Metadata table (cache file)
+    EKMD_LOC/ekmd-template.scm      Template metadata table
+    EKMD_LOC/types-FNAME.scm        Types table
 
-    EKMD_DIR        1.  a LilyPond include directory
-                    2.  MD_DIR
+    EKMD_LOC        1.  a LilyPond include directory
+                    2.  MD_LOC
 
 
 
@@ -165,7 +163,7 @@ Process
     The default is "Ekmelos" (should be changed to "Bravura").
 
 *   Read the command-line option `ekmmetadata`
-    or the variable `ekmMetadata` for the metadata location PRIVATE_DIR.
+    or the variable `ekmMetadata` for the metadata location PRIVATE_LOC.
     The default is #f.
 
 *   If the cache file "ekmd-FNAME.scm" exists, load it and set the
@@ -192,7 +190,7 @@ Process
 *   Create a new metadata table from `ekm:font-name`, `ekm:font-version`,
     `ekmd:defaults`, `ekmd:glyphs`, and the types table.
     Save the table in the cache file "ekmd-FNAME.scm" in the same
-    directory as the types table or the template metadata table if
+    location as the types table or the template metadata table if
     there is no types table.
 
 

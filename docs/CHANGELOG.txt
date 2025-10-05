@@ -524,3 +524,13 @@ January 2021 - May 2021:
 - Add "(ekmd:find-file)" and change "(ekmd:load)" to find json and scm
   (issue #28).
 - Add "(ekmd:set-dg!)" swapped from "(ekmd:load)".
+
+2025-10-05:
+- Fix "(ekmd:set-dg!)" to set "glyphs" table.
+- Add "(ekm:reverse)".
+- Change "(ekm-script)" to draw symbols with "\ekmScript" in UP,DOWN order.
+- Change "(ekm-text)" and "(ekm-extext?)" to accept "#f" which draws
+  an empty-stencil.
+- Remove "(ekm-extext-or-not?)".
+- Fix markup entries in table "harp".
+- Change "hBarThickness" in cache files "ekmd-bravura.scm" and "ekmd-sebastian.scm".

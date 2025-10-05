@@ -281,6 +281,10 @@ Type table with index-tables.
 
     Return the part (symbol) of VAL according to DIR (#f, < 0, >= 0).
 
+*   (ekm:reverse DIR)
+
+    Return the opposite direction, unless DIR is `#f`.
+
 *   (ekm:mv VAR)
 
     Return 1 (for variant symbol) if VAR is true, else MAIN.
@@ -620,6 +624,10 @@ Scripts, Expressive marks
 
 *   SYMBOL (EXTEXT):
     Expressive mark.
+
+Note: The command `\ekmScript` takes a pair of symbols in the reverse
+order (SYMBOL-UP . SYMBOL-DOWN) which is more intuitive, and compatible
+with former Esmuflily.
 
 
 
