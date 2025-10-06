@@ -8,7 +8,7 @@ given with their Unicode code point.
 
 All symbols are assembled in a single internal table `ekm:types`
 arranged according to type (usage), where some types correspond to
-LilyPond's graphical objects like note heads, flags, rests, clefs.
+LilyPond's graphical objects like note heads, flags, rests, and clefs.
 
 The predefined internal table contains SMuFL recommended characters.
 Further (external) tables can be merged into the internal table,
@@ -17,11 +17,13 @@ are replaced.
 
 An external table can be:
 
-*   a `types` sub-table defined in a font-specific cache file "ekmd-FNAME.scm".
+*   a `types` sub-table in a font-specific cache file "ekmd-FNAME.scm".
 
-*   a table defined in a font-specific file "types-FNAME.scm".
+*   in a font-specific file "types-FNAME.scm".
 
-*   a table for a single type specified with the command \ekmMergeType.
+*   in the file "types-template.scm".
+
+*   specified for a single type with the command `\ekmMergeType`.
 
 
 
@@ -1652,9 +1654,12 @@ style tables.
       (STYLE
         (NUMBER . SYMBOL)
         ...
-        (default . PROC)
       )
       ...
+      (ekm
+        (STYLE . DEFAULT-PROC)
+        ...
+      )
     )
 
 *   STYLE (symbol):
@@ -1664,13 +1669,16 @@ style tables.
     Symbol for digit 0.
 
 *   DIG0 - DIG9 (EXTEXT):
-    Symbol for digit 0 - 9.
+    Symbol for digit 0 to 9.
+
+*   SYMBOL (EXTEXT):
+    Symbol for NUMBER (not digit).
 
 *   PROC (procedure):
     Markup procedure applied on the decimal digit string of the specified number.
 
-*   SYMBOL (EXTEXT):
-    Symbol (not digit) for NUMBER.
+*   DEFAULT-PROC (procedure):
+    Markup procedure used if STYLE has no NUMBER = the specified number.
 
 
 

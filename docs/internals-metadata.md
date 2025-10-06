@@ -46,6 +46,7 @@ and "bravura-installer.iss".
     EKMD_LOC/ekmd-FNAME.scm         Metadata table (cache file)
     EKMD_LOC/ekmd-template.scm      Template metadata table
     EKMD_LOC/types-FNAME.scm        Types table
+    EKMD_LOC/types-template.scm     Template types table
 
     EKMD_LOC        1.  a LilyPond include directory
                     2.  MD_LOC
@@ -149,9 +150,8 @@ created from "glyphnames.json" provided by SMuFL, and defined as
 A tree with data for Esmuflily additional to the metadata.
 See "internals.md".
 
-It is either stored in a font-specific file "types-FNAME.scm"
-that will be included into a newly created metadata table,
-or it is added manually to an already existing cache file.
+The types table in a font-specific file "types-FNAME.scm" or in
+"types-template.scm" will be included into a newly created metadata table.
 
 
 
@@ -176,7 +176,7 @@ Process
 *   Load the template metadata table from the file "ekmd-template.scm"
     and set the variables `ekmd:defaults` and `ekmd:glyphs` as above.
 
-*   Load the types table from the file "types-FNAME.scm".
+*   Load the types table from the file "types-FNAME.scm" or "types-template.scm".
 
 *   Parse the JSON file. Select and store members of interest for Esmuflily.
 
@@ -189,7 +189,7 @@ Process
 
 *   Create a new metadata table from `ekm:font-name`, `ekm:font-version`,
     `ekmd:defaults`, `ekmd:glyphs`, and the types table.
-    Save the table in the cache file "ekmd-FNAME.scm" in the same
+    Save the table in the cache file "ekmd-FNAME.scm" at the same
     location as the types table or the template metadata table if
     there is no types table.
 

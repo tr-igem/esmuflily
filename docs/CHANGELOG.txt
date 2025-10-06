@@ -534,3 +534,13 @@ January 2021 - May 2021:
 - Remove "(ekm-extext-or-not?)".
 - Fix markup entries in table "harp".
 - Change "hBarThickness" in cache files "ekmd-bravura.scm" and "ekmd-sebastian.scm".
+
+2025-10-06:
+- Add style "ekm" to "number" table with default procedures.
+  Change "(ekm-number)" accordingly.
+- Add command "\ekm-default-scale-number".
+- Add file "types-template.scm".
+  Change creating metadata table to use this file.
+- Add "types" table to file "ekmd-sebastian.scm".
+- Add "`" to "shared" table.
+- Change "\ekmParensDyn" and "\ekmParensHairpin" using "shared" space for gap.
