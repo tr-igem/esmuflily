@@ -62,12 +62,6 @@
       (string? x)
       (pair? x)))
 
-%#(define (ekm-extext-or-not? x)
-%  (or (not x)
-%      (ekm-cp? x)
-%      (string? x)
-%      (pair? x)))
-
 
 %% Markup and stencils
 
@@ -297,7 +291,7 @@
             (cvt k v ""))
           (cvt
             (if (and tokens (cdr f)) (cons* (car f) k) k)
-            (cons* (make-ekm-text-markup (or (cdr f) 0)) v)
+            (cons* (make-ekm-text-markup (cdr f)) v)
             (substring d (string-length (car f)))))))))
 
 #(define-markup-command (ekm-def layout props tab def)
@@ -317,7 +311,8 @@
       ((not tab)
         (number->string num 10))
       ((pair? tab)
-        (let ((sym (or (assv-ref tab num) (assv-ref tab 'default))))
+        (let ((sym (or (assv-ref tab num)
+                       (assq-ref (ekm:asstl 'number 'ekm) style))))
           (if (procedure? sym)
             (sym (number->string num 10))
             (make-ekm-text-markup sym))))
@@ -1003,10 +998,10 @@ ekmFlag =
 #(define (ekm-parens-align val dir)
   (let ((sym (ekm:sym val dir)))
     (if (not-pair? sym)
-      (markup #:ekm-text sym)
-      (markup #:general-align Y (second sym)
-        #:fontsize (third sym)
-        #:ekm-text (first sym)))))
+      (make-ekm-text-markup sym)
+      (make-general-align-markup Y (second sym)
+        (make-fontsize-markup (third sym)
+          (make-ekm-text-markup (first sym)))))))
 
 #(define (ekm-parens style name)
   (let* ((p (ekm:asst 'parens style name #f)))
@@ -1124,15 +1119,14 @@ ekmFlag =
 ekmParensDyn =
 #(define-event-function (style dyn)
   (symbol? ly:event?)
-  (let ((p (ekm-parens style 'd)))
+  (let ((p (ekm-parens style 'd))
+        (sp (make-ekm-text-markup (assoc-ref ekm-shared-tab "_"))))
     (make-music 'AbsoluteDynamicEvent
       'text
-      (markup #:concat (
-        (car p)
-        #:hspace 0.3
-        #:ekm-dynamic (ly:music-property dyn 'text)
-        #:hspace 0.3
-        (cdr p))))))
+      (make-concat-markup (list
+        (car p) sp
+        (make-ekm-dynamic-markup (ly:music-property dyn 'text))
+        sp (cdr p))))))
 
 ekmParensHairpin =
 #(define-music-function (style)
@@ -1143,11 +1137,13 @@ ekmParensHairpin =
       (let* ((p (ekm-parens style 'h))
              (l (ekm-ctext grob CY (car p)))
              (r (ekm-ctext grob CY (cdr p)))
-             (x (+ (ekm-extent l X) 0.6)))
+             (sp (ekm-ctext grob 0 (assoc-ref ekm-shared-tab "__")))
+             (sp (ekm-extent sp X))
+             (x (+ (ekm-extent l X) sp)))
         (ly:grob-set-property! grob 'shorten-pair (cons x x))
         (ly:stencil-combine-at-edge
-          (ly:stencil-combine-at-edge
-            l X RIGHT (ly:hairpin::print grob) 0.6) X RIGHT r 0.6)))
+        (ly:stencil-combine-at-edge
+          l X RIGHT (ly:hairpin::print grob) sp) X RIGHT r sp)))
   #})
 
 
@@ -1974,9 +1970,8 @@ ekmBendAfter =
 
 #(define (ekm-func layout props size def)
   (interpret-markup layout props
-    (markup
-      #:fontsize size
-      #:ekm-def (ekm:assid 'func #f) def)))
+    (make-fontsize-markup size
+    (make-ekm-def-markup (ekm:assid 'func #f) def))))
 
 #(define-markup-command (ekm-func layout props def)
   (string?)
@@ -2257,6 +2252,15 @@ ekmMetronome =
         #f))))
     music)
   music)
+
+#(define-markup-command (ekm-default-scale-number layout props txt)
+  (string?)
+  (interpret-markup layout props
+    (make-general-align-markup Y DOWN
+    (make-fontsize-markup 4.5
+    (make-sans-markup
+    (make-override-markup '(baseline-skip . 1.2)
+    (make-center-column-markup (list "⌃" txt))))))))
 
 
 %% Types table
@@ -2792,7 +2796,7 @@ ekmMetronome =
   ("___" . ,(markup #:hspace 2))
   ("__" . ,(markup #:hspace 0.78))
   ("_" . ,(markup #:hspace 0.17))
-  ;("`" . #f)
+  ("`" . #f)
   ))
 
   (dynamic (#t
@@ -3099,8 +3103,7 @@ ekmMetronome =
     (10 . #xE84A)
     (11 . #xE84B)
     (12 . #xE84C)
-    (13 . #xE84D)
-    (default . ,make-ekm-default-string-number-markup))
+    (13 . #xE84D))
   (scale
     (1 . #xEF00)
     (2 . #xEF01)
@@ -3110,8 +3113,10 @@ ekmMetronome =
     (6 . #xEF05)
     (7 . #xEF06)
     (8 . #xEF07)
-    (9 . #xEF08)
-    (default . ""))
+    (9 . #xEF08))
+  (ekm
+    (string . ,make-ekm-default-string-number-markup)
+    (scale . ,make-ekm-default-scale-number-markup))
   )
 
   (tremolo
@@ -3813,7 +3818,9 @@ ekmSmuflOff =
   ;; create metadata table
   (if (or cr (not tab))
     (let* ((tpl (ekmd:set-dg! (ekmd:load dir font "ekmd-template.scm")))
-           (types (ekmd:load dir font (string-append "types-" f ".scm")))
+           (types (or (ekmd:load dir font (string-append "types-" f ".scm"))
+                      (ekmd:load dir font "types-template.scm")
+                      '()))
            (md (ekmd:read
                 dir font font
                 '((fontName . #t)
@@ -3833,7 +3840,7 @@ ekmSmuflOff =
             (cons 'fontVersion (assq-ref md 'fontVersion))
             (cons 'defaults ekmd:defaults)
             (cons 'glyphs ekmd:glyphs)
-            (cons 'types (or types '()))))
+            (cons 'types types)))
           (ekmd:save (string-append ekmd:dir "/" name) tab)))))
 
   (set! ekm:font-name font)
