@@ -272,7 +272,7 @@
     (ekm:sym e dir)))
 
 
-%% Token style table
+%% Token table
 
 #(define (ekm:asstk tab def)
   (if (null? tab) #f
@@ -1569,7 +1569,7 @@ ekmArpeggioNormal = {
   (let ((sp (make-hspace-markup (ly:grob-property grob 'word-space 0.2))))
     (cons* sp (ekm:assid 'tuplet ":") sp tail)))
 
-#(define ((ekm-tuplet-number num denom) grob)
+#(define-public ((ekm-tuplet-number num denom) grob)
   (make-ekm-concat-markup (cons*
     (ekm-tuplet-num num grob 'denominator)
     (if (eqv? 0 denom)
@@ -1587,24 +1587,24 @@ ekmArpeggioNormal = {
         (ly:duration-dot-count dur)
         UP))))
 
-#(define (ekm-tuplet-number::calc-denominator-text grob)
+#(define-public (ekm-tuplet-number::calc-denominator-text grob)
   ((ekm-tuplet-number #f 0) grob))
 
-#(define (ekm-tuplet-number::calc-fraction-text grob)
+#(define-public (ekm-tuplet-number::calc-fraction-text grob)
   ((ekm-tuplet-number #f #f) grob))
 
-#(define ((ekm-tuplet-number::non-default-tuplet-denominator-text num) grob)
+#(define-public ((ekm-tuplet-number::non-default-tuplet-denominator-text num) grob)
   ((ekm-tuplet-number num 0) grob))
 
-#(define ((ekm-tuplet-number::non-default-tuplet-fraction-text num denom) grob)
+#(define-public ((ekm-tuplet-number::non-default-tuplet-fraction-text num denom) grob)
   ((ekm-tuplet-number num denom) grob))
 
-#(define ((ekm-tuplet-number::append-note-wrapper fmt dur) grob)
+#(define-public ((ekm-tuplet-number::append-note-wrapper fmt dur) grob)
   (let ((num (and fmt (fmt grob)))
         (note (make-ekm-tuplet-note-markup dur)))
     (if num (make-line-markup (list num note)) note)))
 
-#(define ((ekm-tuplet-number::non-default-fraction-with-notes
+#(define-public ((ekm-tuplet-number::non-default-fraction-with-notes
            num numdur denom denomdur) grob)
   (make-ekm-concat-markup (cons*
     (ekm-tuplet-num num grob 'denominator)
@@ -1614,7 +1614,7 @@ ekmArpeggioNormal = {
         (ekm-tuplet-num denom grob 'numerator)
         (make-ekm-tuplet-note-markup denomdur))))))
 
-#(define ((ekm-tuplet-number::fraction-with-notes
+#(define-public ((ekm-tuplet-number::fraction-with-notes
            numdur denomdur) grob)
   ((ekm-tuplet-number::non-default-fraction-with-notes
     #f numdur #f denomdur) grob))
@@ -2099,7 +2099,7 @@ ekmFuncList =
     defs))
 
 
-%% Arrow / Arrow head / Beater
+%% Arrow / Beater
 
 #(define-markup-command (ekm-arrow layout props style orient)
   (symbol? number?)
@@ -3800,7 +3800,7 @@ ekmSmuflOff =
 
 %% Initializations
 
-#(let* ((font (or (ly:get-option 'ekmfont) (ly:get-option 'ekmelic-font)))
+#(let* ((font (ly:get-option 'ekmfont))
         (font (if font (symbol->string font)
               (if (defined? 'ekmFont) ekmFont "")))
         (path (string-suffix? "#" font))
