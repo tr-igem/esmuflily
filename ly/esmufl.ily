@@ -661,14 +661,15 @@ ekmStaffDivider =
   #})
 
 ekmSlashSeparator =
-#(define-scheme-function (size) (integer?)
- #{ \markup {
-      \center-align
-      \vcenter
-      \override #'(font-size . -5)
-      \ekm-text #(ekm:asslim 'separator 'default size #f)
-    }
- #})
+#(define-scheme-function (size)
+  (number?)
+  #{ \markup {
+       \center-align
+       \vcenter
+       \override #'(font-size . -5)
+       \ekm-text #(ekm:asslim 'separator 'default size #f)
+     }
+  #})
 
 
 %% Note head
@@ -1119,7 +1120,7 @@ ekmFlag =
 ekmParensDyn =
 #(define-event-function (style dyn)
   (symbol? ly:event?)
-  (let ((p (ekm-parens style 'd))
+  (let ((p (ekm-parens style 'dynamic))
         (sp (make-ekm-text-markup (assoc-ref ekm-shared-tab "_"))))
     (make-music 'AbsoluteDynamicEvent
       'text
@@ -1134,7 +1135,7 @@ ekmParensHairpin =
   #{
     \once \override Hairpin.stencil =
     #(lambda (grob)
-      (let* ((p (ekm-parens style 'h))
+      (let* ((p (ekm-parens style 'hairpin))
              (l (ekm-ctext grob CY (car p)))
              (r (ekm-ctext grob CY (cdr p)))
              (sp (ekm-ctext grob 0 (assoc-ref ekm-shared-tab "__")))
@@ -1290,7 +1291,7 @@ ekmStartTrillSpan =
       UP)))
 
 #(define (ekm-calc-parenthesis-stencils grob)
-  (let ((p (ekm-parens (ly:grob-property grob 'style) 'a)))
+  (let ((p (ekm-parens (ly:grob-property grob 'style) 'accidental)))
     (list (ekm-ctext grob CX (car p))
           (ekm-ctext grob CX (cdr p)))))
 
@@ -3345,17 +3346,17 @@ ekmMetronome =
 
   (parens
   (default
-    (a #xE26A . #xE26B)
-    (d ("(" -0.5 -2) . (")" -0.5 -2))
-    (h #xE542 . #xE543))
+    (accidental #xE26A . #xE26B)
+    (dynamic ("(" -0.5 -2) . (")" -0.5 -2))
+    (hairpin #xE542 . #xE543))
   (bracket
-    (a #xE26C . #xE26D)
-    (d ("[" -0.5 -2) . ("]" -0.5 -2))
-    (h #xE544 . #xE545))
+    (accidental #xE26C . #xE26D)
+    (dynamic ("[" -0.5 -2) . ("]" -0.5 -2))
+    (hairpin #xE544 . #xE545))
   (brace
-    (d ("{" -0.5 -2) . ("}" -0.5 -2)))
+    (dynamic ("{" -0.5 -2) . ("}" -0.5 -2)))
   (angle
-    (d ("<" -0.5 -2) . (">" -0.5 -2)))
+    (dynamic ("<" -0.5 -2) . (">" -0.5 -2)))
   )
 
   (fbass (#t
@@ -3813,7 +3814,7 @@ ekmSmuflOff =
         (cr (string-suffix? "%" dir))
         (dir (if cr (string-drop-right dir 1) dir))
         (name (string-append "ekmd-" f ".scm"))
-        (tab (ekmd:set-dg! (ekmd:load dir font name))))
+        (tab (ekmd:load dir font name)))
 
   ;; create metadata table
   (if (or cr (not tab))
@@ -3835,20 +3836,22 @@ ekmSmuflOff =
       (if (and tpl md)
         (begin
           (ekmd:name->cp (append ekmd:glyphnames (or (assq-ref md 'optionalGlyphs) '())))
-          (set! tab (list
+          (set! tab (list 'quasiquote (list
             (cons 'fontName font)
             (cons 'fontVersion (assq-ref md 'fontVersion))
             (cons 'defaults ekmd:defaults)
             (cons 'glyphs ekmd:glyphs)
-            (cons 'types types)))
+            (cons 'types types))))
           (ekmd:save (string-append ekmd:dir "/" name) tab)))))
 
   (set! ekm:font-name font)
   (set! ekm:draw-paths (and path (defined? 'ekm-path-stencil)))
 
+  (set! tab (primitive-eval tab))
+  (ekmd:set-dg! tab)
   (for-each (lambda (t)
     (ekm:merge-type (car t) (cdr t)))
-    (or (and tab (assq-ref tab 'types)) '())))
+    (or (assq-ref tab 'types) '())))
 
 %% Symbols for frequently used types
 #(define ekm-notehead-tab (assq-ref ekm:types 'notehead))
