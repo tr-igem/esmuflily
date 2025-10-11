@@ -544,3 +544,11 @@ January 2021 - May 2021:
 - Add "types" table to file "ekmd-sebastian.scm".
 - Add "`" to "shared" table.
 - Change "\ekmParensDyn" and "\ekmParensHairpin" using "shared" space for gap.
+
+2025-10-11:
+- Change tuplet procedures to be defined public.
+- Add quasiquote to metadata tables in cache files (issue #29).
+- Add keyword list.
+- Change style symbols of `parens` table to "accidental", "dynamic",
+  "hairpin", "func", "text".
+- Change "\ekmSlashSeparator" arg type to number.

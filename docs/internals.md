@@ -1694,10 +1694,10 @@ Parentheses
     )
 
 *   STYLE (symbol):
-    default, bracket, ...
+    default, bracket, brace, angle
 
 *   NAME (symbol):
-    a (accidental), d (dynamics), h (dynamics hairpin), t (normal text), ...
+    accidental, dynamic, hairpin, func, text
 
 *   SYMBOL:
 
