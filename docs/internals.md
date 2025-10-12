@@ -109,13 +109,14 @@ slower/faster).
     Data to draw a musical symbol: either a simple value (CP, string),
     or a list (one or more EXTEXT, or EXTEXT with additional data).
 
-*   EXTEXT (integer, string, list):
+*   EXTEXT (integer, string, list, `#f`):
 
         CP
         "..."
         (CP FEATURE ...)
         (CP-1 CP-2 ...)
         (markup ...)
+        #f
 
 *   CP (integer >= 0):
     Code point of the glyph to draw. 0 draws a point-stencil.
