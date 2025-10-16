@@ -44,7 +44,7 @@
 #(define (number-or-list? x)
   (or (number? x) (list? x)))
 
-#(define ekm-cp? index?)
+#(define ekm-cp? integer?)
 
 #(define (ekm-cdr-cp? x)
   (or (null? (cdr x))
@@ -121,9 +121,7 @@
     (stack-stencil-line 0
       (map (lambda (cp) (ekm-path-stencil cp font-size 0 #t)) cps))
     (interpret-markup layout props
-      (make-ekm-str-markup
-        (string-concatenate
-          (map (lambda (cp) (ly:wide-char->utf-8 cp)) cps)))))))
+      (make-ekm-str-markup (apply string (map integer->char cps)))))))
 
 #(define-markup-command (ekm-text layout props txt)
   (ekm-extext?)
@@ -144,7 +142,7 @@
   (cheap-list?)
   (stack-stencil-line 0
     (interpret-markup-list layout props
-      (map (lambda (s) (make-ekm-text-markup s)) args))))
+      (map make-ekm-text-markup args))))
 
 #(define-markup-command (ekm-line layout props args)
   (cheap-list?)
