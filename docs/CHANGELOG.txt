@@ -552,3 +552,7 @@ January 2021 - May 2021:
 - Change style symbols of `parens` table to "accidental", "dynamic",
   "hairpin", "func", "text".
 - Change "\ekmSlashSeparator" arg type to number.
+
+2025-10-16:
+- Simplify "ekm-cp?" to "integer?" (issue #30).
+- Revise "\ekm-chars" and "\ekm-concat".
