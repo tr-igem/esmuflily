@@ -1,7 +1,6 @@
 %%
 %% Sample for Esmuflily
 %% System start delimiters brace and bracket
-%% using the "Ekmelos" or "Bravura" font.
 %%
 
 \version "2.24.0"
@@ -37,8 +36,6 @@
 %% ---------------------------------------------------------------------
 
 #(define (is-bravura l p) (string=? "Bravura" ekm:font-name))
-#(define sp " ")
-#(define mark "      |")
 
 myinit = {
   \ekmSmuflOn #'systemstart
@@ -225,21 +222,6 @@ myinit = {
     "4"  "5"  "6"  "7"  "8" "9"  "10" "11" "12" "13" "14" "15"
     "16" "17" "18" "19" "20" "21" "22" "23" "24" "25" "26" "27" "28"
   }
-  \if #is-bravura
-  \fill-line {
-    #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp
-  }
-  \unless #is-bravura
-  \fill-line {
-    #sp #mark
-    #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp
-  }
   \vspace #3
 
   \fill-line {
@@ -269,19 +251,6 @@ myinit = {
   \fill-line {
     "29" "30" "31" "32" "33" "34" "35" "36" "37" "38" "39"
     "40" "41" "42" "43" "44" "45" "46" "47" "48" "49" "50"
-  }
-  \if #is-bravura
-  \fill-line {
-    #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #mark
-    #sp
-  }
-  \unless #is-bravura
-  \fill-line {
-    #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp #mark
-    #sp #sp #sp #sp #sp #sp #sp
   }
 }}
 

@@ -7,13 +7,13 @@
 %% Changes:
 %% * "\niente" is replaced with "\n".
 %% * "\smufllig" is replaced with "\ekm-chars".
-%% * uses the "Ekmelos" or "Bravura" font.
 %%
 
 \version "2.24.0"
 
 % ekmFont = "Bravura"
-ekmSystem = 24
+% ekmFont = "Sebastian"
+% ekmFont = "Petaluma"
 
 \include "cosmufl.ily"
 
