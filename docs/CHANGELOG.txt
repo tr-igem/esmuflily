@@ -361,3 +361,198 @@ January 2021 - May 2021:
   Added property "thickness" to "\ekm-system-start" and "(ekm-system-start)".
 - Changed name of "(trill?)" to "(ekm-trill?)".
 - Removed "\ekmStartTrillSpanScript", replaced by "\ekmStartSpan".
+
+2025-08-04:
+- Added basic metadata support (issue #3).
+- Added "ekmd.scm": Parse JSON file and create metadata table.
+- Added metadata tables: "metadata-bravura.scm", "metadata-ekmelos.scm",
+  and "metadata-template.scm" to create new tables.
+  They include data from "engravingDefaults" and stem attachment of note heads.
+- Added "(ekm-md)" to access engravingDefaults,
+  and "(ekm-md-glyph)" to access glyph metadata.
+- Added bracket thickness from engravingDefaults.
+- Removed stem-attachment data from table "ekm-notehead-tab".
+- Changed "(ekm-note)" and "(ekm-stem-attachment)" to access metadata.
+
+2025-08-05:
+- Added cluster notes to "metadata-*.scm".
+- Removed stem-attachment data from table "ekm-cluster-tab".
+- Changed "(ekm-cluster)" to access metadata.
+
+2025-08-06:
+- Added "(ekm-dir)" for beamed notes and clusters (issue #19).
+
+2025-08-10:
+- Added metadata support for flags of different font-specific styles.
+- Added "\ekmInitFlag" to prepare flag metadata.
+- ekmd.scm: Added "(ekmd:tag!)" to tag glyphs for grouping by style
+  and duration log. Used for flags.
+- ekmd.scm: Added "(ekmd:name->cp gn)" to convert glyph names to code points.
+
+2025-08-13:
+- ekmd.scm: Includes the glyphnames table "ekmd:glyphnames" instead of
+  separate file "glyphnames.scm".
+- Changed names of cache files from "metadata-*" to "ekmd-*".
+
+2025-08-14:
+- Changed table "ekm-stemlength-tab" and "\ekmInitFlag"
+  to provide up and down stem length.
+  Adapt "(ekm-stemlength)" and "(ekm-flag)" accordingly.
+
+2025-09-05:
+- Added common type table "ekm-types" replacing type-specific tables:
+  "ekm-notehead-tab", "ekm-flag-tab", "ekm-rest-tab", "ekm-script-tab",
+  "ekm-cluster-tab", "ekm-delimiter-tab", "ekm-spanner-tab",
+  "ekm-accordion-tab", "ekm-brass-tab", "ekm-parens-tab", ...
+- Added "(ekm-merge-type)" to extend type tables with font-specific
+  styles from the cache file.
+- Changed format of flag entries in the "glyphs" sub-table of the
+  metadata table. Moved FLAG-STYLE and LOG to the "styles" sub-table.
+- Added "(ekm-init-stemlength)" replacing "\ekmInitFlag".
+- Changed tables delimiter, accordion, brass:
+  Separate up and down values for a unique format and to allow directions.
+- Removed MINIMUM-LENGTH from brass table.
+- Changed "\ekmBendAfter" to calculate minimum-length from glyphs.
+- Changed parens table:
+  "#t" instead of "ekm-align" to avoid quasi-quote.
+
+2025-09-07:
+- Changed tables script, clef, dynamic, shared:
+  Sub-table with style "#t".
+- Added "(ekm-init-clef)".
+- Added table laissezvibrer.
+  Changed "\ekmLaissezVibrer" to accept an extent instead of an index.
+
+2025-09-08:
+- Added tables tremolo, stem, ottava, ottavation, finger, string.
+- Added "(ekm-ottavation)" creating an ottavation style list for "ottavationMarkups".
+- Removed predefined lists "ekm-ottavation-*" and "(ekm-cdr-text)".
+- Set shared table to "\hspace" markups for SP,EMSP,ENSP,THSP,HSP,
+  and new key "`" to 0 for ZWSP.
+
+2025-09-09:
+- Added tables pedal, harp.
+
+2025-09-10:
+- Added styles to table number: time, time-turned, time-reversed, tuplet,
+  finger, finger-italic, string, fbass, func.
+  string replaces type table.
+- Changed "(ekm-number->list)" and "\ekm-number" to access table number.
+- Added table clef-mod.
+- Added command "\ekm-concat".
+- Changed direction order in glyphs and types tables to (DOWN . UP).
+
+2025-09-18:
+- Add tables fbass, fbass-acc, lyric, analytics, func, arrow, beater.
+- Change "(ekm-fbass)" to accept any extext.
+- Add command "\ekm-orient".
+- Remove "(ekm-oref)".
+- Change "\ekmBendAfter" to accept any extext.
+
+2025-09-20:
+- Add tables time, time-sub, dots.
+- Change "\ekm-note-by-number", "\ekm-fermata", "(ekm-time-num)",
+  "(ekm-timesig)", "\ekmCadenzaOn" to accept any extext.
+- Change "\ekmCadenzaOn" to accept string styles from table time.
+
+2025-09-21:
+- Add tables colon, segno.
+- Add "(make-ekm-old-bar-line)", "(make-ekm-bar-line)", and "(ekm-bar-init)"
+  replacing separate functions for colon and segno.
+- Add "(ekm-symex)".
+- Change "(ekm-asst)" to accept type symbol or table.
+
+2025-09-21:
+- Add table tuplet.
+- Add "(ekm-tuplet-num)" replacing "(ekm-tuplet-list)",
+  and "(ekm-tuplet-frac)".
+- Change "(ekm-tuplet-number)" and "(ekm-tuplet-number::non-default-fraction-with-notes)"
+  to accept extext and "word-space" property instead of space chars.
+
+2025-09-22:
+- Add tables barline, separator, grace, mmrest.
+- Change "\ekm-mmr" using metadata "hBarThickness" instead of U+E4F0.
+- Change to accept extext: "\ekm-number", "\ekmStaffDivider",
+  "ekmSlashSeparator", "(ekm-dots)", "(ekm-flag)", "\ekm-mmr",
+  "\ekm-rest-by-number".
+- Change "\ekm-note-by-number" supporting dot style.
+
+2025-09-23:
+- Add tables percent, arpeggio.
+- Add "(ekm-repeat)", "(ekm-doublerepeat)", "(ekm-doublepercent)"
+  replacing "(ekm-percent)" for separate percent repeats.
+- Change to accept extext: "\ekm-scoop", "\ekmBendAfter", "(ekm-arpeggio)".
+- Add "\ekmArpeggioArrowUp", "\ekmArpeggioArrowDown", "\ekmArpeggioNormal".
+
+2025-09-24:
+- Change to accept extext: "\ekm-harp-change", "\ekm-fret-diagram-terse",
+  "(ekm-time-num)".
+- Add table "fret". Support fretboard without nut.
+- Extend "\ekm-number" and table "number" for normal text styles and default numbers.
+- Remove "(ekm-number->list)".
+- Change "\ekm-string-number" and add "\ekm-default-string-number"
+  for default numbers.
+
+2025-09-26:
+- Change "\ekm-accordion" to accept extext.
+- Fix table "accordion" holding only symbols without direction.
+- Add accordion ricochet symbols to tables "script" and "stem".
+- Fix table "parens" for transformation values.
+- Add tables "level", "misc".
+- Change to accept extext: "(ekm-control)", "\ekm-eyeglasses", "\ekm-metronome".
+
+2025-09-27:
+- Add command "\ekm-misc".
+- Fix "(ekm-repeat-tremolo)" and "\ekmTremolo" to pass extext to stencil.
+- Fix tables "arrow" and "beater" with a default style as first entry.
+
+2025-09-28:
+- Remove styles "straight", "short", "beamed" from table "notehead".
+- Add name "d" to all styles of table "parens".
+- Fix "\ekmParensDyn" using "d" instead of normal text.
+
+2025-10-02:
+- Fix "\ekm-concat", "\ekm-line" to accept "cheap-list?".
+- Fix "(ekm-md-glyph)" default stem-attachment.
+
+2025-10-03:
+- Rename some internals.
+- Add JSON file names to lookup: "FNAME_metadata.json", "metadata.json".
+- Add "\ekmMergeType".
+
+2025-10-04:
+- Add "(ekmd:find-file)" and change "(ekmd:load)" to find json and scm
+  (issue #28).
+- Add "(ekmd:set-dg!)" swapped from "(ekmd:load)".
+
+2025-10-05:
+- Fix "(ekmd:set-dg!)" to set "glyphs" table.
+- Add "(ekm:reverse)".
+- Change "(ekm-script)" to draw symbols with "\ekmScript" in UP,DOWN order.
+- Change "(ekm-text)" and "(ekm-extext?)" to accept "#f" which draws
+  an empty-stencil.
+- Remove "(ekm-extext-or-not?)".
+- Fix markup entries in table "harp".
+- Change "hBarThickness" in cache files "ekmd-bravura.scm" and "ekmd-sebastian.scm".
+
+2025-10-06:
+- Add style "ekm" to "number" table with default procedures.
+  Change "(ekm-number)" accordingly.
+- Add command "\ekm-default-scale-number".
+- Add file "types-template.scm".
+  Change creating metadata table to use this file.
+- Add "types" table to file "ekmd-sebastian.scm".
+- Add "`" to "shared" table.
+- Change "\ekmParensDyn" and "\ekmParensHairpin" using "shared" space for gap.
+
+2025-10-11:
+- Change tuplet procedures to be defined public.
+- Add quasiquote to metadata tables in cache files (issue #29).
+- Add keyword list.
+- Change style symbols of `parens` table to "accidental", "dynamic",
+  "hairpin", "func", "text".
+- Change "\ekmSlashSeparator" arg type to number.
+
+2025-10-16:
+- Simplify "ekm-cp?" to "integer?" (issue #30).
+- Revise "\ekm-chars" and "\ekm-concat".
