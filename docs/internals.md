@@ -97,9 +97,8 @@ slower/faster).
         #(EXTEXT ...)
         CP
 
-    Sequence of symbols accessed by an index >= 0.
+    Sequence of SYMBOLs accessed by an index >= 0.
     A single CP means consecutive code points CP + index.
-    The order of the symbols depends on TYPE.
 
 *   SYMBOL:
 
@@ -118,7 +117,7 @@ slower/faster).
         (markup ...)
         #f
 
-*   CP (integer >= 0):
+*   CP (integer):
     Code point of the glyph to draw. 0 draws a point-stencil.
 
 
@@ -138,8 +137,7 @@ A type table can have one or more style tables.
 ### Identifier table
 
 Special style table with the name `#t`.
-A type table that does not differentiate styles has a single
-identifier table.
+A type table with an identifier table has usually no other style tables.
 
     (TYPE
       (#t
@@ -155,8 +153,8 @@ Special identifier table with the first entry `#t`.
 This entry is only crucial for the correct merger of the predefined table
 with a font-specific table.
 
-A DEFINITION string which is a sequence of one or more tokens
-draws the corresponding musical symbols stacked in a line.
+A DEFINITION string, i.e. a sequence of one or more tokens,
+draws the corresponding SYMBOLs stacked in a line.
 
     (TYPE
       (#t #t
@@ -165,14 +163,12 @@ draws the corresponding musical symbols stacked in a line.
       )
     )
 
-*   TYPE: shared, pedal, ottava, harp, analytics, func.
-
 *   TOKEN (string):
     A token which is a prefix of other tokens in the same table
     must be arranged after them, ie. the correct order is "abc", "ab", "a".
     Else the other keys will be ignored.
 
-*   SYMBOL (EXTEXT or #f):
+*   SYMBOL (EXTEXT):
     Musical symbol.
     `#f` ignores TOKEN in DEFINITION strings.
 
@@ -180,13 +176,6 @@ draws the corresponding musical symbols stacked in a line.
 
 The type `shared` defines additional tokens that are always applicable
 in DEFINITION strings.
-The predefined shared token table defines spaces:
-
-    " "       \hspace #1        SP
-    "____"    \hspace #4        EMSP
-    "___"     \hspace #2        ENSP
-    "__"      \hspace #0.78     THSP
-    "_"       \hspace #0.17     HSP
 
 
 ### Limit table
@@ -249,7 +238,7 @@ Type table with index-tables.
 
     Like `(ekm:asst)` but for the GROB properties `style`, `duration-log`,
     and `Stem.direction`, or for LOG or DIR if true.
-    If GROB is not a grob it must be a style, and LOG and DIR must be true.
+    If GROB is not a grob it must be a style, and LOG and DIR must be true values.
 
 *   (ekm:asslim TYPE STYLE SIZE DIR)
 
@@ -282,7 +271,7 @@ Type table with index-tables.
 
 *   (ekm:sym VAL DIR)
 
-    Return the part (symbol) of VAL according to DIR (#f, < 0, >= 0).
+    Return the part (symbol) of VAL according to DIR (`#f`, < 0, >= 0).
 
 *   (ekm:reverse DIR)
 
@@ -296,19 +285,6 @@ Type table with index-tables.
 
 Types
 -----
-
-S = Style tables
-I = Identifier table
-T = Token table
-L = Limit tables
-O = Orientation table
-
-Forms of symbols in the table entries:
-X = LEFT and RIGHT
-Y = DOWN and UP
-M = main and variant
-W = smaller and wider (slower and faster)
-N = do not distinguish forms
 
     notehead        S     Y     Note heads
     cluster         S     Y     Note clusters
@@ -355,6 +331,22 @@ N = do not distinguish forms
     number          S     N     Numbers, Digits
     parens          S     X     Parentheses
     shared          T     N     Shared token table
+
+Table structue:
+
+    S = Style tables
+    I = Identifier table
+    T = Token table
+    L = Limit tables
+    O = Orientation table
+
+Forms of symbols in the table entries:
+
+    X = LEFT and RIGHT
+    Y = DOWN and UP
+    M = main and variant
+    W = smaller and wider (slower and faster)
+    N = do not distinguish forms
 
 
 
@@ -1001,7 +993,7 @@ The following components are drawn:
         (DELIMITER SCALE STRETCH END MID LEFT RIGHT)
         (#f SCALE STRETCH BOTTOM TOP LEFT RIGHT)
 
-*   DELIMITER (EXTEXT or #f):
+*   DELIMITER (EXTEXT):
     Delimiter symbol.
     `#f` draws the delimiter with BOTTOM and TOP without masks and
     without a middle segment. This is intended for brackets.
