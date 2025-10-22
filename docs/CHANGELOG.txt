@@ -556,3 +556,8 @@ January 2021 - May 2021:
 2025-10-16:
 - Simplify "ekm-cp?" to "integer?" (issue #30).
 - Revise "\ekm-chars" and "\ekm-concat".
+
+2025-10-21:
+- Add "\ekm-script".
+- cosmufl.ily: Add "\ekm-combine-accidental", "\ekmScriptAccidental".
+- cosmufl.ily: Change "\ekmStartTrillSpanAccidental".
