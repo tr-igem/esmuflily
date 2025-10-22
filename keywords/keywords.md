@@ -128,6 +128,7 @@ Esmuflily
     \ekm-number
     \ekm-orient
     \ekm-label
+    \ekm-script
 
     \ekmMergeType
 
@@ -164,5 +165,6 @@ cosmufl.ily
 
     \ekm-system
 
-    \ekm-trill-accidental
+    \ekm-combine-accidental
+    \ekmScriptAccidental
     \ekmStartTrillSpanAccidental
