@@ -1168,6 +1168,16 @@ ekmScriptSmall =
   (make-articulation name
     'tweaks `((details . ,text) (font-size . -3))))
 
+#(define-markup-command (ekm-script layout props style dir)
+  (string-or-symbol? ly:dir?)
+  (interpret-markup layout props
+    (make-ekm-text-markup
+      (ekm:sym
+        (if (string? style)
+          (ekm:assid 'script style)
+          (assq-ref (ekm:asstl 'spanner style) 'text))
+        dir))))
+
 
 %% Multi-segment spanner
 

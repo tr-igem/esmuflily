@@ -47,20 +47,48 @@
   ()
   (interpret-markup layout props ekm:system))
 
-#(define-markup-command (ekm-trill-accidental layout props alt)
-  (rational?)
-  #:properties ((trill-padding 0.2))
-  (let* ((tr (interpret-markup layout props
-               (make-ekm-char-markup #xE566)))
-         (acc (interpret-markup layout props
-                (make-fontsize-markup -1
-                  (make-ekmelic-char-text-markup alt)))))
-    (stack-stencil-line trill-padding (list tr acc point-stencil))))
+
+#(define-markup-command (ekm-combine-accidental layout props alt alt2 arg)
+  (ekm:genalter? ekm:genalter? markup?)
+  #:properties ((x-padding 0.2)
+                (y-padding 0.1)
+                (acc-size -1))
+  (let ((sil (interpret-markup layout props arg)))
+    (if (eq? 'X alt2)
+      (stack-stencil-line x-padding (list
+        sil
+        (interpret-markup layout props
+          (make-fontsize-markup acc-size
+            (make-ekmelic-char-text-markup alt)))
+        point-stencil))
+      (let* ((w (ekm-extent sil X))
+             (acc (map (lambda (a)
+                    (if (eq? 'none a)
+                      empty-stencil
+                      (interpret-markup layout props
+                        (make-hcenter-in-markup w
+                          (make-fontsize-markup acc-size
+                            (make-ekmelic-char-markup a))))))
+                    (list alt alt2))))
+        (ly:stencil-combine-at-edge
+        (ly:stencil-combine-at-edge
+          (ly:stencil-aligned-to sil X CENTER)
+          Y UP (first acc) y-padding)
+          Y DOWN (second acc) y-padding)))))
+
+ekmScriptAccidental =
+#(define-music-function (name alt alt2)
+  (symbol? ekm:genalter? ekm:genalter?)
+  (make-articulation name
+    'tweaks
+    `((details . (,(make-ekm-combine-accidental-markup
+                    alt alt2 (make-ekm-script-markup (symbol->string name) MAIN)))))))
 
 ekmStartTrillSpanAccidental =
 #(define-event-function (tempo alt)
-  (number-or-pair? rational?)
+  (number-or-pair? ekm:genalter?)
   (make-music 'TrillSpanEvent
     'span-direction START
     'tweaks `((zigzag-width . ,tempo)
-              (text . (,(make-ekm-trill-accidental-markup alt) . 0)))))
+              (text . (,(make-ekm-combine-accidental-markup
+                          alt 'none (make-ekm-script-markup 'trill MAIN)) . 0)))))
