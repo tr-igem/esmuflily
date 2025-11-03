@@ -561,3 +561,10 @@ January 2021 - May 2021:
 - Add "\ekm-script".
 - cosmufl.ily: Add "\ekm-combine-accidental", "\ekmScriptAccidental".
 - cosmufl.ily: Change "\ekmStartTrillSpanAccidental".
+
+2025-11-03:
+- Fix LP 2.25 support in type table "number". Style "serif" replaces "roman"
+  (issue #31).
+- Fix LP 2.25 support for new text font:
+  "(ekm-parens-align)" draws a string with \sans instead of "\ekm-text".
+  Change in type table "parens" font-size to -1 ("dynamic" keys).
