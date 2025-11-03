@@ -1000,7 +1000,9 @@ ekmFlag =
       (make-ekm-text-markup sym)
       (make-general-align-markup Y (second sym)
         (make-fontsize-markup (third sym)
-          (make-ekm-text-markup (first sym)))))))
+          (if (string? (first sym))
+            (make-sans-markup (first sym))
+            (make-ekm-text-markup (first sym))))))))
 
 #(define (ekm-parens style name)
   (let* ((p (ekm:asst 'parens style name #f)))
@@ -3094,8 +3096,8 @@ ekmMetronome =
     #xEA70)
   (sans .
     ,make-sans-markup)
-  (roman .
-    ,make-roman-markup)
+  (serif .
+    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
   (typewriter .
     ,make-typewriter-markup)
   (string
@@ -3355,16 +3357,16 @@ ekmMetronome =
   (parens
   (default
     (accidental #xE26A . #xE26B)
-    (dynamic ("(" -0.5 -2) . (")" -0.5 -2))
+    (dynamic ("(" -0.5 -1) . (")" -0.5 -1))
     (hairpin #xE542 . #xE543))
   (bracket
     (accidental #xE26C . #xE26D)
-    (dynamic ("[" -0.5 -2) . ("]" -0.5 -2))
+    (dynamic ("[" -0.5 -1) . ("]" -0.5 -1))
     (hairpin #xE544 . #xE545))
   (brace
-    (dynamic ("{" -0.5 -2) . ("}" -0.5 -2)))
+    (dynamic ("{" -0.5 -1) . ("}" -0.5 -1)))
   (angle
-    (dynamic ("<" -0.5 -2) . (">" -0.5 -2)))
+    (dynamic ("<" -0.5 -1) . (">" -0.5 -1)))
   )
 
   (fbass (#t
