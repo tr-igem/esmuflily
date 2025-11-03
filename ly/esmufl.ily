@@ -600,7 +600,7 @@ ekmCompoundMeter =
       #{
         \once \override Timing.TimeSignature.stencil =
           #(lambda (grob) (grob-interpret-markup grob (ekm-time-compound sig)))
-        \set Timing.timeSignatureFraction = #timesig
+        \set Timing.timeSignature = #timesig
         \set Timing.beatBase = #(calculate-compound-beat-base pln)
         \set Timing.beatStructure = #beatGrouping
         \set Timing.beamExceptions = #'()
@@ -608,7 +608,8 @@ ekmCompoundMeter =
       #})))
 
 #(define (ekm-timesig grob)
-  (let* ((fr (ly:grob-property grob 'fraction))
+  (let* ((fr (or (ly:grob-property grob 'time-signature #f)
+                 (ly:grob-property grob 'fraction)))
          (st (ly:grob-property grob 'style))
          (sym (cond
                ((equal? '(4 . 4) fr) (ekm:assid 'time "C"))
