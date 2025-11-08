@@ -26,27 +26,47 @@
 
 \version "2.24.0"
 
+#(define ekm:tuning #f)
+#(define ekm:file #f)
+#(define ekm:style #f)
+#(define ekm:language-name #f)
 
-#(define ekm:system #f)
-
-#(let* ((s (ly:get-option 'ekmsystem))
-        (s (if s (symbol->string s)
-           (if (defined? 'ekmSystem) ekmSystem "24")))
-        (s (if (number? s) (number->string s 10) s))
-        (file (if (string=? "72" s)
-                 "ekmel.ily"
-                 (string-append "ekmel-" s ".ily"))))
-  (set! ekm:system s)
-  (if (ly:find-file file)
-    (ly:parser-include-string (format #f "\\include \"~a\"\n" file))))
+#(let* ((s (or (ly:get-option 'ekmuse)
+               (and (defined? 'ekmUse) ekmUse)
+               (and (defined? 'ekmSystem) ekmSystem)
+               ""))
+        (s (if (symbol? s) (symbol->string s)
+           (if (number? s) (number->string s 10) s)))
+        (s (string-split s #\-))
+        (t (if (string-null? (car s)) "24" (car s)))
+        (f (if (string=? "72" t)
+            "ekmel.ily"
+            (string-append "ekmel-" t ".ily"))))
+  (set! ekm:tuning t)
+  (set! ekm:file f)
+  (set! ekm:style
+    (if (or (null? (cdr s)) (string-null? (second s))) #f (second s)))
+  (set! ekm:language-name
+    (if (or (> 3 (length s)) (string-null? (third s))) #f (third s)))
+  (if (ly:find-file f)
+    (ly:parser-include-string (format #f "\\include \"~a\"\n" f))
+    (ly:error "Tuning '~a' does not exist" t)))
 
 \include "esmufl.ily"
 
+#(if (and ekm:style
+          (assq (string->symbol ekm:style) ekmNotations))
+  (ekm:set-notation ekm:style))
 
-#(define-markup-command (ekm-system layout props)
+#(if (and ekm:language-name
+          (assq (string->symbol ekm:language-name) ekmLanguages))
+  (ekm:set-language ekm:language-name)
+  (set! ekm:language-name (symbol->string (caar ekmLanguages))))
+
+
+#(define-markup-command (ekm-tuning layout props)
   ()
-  (interpret-markup layout props ekm:system))
-
+  (interpret-markup layout props ekm:tuning))
 
 #(define-markup-command (ekm-combine-accidental layout props alt alt2 arg)
   (ekm:genalter? ekm:genalter? markup?)
