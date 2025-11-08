@@ -571,3 +571,6 @@ January 2021 - May 2021:
 - Fix LP 2.25.30 support for time signature:
   "(ekm-timesig)" uses property "time-signature" or "fraction".
   "\ekmCompoundMeter" sets property "timeSignature" instead of "timeSignatureFraction".
+
+2025-11-08:
+- cosmufl.ily: Add variable "ekmUse".
