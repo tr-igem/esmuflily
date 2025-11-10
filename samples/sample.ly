@@ -40,7 +40,7 @@
   \line { * \typewriter "\\smufllig" is replaced with \typewriter "\\ekm-chars" . }
   \vspace #1
   \line { Font: \typewriter { \ekmelic-font-name }}
-  \line { System: \typewriter { \ekm-system }}
+  \line { Tuning: \typewriter { \ekm-tuning }}
   \line { Include file: \typewriter { cosmufl.ily }}
   \line { Notation style: \typewriter { \ekmelic-style-name }}
   \vspace #2
