@@ -1,6 +1,6 @@
 ;; Template types table for use with Esmuflily.
 (
-  (delimiter
+  (systemstart
     (brace
       (9  ((#xE000 1)))
       (18 . #xE000)
