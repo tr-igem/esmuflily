@@ -478,7 +478,7 @@
           (if paren (ekm:sym paren LEFT) 0)
           (if tr
             tr
-            (make-ekm-def-markup (ekm:asstl 'finger 'italic) trans))
+            (make-ekm-def-markup (ekm:asstl 'fingering 'italic) trans))
           (if paren (ekm:sym paren RIGHT) 0)))))))
 
 
@@ -778,7 +778,7 @@ ekmMakeClusters =
 #(define (ekm-dots grob)
   (ekm-cat-dots
     (ly:grob-property grob 'dot-count)
-    (ekm-ctext grob 0 (car (ekm:asstl 'dots 'default)))))
+    (ekm-ctext grob 0 (car (ekm:asstl 'dot 'default)))))
 
 
 %% Flag / Grace note slash
@@ -940,7 +940,7 @@ ekmFlag =
          (rest (ekm-center 2 (ekm:char layout props
                  (ekm:asst ekm-rest-tab style log (ekm:mv ledgered)))))
          (dot (and (> dot-count 0)
-                   (ekm:text layout props (car (ekm:asstl 'dots 'note))))))
+                   (ekm:text layout props (car (ekm:asstl 'dot 'note))))))
     (if dot
       (ly:stencil-stack rest X RIGHT
         (ekm-cat-dots dot-count dot)
@@ -1019,7 +1019,7 @@ ekmFlag =
   #:properties ((font-size 0)
                 (thickness 0.45))
   (let* (;; select
-         (e (ekm:asslim 'delimiter style size LEFT))
+         (e (ekm:asslim 'systemstart style size LEFT))
          (e (if (pair? e) e (list e)))
          (l (length e))
          (txt (first e))
@@ -1321,7 +1321,7 @@ ekmPitchedTrill =
 #(define (ekm-lvtie grob)
   (let* ((p (fourth (ly:grob-property grob 'control-points)))
          (size (cdr (ly:grob-property grob 'minimum-X-extent '(0 . 0))))
-         (sym (ekm:asslim 'lvtie 'default size
+         (sym (ekm:asslim 'lv 'default size
                 (ly:grob-property grob 'direction))))
     (ly:stencil-translate
       (ekm-ctext grob 0 sym)
@@ -1639,7 +1639,7 @@ ekmArpeggioNormal = {
   (let ((it (eqv? #\* (string-ref def 0))))
     (interpret-markup layout props
       (make-ekm-def-markup
-        (ekm:asstl 'finger (if it 'italic 'default))
+        (ekm:asstl 'fingering (if it 'italic 'default))
         (if it (string-drop def 1) def)))))
 
 #(define ((ekm-fingering size) grob)
@@ -2204,7 +2204,7 @@ ekmFuncList =
   (symbol? integer? integer? ly:dir?)
   (let* ((note (interpret-markup layout props
                  (ekm-note style log dir)))
-         (val (ekm:asstl 'dots style))
+         (val (ekm:asstl 'dot style))
          (dot (ekm:text layout props (car val))))
     (ly:stencil-stack note X RIGHT
       (ekm-cat-dots dots dot)
@@ -2669,7 +2669,7 @@ ekmMetronome =
     (10 . #xE4ED))
   )
 
-  (dots
+  (dot
   (default   #xE1E7 0 0 0)
   (note      #xE1E7 -0.2 0.7 0.7)
   (metronome #xECB7 0.2 0.7 0.7)
@@ -2844,7 +2844,7 @@ ekmMetronome =
   ("rfz" . #xE53D)
   ))
 
-  (delimiter
+  (systemstart
   (brace
     (+inf.0 #xE000 . #xE001))
   (bracket
@@ -2927,7 +2927,7 @@ ekmMetronome =
     (7 #xEAF4 . #xEB02))
   )
 
-  (finger
+  (fingering
   (default
     ("0" . #xED10)
     ("1" . #xED11)
@@ -3087,9 +3087,9 @@ ekmMetronome =
     #xECF0)
   (tuplet .
     #xE880)
-  (finger .
+  (fingering .
     #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
-  (finger-italic .
+  (fingering-italic .
     #xED80)
   (fbass .
     #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
@@ -3184,7 +3184,7 @@ ekmMetronome =
     (3 (#xE565 -0.596 . 2.168) . (#xE564 -0.644 . -2.456)))
   )
 
-  (lvtie
+  (lv
   (default
     (+inf.0 #xE4BB . #xE4BA))
   )
@@ -3625,10 +3625,15 @@ ekmSmuflOn =
 #(define-music-function (type)
   (symbol-list-or-symbol?)
   (let* ((typ (if (symbol? type) (list type) type))
+         (neg (if (and (not (null? typ)) (eq? '- (car typ))) not identity))
+         (typ (if (neg #f) (cdr typ) typ))
          (all (memq 'all typ))
          (music #{ #}))
     (define (on t m)
-      (if (or all (memq t typ)) (set! music #{ #music #m #})))
+      (if (neg (or all (memq t typ)))
+        (if (procedure? m)
+          (m t)
+          (set! music #{ #music #m #}))))
 
     (on 'clef #{
       \override Clef.stencil = #ekm-clef
@@ -3678,10 +3683,8 @@ ekmSmuflOn =
       \override TrillPitchHead.stencil = #ekm-trillpitch-head
       \override TrillPitchParentheses.stencils = #ekm-calc-parenthesis-stencils
     #})
-    (if (or all (memq 'segno typ))
-      (ekm-bar-init 'segno))
-    (if (or all (memq 'colon typ))
-      (ekm-bar-init 'colon))
+    (on 'segno ekm-bar-init)
+    (on 'colon ekm-bar-init)
     (on 'percent #{
       \override RepeatSlash.stencil = #ekm-repeat
       \override DoubleRepeatSlash.stencil = #ekm-doublerepeat
