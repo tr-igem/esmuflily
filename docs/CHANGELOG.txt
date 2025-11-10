@@ -574,3 +574,10 @@ January 2021 - May 2021:
 
 2025-11-08:
 - cosmufl.ily: Add variable "ekmUse".
+
+2025-11-10:
+- Add support for negative SMuFL switches in "\ekmSmuflOn".
+- Change some type names: "delimiter" to "systemstart",
+  "finger" to "fingering", "dots" to "dot", "lvtie" to "lv".
+- Change "number" styles: "finger" to "fingering",
+  "finger-italic" to "fingering-italic".

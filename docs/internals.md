@@ -291,7 +291,7 @@ Types
     flag            S     Y     Flags
     rest            S     M     Rests (normal, ledgered)
     mmrest          S     X     Multi-measure rests
-    dots            S     N     Augmentation dots
+    dot             S     N     Augmentation dots
     script          I     Y     Scripts, Expressive marks
     clef            I     M     Clefs (normal, change)
     clef-mod        I     X,N   Clef modifiers
@@ -302,9 +302,9 @@ Types
     barline         I     N     Staff dividers
     separator       L     N     System separator marks
     dynamic         T     N     Dynamics
-    delimiter       L     X     System start delimiter
+    systemstart     L     X     System start delimiter
     spanner         S     X,W   Multi-segment spanner
-    finger          S     N     Fingering
+    fingering       S     N     Fingering
     pedal           T     N     Piano pedals
     harp            T     N     Harp pedals
     ottava          T     N     Ottavation
@@ -313,7 +313,7 @@ Types
     tremolo         S     N     Tremolo marks
     stem            I     N     Stem decorations
     grace           S     Y     Grace note slash
-    lvtie           L     Y     Laissez vibrer
+    lv              L     Y     Laissez vibrer
     arpeggio        S     Y     Arpeggios
     percent         I     N     Percent repeats
     fret            I     M     Fret diagrams
@@ -581,7 +581,7 @@ The thickness of the horizontal bar is metadata `hBarThickness`.
 Augmentation dots
 -----------------
 
-    (dots
+    (dot
       (STYLE DOT PAD-3 PAD-4 PAD-5)
       ...
     )
@@ -966,9 +966,9 @@ The following components are drawn:
 
 ### Table
 
-    (delimiter
+    (systemstart
       (STYLE
-        DELIMITER-ENTRY
+        SYSTEMSTART-ENTRY
         ...
       )
       ...
@@ -977,7 +977,7 @@ The following components are drawn:
 *   STYLE (symbol):
     brace, bracket
 
-*   DELIMITER-ENTRY:
+*   SYSTEMSTART-ENTRY:
 
         (LIMIT SYMBOL)
         (LIMIT SYMBOL-LEFT . SYMBOL-RIGHT)
@@ -1058,7 +1058,7 @@ Multi-segment spanner
 Fingering
 ---------
 
-    (finger
+    (fingering
       (STYLE
         (NAME SYMBOL)
         ...
@@ -1246,7 +1246,7 @@ Grace note slashes
 Laissez vibrer
 --------------
 
-    (lvtie
+    (lv
       (STYLE
         (LIMIT SYMBOL-DOWN . SYMBOL-UP)
         ...
@@ -1656,7 +1656,7 @@ style tables.
     )
 
 *   STYLE (symbol):
-    time, tuplet, finger, fbass, func, string, ...
+    time, tuplet, fingering, fbass, func, string, ...
 
 *   DIGIT (CP):
     Symbol for digit 0.
