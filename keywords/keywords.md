@@ -161,9 +161,9 @@ Ekmelily
 cosmufl.ily
 -----------
 
-    ekmSystem
+    ekmUse
 
-    \ekm-system
+    \ekm-tuning
 
     \ekm-combine-accidental
     \ekmScriptAccidental

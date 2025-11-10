@@ -106,8 +106,8 @@ ekm-tuplet-number::fraction-with-notes
 \ekmelic-fraction-small
 \ekmelic-table
 
-ekmSystem
-\ekm-system
+ekmUse
+\ekm-tuning
 \ekm-combine-accidental
 \ekmScriptAccidental
 \ekmStartTrillSpanAccidental
