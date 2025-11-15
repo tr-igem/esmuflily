@@ -110,5 +110,6 @@ ekmStartTrillSpanAccidental =
   (make-music 'TrillSpanEvent
     'span-direction START
     'tweaks `((zigzag-width . ,tempo)
-              (text . (,(make-ekm-combine-accidental-markup
-                          alt 'none (make-ekm-script-markup 'trill MAIN)) . 0)))))
+              (text . (,(make-halign-markup LEFT
+                        (make-ekm-combine-accidental-markup
+                          alt 'none (make-ekm-script-markup 'trill MAIN))) . 0)))))
