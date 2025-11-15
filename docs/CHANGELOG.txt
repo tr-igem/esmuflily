@@ -581,3 +581,6 @@ January 2021 - May 2021:
   "finger" to "fingering", "dots" to "dot", "lvtie" to "lv".
 - Change "number" styles: "finger" to "fingering",
   "finger-italic" to "fingering-italic".
+
+2025-11-15:
+- cosmufl.ily: Fix X alignment in "\ekmStartTrillSpanAccidental".
