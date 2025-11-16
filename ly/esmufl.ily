@@ -1967,6 +1967,31 @@ ekmBendAfter =
             (cdr l)))))))
 
 
+%% Chord name
+
+#(define (ekm:chord-set! text)
+  (if (list? text)
+    (cond
+      ((and (eq? fontsize-markup (car text))
+            (equal? "\xB0" (third text)))
+        (set-car! text super-markup)
+        (set-cdr! text `((,ekm-char-markup #xE870))))
+      ((and (eq? super-markup (car text))
+            (equal? "\xF8" (second text)))
+        (set-car! text super-markup)
+        (set-cdr! text `((,ekm-char-markup #xE871))))
+      ((and (eq? fontsize-markup (car text))
+            (pair? (third text))
+            (eq? triangle-markup (car (third text))))
+        (set-cdr! text `(-2 (,ekm-char-markup #xE873))))
+      ((equal? "+" (car text))
+        (set-car! text `(,ekm-char-markup #xE872)))
+      ((equal? "-" (car text))
+        (set-car! text `(,ekm-char-markup #xE874)))
+      (else
+        (for-each ekm:chord-set! text)))))
+
+
 %% Analytics
 
 #(define-markup-command (ekm-analytics layout props def)
@@ -3718,6 +3743,13 @@ ekmSmuflOn =
     (on 'lyric #{
       \override LyricText.stencil = #ekm-lyric-text
     #})
+    (on 'chord #{
+      \override ChordName.stencil = #(lambda (grob)
+        (ekm:chord-set! (ly:grob-property grob 'text))
+        (if (defined? 'ekm:chord-acc-set!)
+          (ekm:chord-acc-set! (ly:grob-property grob 'text)))
+        (ly:text-interface::print grob))
+    #})
     music))
 
 ekmSmuflOff =
@@ -3809,6 +3841,9 @@ ekmSmuflOff =
     #})
     (on 'lyric #{
       \revert LyricText.stencil
+    #})
+    (on 'chord #{
+      \revert ChordName.stencil
     #})
     music))
 
