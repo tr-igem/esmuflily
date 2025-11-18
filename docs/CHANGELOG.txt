@@ -587,3 +587,6 @@ January 2021 - May 2021:
 
 2025-11-16:
 - Add "ekm:chord-set!" and switch "chord" to support chord symbols (issue #34).
+
+2025-11-18:
+- cosmufl.ily: Extend setting with "ekmUse" (issue #36).
