@@ -30,38 +30,57 @@
 #(define ekm:file #f)
 #(define ekm:style #f)
 #(define ekm:language-name #f)
+#(define ekm:switches '())
 
-#(let* ((s (or (ly:get-option 'ekmuse)
-               (and (defined? 'ekmUse) ekmUse)
-               (and (defined? 'ekmSystem) ekmSystem)
-               ""))
-        (s (if (symbol? s) (symbol->string s)
-           (if (number? s) (number->string s 10) s)))
-        (s (string-split s #\-))
-        (t (if (string-null? (car s)) "24" (car s)))
-        (f (if (string=? "72" t)
+#(let* ((ls (or (ly:get-option 'ekmuse)
+                (and (defined? 'ekmUse) ekmUse)
+                (and (defined? 'ekmSystem) ekmSystem)
+                ""))
+        (ls (if (string? ls) (string-split ls (string->char-set " -"))
+            (if (list? ls) ls (list ls))))
+        (len (length ls))
+        (tsl (or (list-index (lambda (e) (or (eq? '- e) (eq? '+ e))) ls)
+                 (min len 3)))
+        (ref (lambda (i)
+          (let ((v (if (> tsl i) (list-ref ls i) "")))
+            (if (number? v) (number->string v 10)
+            (if (symbol? v) (symbol->string v)
+            (if (string-null? v) #f v))))))
+        (typ (if (< tsl len)
+          (map (lambda (e) (if (string? e) (string->symbol e) e)) (list-tail ls tsl))
+          '(-)))
+        (t (or (ref 0) "24"))
+        (f (if (equal? "72" t)
             "ekmel.ily"
             (string-append "ekmel-" t ".ily"))))
+
   (set! ekm:tuning t)
   (set! ekm:file f)
-  (set! ekm:style
-    (if (or (null? (cdr s)) (string-null? (second s))) #f (second s)))
-  (set! ekm:language-name
-    (if (or (> 3 (length s)) (string-null? (third s))) #f (third s)))
+  (set! ekm:style (ref 1))
+  (set! ekm:language-name (ref 2))
+  (set! ekm:switches (if (eq? '+ (car typ)) (cdr typ) typ))
+
   (if (ly:find-file f)
     (ly:parser-include-string (format #f "\\include \"~a\"\n" f))
     (ly:error "Tuning '~a' does not exist" t)))
 
 \include "esmufl.ily"
 
-#(if (and ekm:style
-          (assq (string->symbol ekm:style) ekmNotations))
-  (ekm:set-notation ekm:style))
+#(begin
+  (if (and ekm:style
+           (assq (string->symbol ekm:style) ekmNotations))
+    (ekm:set-notation ekm:style))
+  (if (and ekm:language-name
+           (assq (string->symbol ekm:language-name) ekmLanguages))
+    (ekm:set-language ekm:language-name)
+    (set! ekm:language-name (symbol->string (caar ekmLanguages)))))
 
-#(if (and ekm:language-name
-          (assq (string->symbol ekm:language-name) ekmLanguages))
-  (ekm:set-language ekm:language-name)
-  (set! ekm:language-name (symbol->string (caar ekmLanguages))))
+\layout {
+  \context {
+    \Score
+    \ekmSmuflOn #ekm:switches
+  }
+}
 
 
 #(define-markup-command (ekm-tuning layout props)
