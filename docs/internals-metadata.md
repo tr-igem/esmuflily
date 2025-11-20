@@ -18,8 +18,8 @@ and "bravura-installer.iss".
     MD_LOC/MD_NAME
 
     MD_LOC          1.  PRIVATE_LOC
-                    2.  USER_LOC/SMuFL/Fonts/FONTNAME
-                    3.  SYSTEM_LOC/SMuFL/Fonts/FONTNAME
+                    2.  USER_LOC/SMuFL/Fonts/FONT
+                    3.  SYSTEM_LOC/SMuFL/Fonts/FONT
 
     PRIVATE_LOC     from variable `ekmMetadata`
 
@@ -36,7 +36,7 @@ and "bravura-installer.iss".
                     2.  FNAME.json
                     3.  metadata.json
 
-    FONTNAME        font name in normal spelling, eg. "Bravura"
+    FONT            font name in normal spelling, eg. "Bravura"
 
     FNAME           font name in all lowercase, eg. "bravura"
 
@@ -64,8 +64,8 @@ the Unicode code point.
 Metadata of interest for Esmuflily:
 
     {
-      "fontName": "FONTNAME",
-      "fontVersion": "FONTVERSION",
+      "fontName": "FONT",
+      "fontVersion": "VERSION",
       "engravingDefaults": {
         "DEFKEY": DEFVALUE,
         ...
@@ -99,8 +99,8 @@ and stored in a font-specific cache file "ekmd-FNAME.scm".
 The types sub-table is optional.
 
     (
-      (fontName . "FONTNAME")
-      (fontVersion . "FONTVERSION")
+      (fontName . "FONT")
+      (fontVersion . "VERSION")
       (defaults
         (DEFKEY . DEFVALUE)
         ...
