@@ -498,20 +498,28 @@ Flags
 
     ekm-stemlength-tab (
       (STYLE
-        STEM-LENGTH EXTRA-LENGTH-3 ... EXTRA-LENGTH-10
+        (XLENGTH-DOWN . XLENGTH-UP)
+        (LENGTH-DOWN . LENGTH-UP)
       )
       ...
     )
 
-*   STEM-LENGTH (number):
+*   XLENGTH (list):
+
+        (NOMINAL-LENGTH EXTRA-LENGTH-3 ... EXTRA-LENGTH-10)
+
+*   LENGTH (list):
+
+        (NOMINAL-LENGTH STEM-LENGTH-3 ... STEM-LENGTH-10)
+
+*   NOMINAL-LENGTH (number):
     Nominal unmodified stem length, usually 3.5.
 
-*   EXTRA-LENGTH:
-
-        (EXTRA-LENGTH-DOWN . EXTRA-LENGTH-UP)
-
+*   EXTRA-LENGTH (number):
     Amount to lengthen stem for duration log 3 to 10.
-    Currently, only EXTRA-LENGTH-UP is used.
+
+*   STEM-LENGTH (number):
+    Stem length for duration log 3 to 10.
 
 
 ### Flag metadata
