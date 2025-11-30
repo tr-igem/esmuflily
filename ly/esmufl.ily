@@ -789,35 +789,47 @@ ekmMakeClusters =
   (let ((e (assv-ref ekmd:glyphs cp)))
     (if e
       (if (number? (cdr (first e)))
-        (set-car! (list-ref len (- log 2)) (cdr (first e)))
-        (set-cdr! (list-ref len (- log 2)) (cdr (second e)))))))
+        (list-set! (car len) (- log 2) (cdr (first e)))
+        (list-set! (cdr len) (- log 2) (cdr (second e)))))))
 
 #(define (ekm-init-stemlength)
   (let iter-s ((tab ekm-flag-tab))
     (if (null? tab) #t
       (let* ((s (caar tab))
-             (len (list 3.5 (cons 0.132 -0.04) (cons 0.128 -0.088) (cons -0.448 0.376) (cons -1.244 1.172) (cons -2.076 1.9) (cons -2.812 2.592) (cons -3.608 3.324) (cons -4.684 4.064))))
+             (len (cons
+              (list 3.5 0.132 0.128 -0.448 -1.244 -2.076 -2.812 -3.608 -4.684)
+              (list 3.5 -0.04 -0.088 0.376 1.172 1.9 2.592 3.324 4.064))))
         (let iter-f ((t (cdar tab)))
           (if (null? t)
-            (set! ekm-stemlength-tab
-              (append ekm-stemlength-tab (list (cons* s len))))
+            (let* ((nom (caar len))
+                   (down (cons* nom (map (lambda (y) (abs (- y nom))) (cdar len))))
+                   (nom (cadr len))
+                   (up (cons* nom (map (lambda (y) (+ nom y)) (cddr len)))))
+              (set! ekm-stemlength-tab
+                (append ekm-stemlength-tab (list
+                  (list s len (cons down up))))))
             (let ((e (car t)))
               (ekm-set-stemlength! len (car e) (cadr e)) ; DOWN
               (ekm-set-stemlength! len (car e) (cddr e)) ; UP
               (iter-f (cdr t)))))
         (iter-s (cdr tab))))))
 
-#(define (ekm-stemlength style)
-  (let* ((tab (ekm:assq ekm-stemlength-tab style))
-         (nom (car tab)))
-    (cons* nom (map (lambda (y) (+ nom (cdr y))) (cdr tab)))))
+#(define (ekm-stem-print grob)
+  (let* ((flag (ly:grob-object grob 'flag))
+         (dir (ly:grob-property grob 'direction))
+         (log (ly:grob-property grob 'duration-log))
+         (len (second (ekm:assq ekm-stemlength-tab
+          (if (null? flag) 'default (ly:grob-property flag 'style))))))
+  (ly:grob-set-nested-property! grob '(details lengths)
+    (if (< dir 0) (car len) (cdr len)))
+  (ly:stem::print grob)))
 
 #(define (ekm-flag grob)
   (let* ((stm (ly:grob-parent grob X))
          (dir (ly:grob-property stm 'direction))
          (log (ly:grob-property stm 'duration-log))
          (style (ly:grob-property grob 'style))
-         (len (list-ref (ekm:assq ekm-stemlength-tab style) (- log 2)))
+         (len (first (ekm:assq ekm-stemlength-tab style)))
          (flg (grob-interpret-markup grob
                 (make-ekm-text-markup (ekm:asst ekm-flag-tab style log dir)))))
     (ly:stencil-translate
@@ -832,15 +844,13 @@ ekmMakeClusters =
         flg)
       (cons
         (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
-        (- (if (< dir 0) (car len) (cdr len)))
-        ))))
+        (- (list-ref (if (< dir 0) (car len) (cdr len)) (- log 2)))))))
 
 ekmFlag =
 #(define-music-function (style)
   (symbol?)
   #{
     \override Flag.style = #style
-    \override Stem.details.lengths = #(ekm-stemlength style)
   #})
 
 
@@ -3679,7 +3689,7 @@ ekmSmuflOn =
     (on 'flag #{
       \override Flag.stencil = #ekm-flag
       \override Flag.style = #'default
-      \override Stem.details.lengths = #(ekm-stemlength 'default)
+      \override Stem.stencil = #ekm-stem-print
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
@@ -3780,7 +3790,7 @@ ekmSmuflOff =
     (on 'flag #{
       \revert Flag.stencil
       \revert Flag.style
-      \revert Stem.details.lengths
+      \revert Stem.stencil
     #})
     (on 'rest #{
       \revert Rest.stencil
