@@ -817,7 +817,6 @@ ekmMakeClusters =
 #(define (ekm-stem-print grob)
   (let* ((flag (ly:grob-object grob 'flag))
          (dir (ly:grob-property grob 'direction))
-         (log (ly:grob-property grob 'duration-log))
          (len (second (ekm:assq ekm-stemlength-tab
           (if (null? flag) 'default (ly:grob-property flag 'style))))))
   (ly:grob-set-nested-property! grob '(details lengths)
