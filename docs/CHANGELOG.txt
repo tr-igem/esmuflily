@@ -594,5 +594,8 @@ January 2021 - May 2021:
 2025-11-30:
 - Add "ekm-stem-print" to support different stem lengths for up and down flags
   (issue #22).
-- Change format of "ekm-stemlength-tab", and "ekm-init-stemlength", 
+- Change format of "ekm-stemlength-tab", and "ekm-init-stemlength",
   "ekm-set-stemlength!", "ekm-flag", and "\ekmFlag" which is now obsolete.
+
+2025-12-02:
+- Change "ekm-stem-print": duration log is not required.
