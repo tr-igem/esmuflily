@@ -599,3 +599,6 @@ January 2021 - May 2021:
 
 2025-12-02:
 - Change "ekm-stem-print": duration log is not required.
+
+2025-12-14:
+- Add SMuFL cue clef support (issue #41).
