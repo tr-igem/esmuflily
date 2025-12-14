@@ -3671,6 +3671,8 @@ ekmSmuflOn =
 
     (on 'clef #{
       \override Clef.stencil = #ekm-clef
+      \override CueClef.stencil = #ekm-clef
+      \override CueEndClef.stencil = #ekm-clef
       \set clefTranspositionFormatter = #ekm-clef-mod
       \set cueClefTranspositionFormatter = #ekm-clef-mod
     #})
@@ -3772,6 +3774,8 @@ ekmSmuflOff =
 
     (on 'clef #{
       \revert Clef.stencil
+      \revert CueClef.stencil
+      \revert CueEndClef.stencil
       \unset clefTranspositionFormatter
       \unset cueClefTranspositionFormatter
     #})
