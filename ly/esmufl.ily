@@ -856,8 +856,8 @@ ekmFlag =
 %% Rest
 
 #(define-markup-command
-  (ekm-mmr layout props style oneline ledgered measures limit width space)
-  (symbol? boolean? boolean? index? integer? number? number?)
+  (ekm-mmr layout props style oneline ledgered measures limit width space ssp)
+  (symbol? boolean? boolean? index? integer? number? number? boolean-or-number?)
   #:properties ((font-size 0))
   (if (> measures limit)
     (let* ((sym (or (ekm:asstl 'mmrest style) '(#f #f . #f)))
@@ -876,7 +876,7 @@ ekmFlag =
       (stack-stencil-line
         (- (* edge 0.25))
         (list lbar hbar rbar)))
-    (let* ((ssp (ly:output-def-lookup layout 'staff-space))
+    (let* ((ssp (or ssp (ly:output-def-lookup layout 'staff-space)))
            (cts
              (let cnt ((m measures) (d '(8 4 2 1)) (c '()))
                (if (null? d)
@@ -894,7 +894,7 @@ ekmFlag =
                    (con (1- c)
                         (cons*
                           (if ((if oneline = <) log 0) r
-                          (ly:stencil-translate-axis r (if oneline (- ssp) ssp) Y))
+                            (ly:stencil-translate-axis r (if oneline (- ssp) ssp) Y))
                           s)))))))
                '() cts '(-3 -2 -1 0))))
            (pad (if (< (length sils) 2)
@@ -911,9 +911,9 @@ ekmFlag =
 
 #(define (ekm-mmr grob)
   (let* ((org (ly:multi-measure-rest::print grob))
-         (lines (ly:grob-property (ly:grob-object grob 'staff-symbol) 'line-count))
-         (lpos (ly:grob-property (ly:grob-object grob 'staff-symbol) 'line-positions))
-         (lpos (if (null? lpos) (ekm-linepos lines) lpos))
+         (staff (ly:grob-object grob 'staff-symbol))
+         (lines (ly:grob-property staff 'line-count))
+         (lpos (ly:grob-property staff 'line-positions (ekm-linepos lines)))
          (pos (inexact->exact (ly:grob-property grob 'staff-position 0)))
          (oneline (= 1 lines))
          (sil (grob-interpret-markup grob
@@ -924,7 +924,8 @@ ekmFlag =
                   (ly:grob-property grob 'measure-count)
                   (ly:grob-property grob 'expand-limit)
                   (ekm-extent org X)
-                  -1)))
+                  -1
+                  (ly:grob-property staff 'staff-space #f))))
          (sil (ly:stencil-aligned-to sil X CENTER))
          (lb (ly:spanner-bound grob LEFT))
          (rb (ly:spanner-bound grob RIGHT))
@@ -979,7 +980,7 @@ ekmFlag =
          (mmr (interpret-markup layout props
                 (make-ekm-mmr-markup
                   (if (null? style) 'default style)
-                  #f #f measures expand-limit width word-space))))
+                  #f #f measures expand-limit width word-space #f))))
     (if (or bar
             (and multi-measure-rest-number (> measures 1)))
       (let ((num (interpret-markup layout props
