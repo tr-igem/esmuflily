@@ -31,8 +31,6 @@
       (9  #xF498 . #xF497)
       (10 #xF49A . #xF499))
   )
-  (mmrest
-    (default #xE4F0 #t #xE4EF . #xE4F1))
   (number
     (string (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C))
     (scale ()))

@@ -2894,7 +2894,7 @@ ekmMetronome =
   )
 
   (mmrest
-  (default #xE4F0 #f #xE4EF . #xE4F1)
+  (default #xE4F0 #t #xE4EF . #xE4F1)
   )
 
   (spanner
