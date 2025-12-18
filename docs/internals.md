@@ -571,7 +571,8 @@ Multi-measure rests
 -------------------
 
     (mmrest
-      (STYLE HBAR-LEFT . HBAR-RIGHT)
+      (STYLE HBAR-MIDDLE DRAW HBAR-LEFT . HBAR-RIGHT)
+      (STYLE HBAR-MIDDLE DRAW . #f)
       ...
     )
 
@@ -579,10 +580,18 @@ Multi-measure rests
     default, ...
     This is the rest style.
 
-*   HBAR (EXTEXT):
-    Edge symbol of horizontal bar.
+*   HBAR-MIDDLE (EXTEXT or #f):
+    Middle symbol of horizontal bar.
 
-The thickness of the horizontal bar is metadata `hBarThickness`.
+*   DRAW (boolean):
+    `#t` draws HBAR-MIDDLE stretched, i.e. scales the stencil horizontally.
+    The height remains unchanged. This is the default.
+
+    `#f` draws a horizontal bar with the Y extent of HBAR-MIDDLE,
+    or with metadata `hBarThickness` if HBAR-MIDDLE is `#f`.
+
+*   HBAR-LEFT/RIGHT (EXTEXT):
+    Edge symbol of horizontal bar.
 
 
 
