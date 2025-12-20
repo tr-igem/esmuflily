@@ -4,6 +4,8 @@
 (types
   (notehead
     (slash (0 . #xE504)))
+  (mmrest
+    (default #f #f . #f))
   (number
     (string ())
     (scale ()))
