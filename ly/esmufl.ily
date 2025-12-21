@@ -335,7 +335,9 @@
     (if d
       (if (first d)
         d
-        (let* ((sil (grob-interpret-markup grob (make-ekm-char-markup cp)))
+        (let* ((sil (begin
+                 (ly:grob-set-property! grob 'font-size 0)
+                 (grob-interpret-markup grob (make-ekm-char-markup cp))))
                (w (* 0.5 (ekm-extent sil X)))
                (h (ly:stencil-extent sil Y))
                (c (list #t
