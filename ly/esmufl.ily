@@ -3679,6 +3679,13 @@ ekmSmuflOn =
           (m t)
           (set! music #{ #music #m #}))))
 
+    (on 'staff #{
+      \override Staff.StaffSymbol.thickness = #(/ (ekm:md 'staffLineThickness) 0.1)
+      \override BarLine.hair-thickness = #(/ (ekm:md 'thinBarlineThickness) 0.1)
+      \override BarLine.thick-thickness = #(/ (ekm:md 'thickBarlineThickness) 0.1)
+      \override BarLine.kern = #(/ (ekm:md 'barlineSeparation) 0.1)
+      \override BarLine.segno-kern = #(/ (ekm:md 'barlineSeparation) 0.1)
+    #})
     (on 'clef #{
       \override Clef.stencil = #ekm-clef
       \override CueClef.stencil = #ekm-clef
@@ -3701,6 +3708,8 @@ ekmSmuflOn =
       \override Flag.stencil = #ekm-flag
       \override Flag.style = #'default
       \override Stem.stencil = #ekm-stem-print
+      \override Stem.thickness = #(lambda (grob)
+        (/ (ekm:md 'stemThickness) (ly:staff-symbol-line-thickness grob)))
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
