@@ -3708,8 +3708,7 @@ ekmSmuflOn =
       \override Flag.stencil = #ekm-flag
       \override Flag.style = #'default
       \override Stem.stencil = #ekm-stem-print
-      \override Stem.thickness = #(lambda (grob)
-        (/ (ekm:md 'stemThickness) (ly:staff-symbol-line-thickness grob)))
+      \override Stem.thickness = #(/ (ekm:md 'stemThickness) (ekm:md 'staffLineThickness))
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
@@ -3791,6 +3790,13 @@ ekmSmuflOff =
     (define (on t m)
       (if (or all (memq t typ)) (set! music #{ #music #m #})))
 
+    (on 'staff #{
+      \revert Staff.StaffSymbol.thickness
+      \revert BarLine.hair-thickness
+      \revert BarLine.thick-thickness
+      \revert BarLine.kern
+      \revert BarLine.segno-kern
+    #})
     (on 'clef #{
       \revert Clef.stencil
       \revert CueClef.stencil
@@ -3813,6 +3819,7 @@ ekmSmuflOff =
       \revert Flag.stencil
       \revert Flag.style
       \revert Stem.stencil
+      \revert Stem.thickness
     #})
     (on 'rest #{
       \revert Rest.stencil
