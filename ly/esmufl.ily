@@ -335,7 +335,9 @@
     (if d
       (if (first d)
         d
-        (let* ((sil (grob-interpret-markup grob (make-ekm-char-markup cp)))
+        (let* ((sil (begin
+                 (ly:grob-set-property! grob 'font-size 0)
+                 (grob-interpret-markup grob (make-ekm-char-markup cp))))
                (w (* 0.5 (ekm-extent sil X)))
                (h (ly:stencil-extent sil Y))
                (c (list #t
@@ -3677,6 +3679,13 @@ ekmSmuflOn =
           (m t)
           (set! music #{ #music #m #}))))
 
+    (on 'staff #{
+      \override Staff.StaffSymbol.thickness = #(/ (ekm:md 'staffLineThickness) 0.1)
+      \override BarLine.hair-thickness = #(/ (ekm:md 'thinBarlineThickness) 0.1)
+      \override BarLine.thick-thickness = #(/ (ekm:md 'thickBarlineThickness) 0.1)
+      \override BarLine.kern = #(/ (ekm:md 'barlineSeparation) 0.1)
+      \override BarLine.segno-kern = #(/ (ekm:md 'barlineSeparation) 0.1)
+    #})
     (on 'clef #{
       \override Clef.stencil = #ekm-clef
       \override CueClef.stencil = #ekm-clef
@@ -3699,6 +3708,7 @@ ekmSmuflOn =
       \override Flag.stencil = #ekm-flag
       \override Flag.style = #'default
       \override Stem.stencil = #ekm-stem-print
+      \override Stem.thickness = #(/ (ekm:md 'stemThickness) (ekm:md 'staffLineThickness))
     #})
     (on 'rest #{
       \override Rest.stencil = #ekm-rest
@@ -3780,6 +3790,13 @@ ekmSmuflOff =
     (define (on t m)
       (if (or all (memq t typ)) (set! music #{ #music #m #})))
 
+    (on 'staff #{
+      \revert Staff.StaffSymbol.thickness
+      \revert BarLine.hair-thickness
+      \revert BarLine.thick-thickness
+      \revert BarLine.kern
+      \revert BarLine.segno-kern
+    #})
     (on 'clef #{
       \revert Clef.stencil
       \revert CueClef.stencil
@@ -3802,6 +3819,7 @@ ekmSmuflOff =
       \revert Flag.stencil
       \revert Flag.style
       \revert Stem.stencil
+      \revert Stem.thickness
     #})
     (on 'rest #{
       \revert Rest.stencil
