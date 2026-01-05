@@ -1,5 +1,5 @@
 %% This file is part of Esmuflily - Support for SMuFL/Ekmelos.
-%% Copyright (C) 2025  Thomas Richter <thomas-richter@aon.at>
+%% Copyright (C) 2025-2026  Thomas Richter <thomas-richter@aon.at>
 %%
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -28,52 +28,64 @@
 
 #(define ekm:tuning #f)
 #(define ekm:file #f)
-#(define ekm:style #f)
 #(define ekm:language-name #f)
+#(define ekm:style #f)
 #(define ekm:switches '())
+
+#(define (ekm:get-use fn c ls)
+  (if (or (zero? c) (null? ls) (eq? '- (car ls)) (eq? '+ (car ls)))
+    ls
+    (let* ((e (car ls))
+           (e (if (number? e) (number->string e 10)
+              (if (symbol? e) (symbol->string e) e)))
+           (r (if (string-null? e) 0 (fn (string-downcase e))))) ; 0:skip, 1:next, #f:end
+      (ekm:get-use fn (if r (- c r) 0) (if r (cdr ls) ls)))))
 
 #(let* ((ls (or (ly:get-option 'ekmuse)
                 (and (defined? 'ekmUse) ekmUse)
                 (and (defined? 'ekmSystem) ekmSystem)
                 ""))
-        (ls (if (string? ls) (string-split ls (string->char-set " -"))
-            (if (list? ls) ls (list ls))))
-        (len (length ls))
-        (tsl (or (list-index (lambda (e) (or (eq? '- e) (eq? '+ e))) ls)
-                 (min len 3)))
-        (ref (lambda (i)
-          (let ((v (if (> tsl i) (list-ref ls i) "")))
-            (if (number? v) (number->string v 10)
-            (if (symbol? v) (symbol->string v)
-            (if (string-null? v) #f v))))))
-        (typ (if (< tsl len)
-          (map (lambda (e) (if (string? e) (string->symbol e) e)) (list-tail ls tsl))
-          '(-)))
-        (t (or (ref 0) "24"))
-        (f (if (equal? "72" t)
-            "ekmel.ily"
-            (string-append "ekmel-" t ".ily"))))
+        (ls (if (string? ls) (string-split ls char-set:whitespace)
+            (if (list? ls) ls (list ls)))))
+  (set! ekm:switches
+    (ekm:get-use (lambda (e)
+      (cond
+        ((or (char-numeric? (string-ref e 0))
+             (equal? "arabic" e))
+          (set! ekm:tuning e) 1)
+        (else #f)))
+      1 ls))
+  (set! ekm:tuning (or ekm:tuning "24"))
+  (set! ekm:file
+    (if (equal? "72" ekm:tuning)
+      "ekmel.ily"
+      (string-append "ekmel-" ekm:tuning ".ily")))
+  (if (ly:find-file ekm:file)
+    (ly:parser-include-string (format #f "\\include \"~a\"\n" ekm:file))
+    (ly:error "Tuning '~a' does not exist" ekm:tuning)))
 
-  (set! ekm:tuning t)
-  (set! ekm:file f)
-  (set! ekm:style (ref 1))
-  (set! ekm:language-name (ref 2))
-  (set! ekm:switches (if (eq? '+ (car typ)) (cdr typ) typ))
-
-  (if (ly:find-file f)
-    (ly:parser-include-string (format #f "\\include \"~a\"\n" f))
-    (ly:error "Tuning '~a' does not exist" t)))
+#(let* ((sw (ekm:get-use (lambda (e)
+          (cond
+            ((and (not ekm:language-name) (assq (string->symbol e) ekmLanguages))
+              (set! ekm:language-name e) 1)
+            ((and (not ekm:style) (assq (string->symbol e) ekmNotations))
+              (set! ekm:style e) 1)
+            (else #f)))
+          2 ekm:switches))
+        (sw (filter-map (lambda (e)
+          (if (string? e) (if (string-null? e) #f (string->symbol e)) e)) sw)))
+  (set! ekm:switches
+    (if (null? sw) '(-)
+    (if (eq? '+ (car sw)) (cdr sw)
+    sw)))
+  (if ekm:language-name
+    (ekm:set-language ekm:language-name)
+    (set! ekm:language-name (symbol->string (caar ekmLanguages))))
+  (if ekm:style
+    (ekm:set-notation ekm:style))
+  (set! ekm:style ekm:notation-name))
 
 \include "esmufl.ily"
-
-#(begin
-  (if (and ekm:style
-           (assq (string->symbol ekm:style) ekmNotations))
-    (ekm:set-notation ekm:style))
-  (if (and ekm:language-name
-           (assq (string->symbol ekm:language-name) ekmLanguages))
-    (ekm:set-language ekm:language-name)
-    (set! ekm:language-name (symbol->string (caar ekmLanguages)))))
 
 \layout {
   \context {
