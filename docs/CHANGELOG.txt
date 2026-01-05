@@ -609,3 +609,10 @@ January 2021 - May 2021:
 
 2025-12-18:
 - Change default to draw MMrest bar with "restHBarMiddle".
+
+2025-12-27:
+- cosmufl.ily: Flexible arguments in "ekmUse".
+
+2026-01-06:
+- Fix: Stem thickness.
+- cosmufl.ily: More versatile "ekmUse".
