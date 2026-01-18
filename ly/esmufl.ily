@@ -1,5 +1,5 @@
 %% Esmuflily - Support for SMuFL/Ekmelos
-%% Copyright (c) 2020-2025 Thomas Richter
+%% Copyright (c) 2020-2026 Thomas Richter
 %%
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -908,8 +908,20 @@ ekmFlag =
                      (1- (length sils)))))))
       (stack-stencil-line pad sils))))
 
+#(define (ekm:is-ledgered sil)
+  (let lookup ((expr (ly:stencil-expr sil)))
+    (if (null? expr) #f
+    (or
+      (cond
+        ((eq? 'named-glyph (car expr)) (string-suffix? "o" (last expr)))
+        ((list? (car expr)) (lookup (car expr)))
+        (else #f))
+      (lookup (cdr expr))))))
+
 #(define (ekm-rest grob)
-  (ekm-cchar grob 0 (ekm:assld ekm-rest-tab grob #f DOWN)))
+  (ekm-cchar grob 0
+    (ekm:assld ekm-rest-tab grob #f
+      (ekm:mv (ekm:is-ledgered (ly:rest::print grob))))))
 
 #(define (ekm-mmr grob)
   (let* ((org (ly:multi-measure-rest::print grob))
@@ -918,16 +930,19 @@ ekmFlag =
          (lpos (ly:grob-property staff 'line-positions (ekm-linepos lines)))
          (pos (inexact->exact (ly:grob-property grob 'staff-position 0)))
          (oneline (= 1 lines))
-         (sil (grob-interpret-markup grob
-                (make-ekm-mmr-markup
-                  (ly:grob-property grob 'style 'default)
-                  oneline
-                  (not (memv (if oneline pos (+ 2 pos)) lpos))
-                  (ly:grob-property grob 'measure-count)
-                  (ly:grob-property grob 'expand-limit)
-                  (ekm-extent org X)
-                  -1
-                  (ly:grob-property staff 'staff-space #f))))
+         (measures (ly:grob-property grob 'measure-count))
+         (limit (ly:grob-property grob 'expand-limit))
+         (ledgered
+          (if (> measures limit)
+            (not (memv (if oneline pos (+ 2 pos)) lpos))
+            (ekm:is-ledgered org)))
+         (sil
+          (grob-interpret-markup grob
+            (make-ekm-mmr-markup
+              (ly:grob-property grob 'style 'default)
+              oneline ledgered measures limit
+              (ekm-extent org X) -1
+              (ly:grob-property staff 'staff-space #f))))
          (sil (ly:stencil-aligned-to sil X CENTER))
          (lb (ly:spanner-bound grob LEFT))
          (rb (ly:spanner-bound grob RIGHT))
