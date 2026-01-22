@@ -213,6 +213,11 @@
 #(define (ekm-extent sil dir)
   (interval-length (ly:stencil-extent sil dir)))
 
+#(define (ekm-bound iv dir)
+  (if (negative? dir) (car iv)
+  (if (zero? dir) (interval-center iv)
+  (cdr iv))))
+
 #(define (ekm-dim grob mk dir)
   (cdr (ly:stencil-extent (grob-interpret-markup grob mk) dir)))
 
@@ -768,14 +773,64 @@ ekmMakeClusters =
   #})
 
 
+%% Ledger line
+
+#(define-markup-command (ekm-ledgered layout props txt)
+  (ekm-extext?)
+  #:properties ((font-size 0))
+  (let* ((sym (if (pair? txt) txt (list txt)))
+         (sil
+          (interpret-markup layout props
+            (make-ekm-text-markup (first sym)))))
+    (if (null? (cdr sym))
+      sil
+      (let* ((x (ly:stencil-extent sil X))
+             (y (ly:stencil-extent sil Y))
+             (w (interval-length x))
+             (ledger
+               (if (eq? #t (second sym))
+                 (ly:stencil-aligned-to
+                   (make-line-stencil
+                     (* (magstep font-size) (ekm:md 'legerLineThickness))
+                     0 0
+                     (+ w (* 2 (magstep font-size) (ekm:md 'legerLineExtension))) 0)
+                   X LEFT)
+                 (interpret-markup layout props
+                   (make-ekm-text-markup (second sym)))))
+             (ofs (* 0.5 (- w (ekm-extent ledger X)))))
+        (ly:stencil-outline
+          (apply ly:stencil-add
+            (cons*
+              sil
+              (map (lambda (d)
+                (ly:stencil-translate ledger (cons ofs (ekm-bound y d))))
+                (cddr sym))))
+          (make-filled-box-stencil x y))))))
+
+#(define (ekm:ledgered ledgered txt)
+  (if ledgered
+    (make-ekm-ledgered-markup txt)
+    (make-ekm-text-markup txt)))
+
+#(define (ekm:is-ledgered sil)
+  (let lookup ((expr (ly:stencil-expr sil)))
+    (if (null? expr) #f
+    (or
+      (cond
+        ((eq? 'named-glyph (car expr)) (string-suffix? "o" (last expr)))
+        ((list? (car expr)) (lookup (car expr)))
+        (else #f))
+      (lookup (cdr expr))))))
+
+
 %% Augmentation dot
 
 #(define (ekm-cat-dots count dot)
-  (let ((ext (ekm-extent dot X)))
+  (let ((w (ekm-extent dot X)))
     (let cat ((c (max count 0))
               (r empty-stencil))
       (if (zero? c) r
-        (cat (1- c) (ly:stencil-stack r X RIGHT dot ext))))))
+        (cat (1- c) (ly:stencil-stack r X RIGHT dot w))))))
 
 #(define (ekm-dots grob)
   (ekm-cat-dots
@@ -891,13 +946,17 @@ ekmFlag =
                (if (zero? ct) sil
                (let con ((c ct) (s sil))
                  (if (zero? c) s
-                 (let ((r (ekm:char layout props
-                            (ekm:asst ekm-rest-tab style log (ekm:mv ledgered)))))
-                   (con (1- c)
-                        (cons*
-                          (if ((if oneline = <) log 0) r
-                            (ly:stencil-translate-axis r (if oneline (- ssp) ssp) Y))
-                          s)))))))
+                 (let ((rest
+                        (interpret-markup layout props
+                          (ekm:ledgered ledgered
+                            (ekm:asst ekm-rest-tab style log (ekm:mv ledgered))))))
+                   (con
+                    (1- c)
+                    (cons*
+                      (if ((if oneline = <) log 0)
+                        rest
+                        (ly:stencil-translate-axis rest (if oneline (- ssp) ssp) Y))
+                      s)))))))
                '() cts '(-3 -2 -1 0))))
            (pad (if (< (length sils) 2)
                   0
@@ -908,20 +967,11 @@ ekmFlag =
                      (1- (length sils)))))))
       (stack-stencil-line pad sils))))
 
-#(define (ekm:is-ledgered sil)
-  (let lookup ((expr (ly:stencil-expr sil)))
-    (if (null? expr) #f
-    (or
-      (cond
-        ((eq? 'named-glyph (car expr)) (string-suffix? "o" (last expr)))
-        ((list? (car expr)) (lookup (car expr)))
-        (else #f))
-      (lookup (cdr expr))))))
-
 #(define (ekm-rest grob)
-  (ekm-cchar grob 0
-    (ekm:assld ekm-rest-tab grob #f
-      (ekm:mv (ekm:is-ledgered (ly:rest::print grob))))))
+  (let ((ledgered (ekm:is-ledgered (ly:rest::print grob))))
+    (grob-interpret-markup grob
+      (ekm:ledgered ledgered
+        (ekm:assld ekm-rest-tab grob #f (ekm:mv ledgered))))))
 
 #(define (ekm-mmr grob)
   (let* ((org (ly:multi-measure-rest::print grob))
@@ -971,8 +1021,11 @@ ekmFlag =
                 (ledgers '(-1 0 1))
                 (style '()))
   (let* ((ledgered (memv log ledgers))
-         (rest (ekm-center 2 (ekm:char layout props
-                 (ekm:asst ekm-rest-tab style log (ekm:mv ledgered)))))
+         (rest
+          (ekm-center 2
+            (interpret-markup layout props
+              (ekm:ledgered ledgered
+                (ekm:asst ekm-rest-tab style log (ekm:mv ledgered))))))
          (dot (and (> dot-count 0)
                    (ekm:text layout props (car (ekm:asstl 'dot 'note))))))
     (if dot
