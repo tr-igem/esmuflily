@@ -621,3 +621,8 @@ January 2021 - May 2021:
 - Add "ekm:is-ledgered" and change "ekm-rest" and "ekm-mmr"
   for correct ledgered rest and MMrest, combined with cue notes and for LP 2.25
   (issues #45, #46).
+
+2026-01-22:
+- Add "\ekm-ledgered" and "ekm:ledgered", and change "ekm-rest", "\ekm-mmr",
+  and "\ekm-rest-by-number" to support composite ledgered glyphs (issue #47).
+- Add "ekm-bound", an extented version of LP's "interval-bound".
