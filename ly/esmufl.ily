@@ -67,18 +67,20 @@
 
 #(define-markup-command (ekm-str layout props str)
   (string?)
-  #:properties ((font-size 0))
+  #:properties ((font-size 0)
+                (font-name ekm:font-name))
   (interpret-markup
     layout
     (cons
       `((font-size . ,(+ ekm:font-size font-size))
-        (font-name . ,ekm:font-name))
+        (font-name . ,font-name))
       props)
     str))
 
 #(define-markup-command (ekm-char layout props cp)
   (ekm-cp?)
-  #:properties ((font-size 0))
+  #:properties ((font-size 0)
+                (font-name ekm:font-name))
   (if (zero? cp)
     point-stencil
   (if ekm:draw-paths
@@ -86,13 +88,14 @@
     (interpret-markup layout
       (cons
         `((font-size . ,(+ ekm:font-size font-size))
-          (font-name . ,ekm:font-name))
+          (font-name . ,font-name))
         props)
       (ly:wide-char->utf-8 cp)))))
 
 #(define-markup-command (ekm-charf layout props cp ff)
   (ekm-cp? number-or-list?)
-  #:properties ((font-size 0))
+  #:properties ((font-size 0)
+                (font-name ekm:font-name))
   (let ((f (if (pair? ff) (car ff) ff)))
     (if (and (number? f) (negative? f))
       (if (defined? 'ekm-path-stencil)
@@ -102,7 +105,7 @@
         (cons
           (cons*
             `(font-size . ,(+ ekm:font-size font-size))
-            `(font-name . ,ekm:font-name)
+            `(font-name . ,font-name)
             (if (null? ff)
               ff
               `((font-features .
