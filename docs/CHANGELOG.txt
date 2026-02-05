@@ -626,3 +626,7 @@ January 2021 - May 2021:
 - Add "\ekm-ledgered" and "ekm:ledgered", and change "ekm-rest", "\ekm-mmr",
   and "\ekm-rest-by-number" to support composite ledgered glyphs (issue #47).
 - Add "ekm-bound", an extented version of LP's "interval-bound".
+
+2026-02-05:
+- Add support of "font-name" property in the commands "ekm-str",
+  "ekm-char", and "ekm-charf" (part of issue #33).
