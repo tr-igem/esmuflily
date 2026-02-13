@@ -2923,7 +2923,7 @@ ekmMetronome =
   ("___" . ,(markup #:hspace 2))
   ("__" . ,(markup #:hspace 0.78))
   ("_" . ,(markup #:hspace 0.17))
-  ("`" . #f)
+  ("'" . #f)
   ))
 
   (dynamic (#t
@@ -3856,10 +3856,15 @@ ekmSmuflOff =
 #(define-music-function (type)
   (symbol-list-or-symbol?)
   (let* ((typ (if (symbol? type) (list type) type))
+         (neg (if (and (not (null? typ)) (eq? '- (car typ))) not identity))
+         (typ (if (neg #f) (cdr typ) typ))
          (all (memq 'all typ))
          (music #{ #}))
     (define (on t m)
-      (if (or all (memq t typ)) (set! music #{ #music #m #})))
+      (if (neg (or all (memq t typ)))
+        (if (procedure? m)
+          (m t)
+          (set! music #{ #music #m #}))))
 
     (on 'staff #{
       \revert Staff.StaffSymbol.thickness
