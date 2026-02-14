@@ -3968,22 +3968,23 @@ ekmSmuflOff =
 #(let* ((font (ly:get-option 'ekmfont))
         (font (if font (symbol->string font)
               (if (defined? 'ekmFont) ekmFont "")))
-        (path (string-suffix? "#" font))
-        (font (if path (string-drop-right font 1) font))
+        (paths (string-suffix? "#" font))
+        (font (if paths (string-drop-right font 1) font))
         (font (if (string-null? font) "Ekmelos" font))
-        (f (string-downcase font))
+        (fname (string-downcase font))
+        (pname (string-append fname "-paths.ily"))
         (dir (ly:get-option 'ekmmetadata))
         (dir (if dir (symbol->string dir)
              (if (defined? 'ekmMetadata) ekmMetadata "")))
         (cr (string-suffix? "%" dir))
         (dir (if cr (string-drop-right dir 1) dir))
-        (name (string-append "ekmd-" f ".scm"))
-        (tab (ekmd:load dir font name)))
+        (mdname (string-append "ekmd-" fname ".scm"))
+        (tab (ekmd:load dir font mdname)))
 
   ;; create metadata table
   (if (or cr (not tab))
     (let* ((tpl (ekmd:set-dg! (ekmd:load dir font "ekmd-template.scm")))
-           (types (or (ekmd:load dir font (string-append "types-" f ".scm"))
+           (types (or (ekmd:load dir font (string-append "types-" fname ".scm"))
                       (ekmd:load dir font "types-template.scm")
                       '()))
            (md (ekmd:read
@@ -4006,16 +4007,21 @@ ekmSmuflOff =
             (cons 'defaults ekmd:defaults)
             (cons 'glyphs ekmd:glyphs)
             (cons 'types types))))
-          (ekmd:save (string-append ekmd:dir "/" name) tab)))))
+          (ekmd:save (string-append ekmd:dir "/" mdname) tab)))))
 
   (set! ekm:font-name font)
-  (set! ekm:draw-paths (and path (defined? 'ekm-path-stencil)))
+  (set! ekm:draw-paths paths)
 
   (set! tab (primitive-eval tab))
   (ekmd:set-dg! tab)
   (for-each (lambda (t)
     (ekm:merge-type (car t) (cdr t)))
-    (or (assq-ref tab 'types) '())))
+    (or (assq-ref tab 'types) '()))
+
+  (if (and paths (not (defined? 'ekm-path-stencil)) (ly:find-file pname))
+    (ly:parser-include-string (format #f "\\include \"~a\"\n" pname))))
+
+#(set! ekm:draw-paths (and ekm:draw-paths (defined? 'ekm-path-stencil)))
 
 %% Symbols for frequently used types
 #(define ekm-notehead-tab (assq-ref ekm:types 'notehead))
