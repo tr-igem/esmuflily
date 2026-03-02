@@ -453,15 +453,15 @@
 
 %% Clef
 
-#(define (ekm-init-clef)
-  (let iter-s ((t (ekm:assid 'clef #f)))
+#(define (ekm-init-clef tab)
+  (let init ((t (or tab (ekm:assid 'clef #f))))
     (if (null? t) #t
     (let ((sym (ekm:sym (cdar t) MAIN)))
       (if (not (string-prefix? "clefs." (caar t)))
         (if (or (not-pair? sym) (null? (cdr sym)))
           (add-new-clef (caar t) (caar t) 0 0 0)
           (add-new-clef (caar t) (caar t) (second sym) (third sym) (fourth sym))))
-      (iter-s (cdr t))))))
+      (init (cdr t))))))
 
 #(define-public ekm:clef-change-font-size '(1.5 . -2))
 
@@ -470,12 +470,14 @@
          (ch (string-suffix? "_change" name))
          (val (ekm:assid 'clef (if ch (string-drop-right name 7) name)))
          (sym (ekm:sym val (ekm:mv ch)))
-         (mk (make-ekm-char-markup
+         (mk (make-ekm-text-markup
               (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))))
     (grob-interpret-markup grob
       (if ch
         (make-fontsize-markup
-          ((if sym car cdr) ekm:clef-change-font-size)
+          (if (pair? sym)
+            (second sym)
+            ((if sym car cdr) ekm:clef-change-font-size))
           mk)
         mk))))
 
@@ -1198,9 +1200,9 @@ ekmFlag =
 #(define-markup-command (ekm-dynamic layout props def)
   (string?)
   (interpret-markup layout props
-    (let ((c (ekm:assid 'dynamic def)))
-      (if c
-        (make-ekm-char-markup c)
+    (let ((sym (ekm:assid 'dynamic def)))
+      (if sym
+        (make-ekm-text-markup (ekm:sym sym MAIN))
         (make-ekm-def-markup (ekm:assid 'dynamic #f) def)))))
 
 #(define (ekm-dyntext grob)
@@ -3731,7 +3733,8 @@ ekmMetronome =
 ekmMergeType =
 #(define-void-function (type tab)
   (symbol? cheap-list?)
-  (ekm:merge-type type tab))
+  (ekm:merge-type type tab)
+  (if (eq? 'clef type) (ekm-init-clef (cdar tab))))
 
 
 %% SMuFL switches
@@ -4030,4 +4033,4 @@ ekmSmuflOff =
 #(define ekm-shared-tab (ekm:assid 'shared #f))
 
 #(ekm-init-stemlength)
-#(ekm-init-clef)
+#(ekm-init-clef #f)

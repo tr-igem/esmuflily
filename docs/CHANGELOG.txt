@@ -630,3 +630,10 @@ January 2021 - May 2021:
 2026-02-05:
 - Add support of "font-name" property in the commands "ekm-str",
   "ekm-char", and "ekm-charf" (part of issue #33).
+
+2026-03-02:
+- Add support of EXTEXT for clefs in "ekm-clef"
+  and for dynamics in "\ekm-dynamic" (issue #49).
+- Change "\ekmMergeType" and "ekm-init-clef" to initialize merged clefs.
+- Add in "ekm-clef" support for individual change clef font size
+  specified in type table "clef".
