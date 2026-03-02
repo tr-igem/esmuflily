@@ -637,3 +637,4 @@ January 2021 - May 2021:
 - Change "\ekmMergeType" and "ekm-init-clef" to initialize merged clefs.
 - Add in "ekm-clef" support for individual change clef font size
   specified in type table "clef".
+- Add "\ekmMergeGlyphs" to customize the `glyphs` sub-table (issue #50).

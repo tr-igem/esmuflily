@@ -686,12 +686,12 @@ ekmSlashSeparator =
 %% Note head
 
 #(define (ekm-note grob log dir)
-  (let ((d (ekm:assld ekm-notehead-tab grob log dir)))
-    (if (pair? d)
+  (let ((val (ekm:assld ekm-notehead-tab grob log dir)))
+    (if (pair? val)
       (make-combine-markup
-        (make-with-color-markup white (make-ekm-char-markup (cdr d)))
-        (make-ekm-char-markup (car d)))
-      (make-ekm-char-markup d))))
+        (make-with-color-markup white (make-ekm-char-markup (cdr val)))
+        (make-ekm-char-markup (car val)))
+      (make-ekm-char-markup val))))
 
 #(define ((ekm-notehead dir) grob)
   (grob-interpret-markup grob (ekm-note grob #f dir)))
@@ -3735,6 +3735,13 @@ ekmMergeType =
   (symbol? cheap-list?)
   (ekm:merge-type type tab)
   (if (eq? 'clef type) (ekm-init-clef (cdar tab))))
+
+ekmMergeGlyphs =
+#(define-void-function (tab)
+  (cheap-list?)
+  (for-each (lambda (e)
+    (set! ekmd:glyphs (assv-set! ekmd:glyphs (car e) (cdr e))))
+    tab))
 
 
 %% SMuFL switches
