@@ -3989,7 +3989,7 @@ ekmSmuflOff =
         (dir (ly:get-option 'ekmmetadata))
         (dir (if dir (symbol->string dir)
              (if (defined? 'ekmMetadata) ekmMetadata "")))
-        (cr (string-suffix? "%" dir))
+        (cr (string-suffix? "#" dir))
         (dir (if cr (string-drop-right dir 1) dir))
         (mdname (string-append "ekmd-" fname ".scm"))
         (tab (ekmd:load dir font mdname)))
