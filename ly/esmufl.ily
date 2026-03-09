@@ -3733,15 +3733,18 @@ ekmMetronome =
 ekmMergeType =
 #(define-void-function (type tab)
   (symbol? cheap-list?)
-  (ekm:merge-type type tab)
-  (if (eq? 'clef type) (ekm-init-clef (cdar tab))))
-
-ekmMergeGlyphs =
-#(define-void-function (tab)
-  (cheap-list?)
-  (for-each (lambda (e)
-    (set! ekmd:glyphs (assv-set! ekmd:glyphs (car e) (cdr e))))
-    tab))
+  (case type
+    ((defaults)
+      (for-each (lambda (e)
+        (set! ekmd:defaults (assv-set! ekmd:defaults (car e) (cdr e))))
+        tab))
+    ((glyphs)
+      (for-each (lambda (e)
+        (set! ekmd:glyphs (assv-set! ekmd:glyphs (car e) (cdr e))))
+        tab))
+    (else
+      (ekm:merge-type type tab)
+      (if (eq? 'clef type) (ekm-init-clef (cdar tab))))))
 
 
 %% SMuFL switches
