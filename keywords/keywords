@@ -93,8 +93,6 @@ ekm-tuplet-number::fraction-with-notes
 
 \ekmStyle
 \ekmUserStyle
-\ekmelicStyle
-\ekmelicUserStyle
 \ekmelicOutputSuffix
 \ekmelic-style-name
 \ekmelic-font-name

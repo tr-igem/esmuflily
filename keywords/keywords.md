@@ -140,8 +140,6 @@ Ekmelily
 
     \ekmStyle
     \ekmUserStyle
-    \ekmelicStyle
-    \ekmelicUserStyle
 
     \ekmelicOutputSuffix
 
