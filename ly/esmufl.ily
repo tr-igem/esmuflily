@@ -241,7 +241,7 @@
   (and dir (if (negative? dir) UP DOWN)))
 
 #(define (ekm:sym val dir)
-  (if (or (not-pair? val) (not dir))
+  (if (or (not dir) (not-pair? val))
     val
     (if (or (null? (cdr val)) (negative? dir)) (car val) (cdr val))))
 
@@ -251,9 +251,9 @@
 #(define (ekm:asstl type style)
   (ekm:assq (assq-ref ekm:types type) style))
 
-#(define (ekm:assid type key)
+#(define* (ekm:assid type key #:optional (dir #f))
   (let ((t (cdar (assq-ref ekm:types type))))
-    (if key (assoc-ref t key)
+    (if key (ekm:sym (assoc-ref t key) dir)
     (if (eq? #t (car t)) (cdr t) t))))
 
 #(define (ekm:asst tab style key dir)
@@ -1200,9 +1200,9 @@ ekmFlag =
 #(define-markup-command (ekm-dynamic layout props def)
   (string?)
   (interpret-markup layout props
-    (let ((sym (ekm:assid 'dynamic def)))
+    (let ((sym (ekm:assid 'dynamic def MAIN)))
       (if sym
-        (make-ekm-text-markup (ekm:sym sym MAIN))
+        (make-ekm-text-markup sym)
         (make-ekm-def-markup (ekm:assid 'dynamic #f) def)))))
 
 #(define (ekm-dyntext grob)
@@ -1524,7 +1524,7 @@ ekmBreathing =
       (grob-interpret-markup grob
         (if text
           (make-ekm-ctext-markup STEMCXY
-            (or (and (string? text) (ekm:sym (ekm:assid 'stem text) dir))
+            (or (and (string? text) (ekm:assid 'stem text dir))
                 text))
           (make-ekm-text-markup
             (ekm:asst 'tremolo style cnt dir))))
@@ -1549,7 +1549,7 @@ ekmTremolo =
          (dir (ly:grob-property grob 'direction))
          (sym (grob-interpret-markup grob
            (make-ekm-ctext-markup STEMCX
-             (or (and (string? text) (ekm:sym (ekm:assid 'stem text) dir))
+             (or (and (string? text) (ekm:assid 'stem text dir))
                  text)))))
     (if (null? stm)
       empty-stencil
@@ -2061,27 +2061,29 @@ ekmBendAfter =
 
 %% Chord name
 
-#(define (ekm:chord-set! text)
+#(define (ekm:chord-set! text super)
   (if (list? text)
     (cond
       ((and (eq? fontsize-markup (car text))
             (equal? "\xB0" (third text)))
         (set-car! text super-markup)
-        (set-cdr! text `((,ekm-char-markup #xE870))))
+        (set-cdr! text `((,ekm-text-markup ,(ekm:assid 'chord #\o UP)))))
       ((and (eq? super-markup (car text))
             (equal? "\xF8" (second text)))
         (set-car! text super-markup)
-        (set-cdr! text `((,ekm-char-markup #xE871))))
+        (set-cdr! text `((,ekm-text-markup ,(ekm:assid 'chord #\h UP)))))
       ((and (eq? fontsize-markup (car text))
             (pair? (third text))
             (eq? triangle-markup (car (third text))))
-        (set-cdr! text `(-2 (,ekm-char-markup #xE873))))
+        (set-cdr! text `(-2 (,ekm-text-markup ,(ekm:assid 'chord #\7 (ekm:mv super))))))
       ((equal? "+" (car text))
-        (set-car! text `(,ekm-char-markup #xE872)))
+        (set-car! text `(,ekm-text-markup ,(ekm:assid 'chord #\+ (ekm:mv super)))))
       ((equal? "-" (car text))
-        (set-car! text `(,ekm-char-markup #xE874)))
+        (set-car! text `(,ekm-text-markup ,(ekm:assid 'chord #\- (ekm:mv super)))))
       (else
-        (for-each ekm:chord-set! text)))))
+        (for-each (lambda (t)
+          (ekm:chord-set! t (or super (eq? super-markup (car text)))))
+          text)))))
 
 
 %% Analytics
@@ -2331,11 +2333,11 @@ ekmFuncList =
 
 #(define-markup-command (ekm-misc layout props key dir)
   (symbol? ly:dir?)
-  (ekm:text layout props (ekm:sym (or (ekm:assid 'misc key) 0) dir)))
+  (ekm:text layout props (or (ekm:assid 'misc key dir) 0)))
 
 #(define-markup-command (ekm-eyeglasses layout props dir)
   (ly:dir?)
-  (ekm:text layout props (ekm:sym (ekm:assid 'misc 'eyeglasses) dir)))
+  (ekm:text layout props (ekm:assid 'misc 'eyeglasses dir)))
 
 #(define-markup-command (ekm-metronome layout props count)
   (integer?)
@@ -3523,6 +3525,21 @@ ekmMetronome =
   (#\x . 0)
   ))
 
+  (chord (#t
+  (#\o . #xE870)
+  (#\h . #xE871)
+  (#\7 . #xE873)
+  (#\+ . #xE872)
+  (#\- . #xE874)
+  ("\uE260" . #xED60)
+  ("\uE261" . #xED61)
+  ("\uE262" . #xED62)
+  ("\uE263" . #xED63)
+  ("\uE264" . #xED64)
+  ("\uE265" . #xED65)
+  ("\uE266" . #xED66)
+  ))
+
   (analytics (#t #t
   ("H" . #xE860)
   ("CH" . #xE86A)
@@ -3858,9 +3875,9 @@ ekmSmuflOn =
     #})
     (on 'chord #{
       \override ChordName.stencil = #(lambda (grob)
-        (ekm:chord-set! (ly:grob-property grob 'text))
+        (ekm:chord-set! (ly:grob-property grob 'text) #f)
         (if (defined? 'ekm:chord-acc-set!)
-          (ekm:chord-acc-set! (ly:grob-property grob 'text)))
+          (ekm:chord-acc-set! (ly:grob-property grob 'text) #f))
         (ly:text-interface::print grob))
     #})
     music))

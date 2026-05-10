@@ -644,3 +644,19 @@ January 2021 - May 2021:
   replacing "\ekmMergeGlyphs".
 - Change trailing "%" to "#" in PRIVATE_LOCATION ("ekmMetadata").
   "%" can conflict with Win system variables.
+
+2026-05-06:
+- ekmd-ekmelos.scm: Update for Ekmelos 2.60.
+  Add new glyphs to type tables "spanner" (U+F7A0 - U+F7A5)
+  and "pedal" (U+F79E, U+F79F).
+
+2026-05-10:
+- Add to "ekm:assid" an optional argument DIR with default #f.
+  Revise "\ekm-dynamic", "ekm-repeat-tremolo", "ekm-stem", "\ekm-misc",
+  "\ekm-eyeglasses", "ekm:chord-set!" now calling "ekm:assid" with DIR.
+- Add type table "chord" for chord name symbols and accidentals.
+  Change "ekm:chord-set!" to use the table (issue #51).
+- "ekm:chord-set!" now detects superscript parts in the markup and
+  selects superscript (small) variants.
+- ekmd-bravura.scm: Add "chord" type table with superscript variants.
+- ekmd-ekmelos.scm: Add "chord" type table with quadruple sharp/flat.
