@@ -151,22 +151,49 @@
   (cheap-list?)
   #:properties ((word-space)
                 (text-direction RIGHT))
-  (let* ((al (map (lambda (s)
-               (if (or (ekm-cp? s) (pair? s))
-                 (make-general-align-markup Y DOWN
-                   (make-ekm-text-markup s))
-                 s))
-               args))
-         (sil (interpret-markup-list layout props al)))
-    (stack-stencil-line
-      word-space
+  (let ((sil (interpret-markup-list layout props
+          (map (lambda (s)
+           (if (or (ekm-cp? s) (pair? s))
+             (make-general-align-markup Y DOWN (make-ekm-text-markup s))
+             s))
+           args))))
+    (stack-stencil-line word-space
       (if (= LEFT text-direction) (reverse sil) sil))))
+
+#(define-markup-command (ekm-join-line layout props sep args)
+  (markup? markup-list?)
+  #:properties ((word-space)
+                (text-direction RIGHT))
+  (let ((s (interpret-markup layout props sep))
+        (ls (interpret-markup-list layout props args)))
+    (let join ((l (cdr ls)) (r (list (car ls))))
+      (if (null? l)
+        (stack-stencil-line word-space
+          (if (= LEFT text-direction) r (reverse r)))
+        (join (cdr l) (cons* (car l) s r))))))
 
 #(define (ekm:char layout props cp)
   (interpret-markup layout props (make-ekm-char-markup cp)))
 
 #(define (ekm:text layout props txt)
   (interpret-markup layout props (make-ekm-text-markup txt)))
+
+#(define (ekm:kern pad . sil)
+  (fold (lambda (s r)
+    (let ((dist (ly:skyline-distance
+            (cdr (ly:skylines-for-stencil r Y))
+            (car (ly:skylines-for-stencil s Y))
+            pad)))
+     (ly:stencil-add
+      r
+      (ly:stencil-translate-axis s
+        (cond
+         ((or (inf? dist) (negative? dist)) pad)
+         ((< (- dist (ekm-extent r X)) pad) (+ dist pad))
+         (else dist))
+        X))))
+    (car sil)
+    (cdr sil)))
 
 
 #(define-public CX #b101)
@@ -224,10 +251,10 @@
 #(define (ekm-dim grob mk dir)
   (cdr (ly:stencil-extent (grob-interpret-markup grob mk) dir)))
 
-#(define (ekm-dir stm)
-  (let ((dir (if (null? (ly:grob-object stm 'beam))
-              (ly:grob-property stm 'direction)
-              (ly:grob-property-data stm 'direction))))
+#(define (ekm-dir stem)
+  (let ((dir (if (null? (ly:grob-object stem 'beam))
+              (ly:grob-property stem 'direction)
+              (ly:grob-property-data stem 'direction))))
     (if (number? dir) dir UP)))
 
 
@@ -310,27 +337,122 @@
 %% Number
 
 #(define-markup-command (ekm-number layout props style num)
-  (symbol? integer?)
-  (interpret-markup layout props
-    (let ((tab (ekm:asstl 'number style)))
+  (symbol? number?)
+  #:properties
+   ((font-size 0)
+    (mixed #t)
+    (fraction-style 'default)
+    (fraction-size -6)
+    (fraction-align -1) ; DOWN
+    (bar-thickness 0.15)
+    (x-padding 0.2)
+    (xy-padding 0.1)
+    (y-padding 0.1)
+    (word-space))
+
+  (define (integer num dir frac)
+    (ly:stencil-aligned-to
+     (interpret-markup layout props
+      (make-fontsize-markup
+       (if frac fraction-size 0)
+       (let ((tab (ekm:asstl 'number style)))
+        (cond
+         ((pair? tab)
+          (let ((sym (or (assv-ref tab num)
+                         (assq-ref (ekm:asstl 'number 'ekm) style))))
+            (if (procedure? sym)
+              (sym (number->string num 10))
+              (make-ekm-text-markup sym))))
+         ((procedure? tab)
+          (tab (number->string num 10)))
+         (else
+          (let digit ((f (not num)) (n num) (l '()))
+            (if f (make-ekm-concat-markup l)
+            (digit
+              (< n 10)
+              (quotient n 10)
+              (cons* ((if (vector? tab) vector-ref +) tab (remainder n 10)) l)))))))))
+     Y dir))
+
+  (define (bar l b r t)
+    (make-line-stencil
+     (* bar-thickness (magstep (+ font-size fraction-size)))
+     l b r t))
+
+  (define (align center sil)
+    (cond
+     ((or center (= CENTER fraction-align))
+      (ly:stencil-translate-axis
+        (ly:stencil-aligned-to sil Y CENTER)
+        (* 0.5 (ekm-extent (integer 0 DOWN #f) Y)) Y))
+     ((< 0 fraction-align)
+      (ly:stencil-translate-axis
+        (ly:stencil-aligned-to sil Y UP)
+         fraction-align Y))
+     (else
+      (ly:stencil-aligned-to sil Y fraction-align))))
+
+  (define (fraction num small line slash)
+    (let* ((mag (magstep font-size))
+           (pre (and small slash (assv-ref (ekm:asstl 'fraction style) num)))
+           (n (or pre (integer (numerator num) DOWN #t)))
+           (d (or pre (integer (denominator num) (if line DOWN UP) #t)))
+           (b (or pre (ekm:asstl 'sign style))))
+     (align #f
       (cond
-      ((not tab)
-        (number->string num 10))
-      ((pair? tab)
-        (let ((sym (or (assv-ref tab num)
-                       (assq-ref (ekm:asstl 'number 'ekm) style))))
-          (if (procedure? sym)
-            (sym (number->string num 10))
-            (make-ekm-text-markup sym))))
-      ((procedure? tab)
-        (tab (number->string num 10)))
-      (else
-        (let digit ((f (not num)) (n num) (l '()))
-          (if f (make-ekm-concat-markup l)
-          (digit
-            (< n 10)
-            (quotient n 10)
-            (cons* ((if (vector? tab) vector-ref +) tab (remainder n 10)) l)))))))))
+       (line
+        (ekm:kern (* x-padding mag)
+         n
+         (ly:stencil-aligned-to
+           (if (first b)
+             (interpret-markup layout props
+              (make-fontsize-markup fraction-size
+               (make-ekm-text-markup (first b))))
+             (bar 0 0 (* 0.6 (ekm-extent n X)) (* 0.95 (ekm-extent n Y))))
+           Y DOWN)
+         d))
+       (slash
+        (if pre
+          (ekm:text layout props pre)
+          (let ((sym (if small (second b) (third b))))
+            (ekm:kern (* xy-padding mag)
+             n
+             (ly:stencil-aligned-to
+              (if sym
+                (ekm:text layout props sym)
+                (let ((h (* 0.6 (ekm-extent n Y))))
+                  (bar (- h) (- h) h h)))
+              Y CENTER)
+             d))))
+       (else ; vertical
+        (let* ((n (ly:stencil-aligned-to n X CENTER))
+               (d (ly:stencil-aligned-to d X CENTER)))
+         (stack-stencils Y DOWN
+           (* y-padding mag)
+           (if (eq? 'none fraction-style)
+             (list n d) ; no bar
+             (let ((w (interval-union (ly:stencil-extent n X) (ly:stencil-extent d X))))
+              (list n (bar (car w) 0 (cdr w) 0) d))))))))))
+
+  (let* ((n (truncate num))
+         (small (< fraction-size 0))
+         (line (memq fraction-style '(horizontal line)))
+         (slash (memq fraction-style '(diagonal slash))))
+    (cond
+     ((or (integer? num) (inexact? num))
+      (integer n DOWN #f))
+     ((and mixed (positive? n))
+      (stack-stencil-line
+        (if (and line (not small)) (* word-space (magstep font-size)) 0)
+        (list
+          (integer n DOWN #f)
+          (if (eq? 'plus mixed)
+            (align #t
+              (ekm:text layout props (fourth (ekm:asstl 'sign style))))
+            empty-stencil)
+          (fraction (- num n) small line slash))))
+     (else
+      (fraction num small line slash)))))
 
 
 %% Metadata access
@@ -338,23 +460,27 @@
 #(define (ekm:md key)
   (assq-ref ekmd:defaults key))
 
-#(define (ekm:md-glyph grob cp)
-  (let ((d (assv-ref ekmd:glyphs cp)))
+#(define (ekm:md-glyph grob key)
+  (let* ((cp (if (pair? key) (car key) key))
+         (d (assv-ref ekmd:glyphs cp)))
     (if d
       (if (first d)
         d
-        (let* ((sil (begin
-                 (ly:grob-set-property! grob 'font-size 0)
-                 (grob-interpret-markup grob (make-ekm-char-markup cp))))
+        (let* ((sil
+                (if (ly:grob? grob)
+                  (begin
+                    (ly:grob-set-property! grob 'font-size 0)
+                    (grob-interpret-markup grob (make-ekm-char-markup cp)))
+                  grob))
                (w (* 0.5 (ekm-extent sil X)))
                (h (ly:stencil-extent sil Y))
                (c (list #t
-                    (cons (1- (/ (car (second d)) w))
-                          (/ (cdr (second d)) (abs (cdr h))))
-                    (cons (1- (/ (car (third d)) w))
-                          (/ (cdr (third d)) (abs (car h)))))))
-          (assv-set! ekmd:glyphs cp c)
-          c))
+                   (cons (1- (/ (car (second d)) w))
+                         (/ (cdr (second d)) (abs (cdr h))))
+                   (cons (1- (/ (car (third d)) w))
+                         (/ (cdr (third d)) (abs (car h)))))))
+         (assv-set! ekmd:glyphs cp c)
+         c))
       '(#t (-1 . 0) (1 . 0)))))
 
 
@@ -497,7 +623,7 @@
 %% Time signature
 
 #(define (ekm-time-subnum num)
-  (or (ekm:assid 'time-sub num)
+  (or (assv-ref (ekm:asstl 'fraction 'time) num)
       (ekm:assid 'time "//")))
 
 #(define (ekm-time-num l num)
@@ -507,11 +633,13 @@
         (make-ekm-concat-markup
           (list
             (make-ekm-number-markup 'time (caar l))
-            (ekm-time-subnum (cdar l)))))
+            (make-general-align-markup Y DOWN
+              (make-ekm-text-markup (ekm-time-subnum (cdar l)))))))
       ((integer? (car l))
         (make-ekm-number-markup 'time (car l)))
       (else
-        (make-ekm-text-markup (ekm-time-subnum (car l)))))
+        (make-general-align-markup Y DOWN
+          (make-ekm-text-markup (ekm-time-subnum (car l))))))
     (car l)))
 
 #(define (ekm-time-join ls sep denom)
@@ -536,7 +664,8 @@
                 ((number? fr) (list fr))
                 ((number-pair? fr) (list (car fr) (cdr fr)))
                 (else fr))
-              (make-ekm-text-markup (ekm:assid 'time "/+"))
+              (make-general-align-markup Y -2.4
+                (make-ekm-text-markup (ekm:assid 'time "/+")))
               #t))
          (num (make-line-markup (car t))))
     (make-vcenter-markup
@@ -585,11 +714,6 @@
     (ekm-time-list sig 'numbered)
     (ekm-time-fraction sig 'numbered)))
 
-#(define-markup-command (ekm-compound-meter layout props sig)
-  (number-or-pair?)
-  (interpret-markup layout props
-    (ekm-time-compound sig)))
-
 ekmCompoundMeter =
 #(define-music-function (sig)
   (number-or-pair?)
@@ -631,6 +755,155 @@ ekmCompoundMeter =
       (if (and sym (or (eq? 'C st) (eq? 'default st)))
         (make-ekm-ctext-markup CY sym)
         (ekm-time-fraction fr st)))))
+
+
+%% Time signature new
+
+#(define-markup-command (ekm-compound-meter layout props sig)
+  (number-or-pair?)
+  #:properties
+   ((font-size 0)
+    (denominator-style 'default)
+    (nested-fraction-mixed #t)
+    (nested-fraction-orientation 'default)
+    (nested-fraction-relative-font-size '())
+    (note-dots-direction CENTER)
+    (note-flag-style '())
+    (note-head-style 'metronome)
+    (note-staff-position -2)
+    (bar-thickness 0.25)
+    (xy-padding 0.1))
+
+  (define (ss y)
+    (* y (ly:output-def-lookup layout 'staff-space) (magstep font-size)))
+
+  (define (number num)
+   (let* ((m nested-fraction-mixed)
+          (o nested-fraction-orientation)
+          (s nested-fraction-relative-font-size)
+          (o (if (number? s)
+              (if (negative? s)
+               (case o
+                ((default vertical) 'none)
+                (else o))
+               'horizontal)
+              (case o
+               ((default) (if m 'none 'horizontal))
+               ((vertical) 'none)
+               (else o))))
+          (s (cond
+              ((number? s) s)
+              ((and (not m) (eq? 'horizontal o)) 0)
+              (else -6))))
+    (make-override-markup
+     `((mixed . ,m)
+       (fraction-style . ,o)
+       (fraction-size . ,s)
+       (fraction-align . ,(if (and m (eq? 'horizontal o)) (ss 2.04) -1))
+       (bar-thickness . ,bar-thickness)
+       (y-padding . 0)
+       (xy-padding . ,xy-padding))
+      (make-ekm-number-markup 'time num))))
+
+  (define (translate x y sym)
+    (make-translate-markup (cons x (ss y)) sym))
+
+  (define (fraction sig)
+    (let* ((num (make-ekm-join-line-markup
+                  (translate 0 1 (make-ekm-text-markup (ekm:assid 'time "/+")))
+                  (map number (if (pair? (car sig)) (car sig) (list (car sig))))))
+           (den (cdr sig))
+           (dur (and (eq? 'note denominator-style)
+                     (positive? den)
+                     (ly:number->duration (/ den)))))
+      (cond
+       ;; num note
+       ((and dur (= 1 (ly:duration-scale dur)))
+        (let ((style (if (symbol? note-head-style) note-head-style 'metronome)))
+         (make-left-align-markup
+          (make-combine-markup
+           (make-center-align-markup num)
+           (translate
+            (- (interval-center (ly:stencil-extent
+                (interpret-markup layout props
+                 (make-override-markup `(style . ,style)
+                  (make-ekm-note-by-number-markup
+                   (ly:duration-log dur) 0 DOWN)))
+                X)))
+            (* note-staff-position 0.5)
+            (make-override-markup
+             `((style . ,style)
+               (flag-style . ,note-flag-style)
+               (dots-direction . ,note-dots-direction))
+             (make-ekm-note-by-number-markup
+              (ly:duration-log dur)
+              (ly:duration-dot-count dur)
+              DOWN)))))))
+       ;; num
+       ((eq? 'none denominator-style)
+        (translate 0 -1 num))
+       ;; num / den
+       ((memq denominator-style '(diagonal slash))
+        (make-stencil-markup
+         (let ((b (third (ekm:asstl 'sign 'time))))
+          (ekm:kern (* xy-padding (magstep font-size))
+           (interpret-markup layout props num)
+           (if b
+             (ekm:text layout props b)
+             (let ((h (ss 2)))
+              (make-line-stencil (* bar-thickness (magstep font-size))
+               (* 0.4 (- h)) (- h) (* 0.4 h) h)))
+           (interpret-markup layout props (translate 0 -2 (number den)))))))
+       ;; num den
+       (else
+        (make-left-align-markup
+         (make-combine-markup
+          (make-center-align-markup num)
+          (make-center-align-markup (translate 0 -2 (number den)))))))))
+
+  (define (element sig)
+    (cond
+     ((number? (cdr sig))
+      (fraction sig))
+     ((pair? (cdr sig))
+      (fraction (tsig-abbr-expand sig)))
+     (else
+      (translate 0 -1 (number (car sig))))))
+
+  (interpret-markup layout props
+    (if (ly:version? < '(2 26))
+      (ekm-time-compound sig)
+      (cond
+       ((number? sig)
+        (element (list sig)))
+       ((number? (cdr sig))
+        (element sig))
+       ((pair? (car sig))
+        (make-ekm-join-line-markup
+          (make-ekm-text-markup (ekm:assid 'time "+"))
+          (map element sig)))
+       (else
+        (element sig))))))
+
+#(define-public (ekm-time-signature grob)
+  (let ((sig (ly:grob-property grob 'time-signature #f)))
+   (if sig
+    (let ((style (ly:grob-property grob 'style 'default)))
+      (grob-interpret-markup grob
+       (case style
+        ((default C)
+         (let ((sym (ekm:assid 'time sig)))
+           (if sym
+             (make-ekm-text-markup sym)
+             (make-ekm-compound-meter-markup sig))))
+        ((single-number single-digit)
+         (if (number-pair? sig)
+           (make-override-markup '(denominator-style . none)
+             (make-ekm-compound-meter-markup sig))
+           (make-ekm-compound-meter-markup sig)))
+        (else ; numbered
+          (make-ekm-compound-meter-markup sig)))))
+    (ly:grob-property grob 'senza-misura-stencil))))
 
 
 %% Cadenza signature
@@ -685,23 +958,117 @@ ekmSlashSeparator =
 
 %% Note head
 
+#(define (ekm:note val)
+  (if (pair? val)
+    (make-combine-markup
+      (make-with-color-markup white (make-ekm-char-markup (cdr val)))
+      (make-ekm-char-markup (car val)))
+    (make-ekm-char-markup val)))
+
 #(define (ekm-note grob log dir)
-  (let ((val (ekm:assld ekm-notehead-tab grob log dir)))
-    (if (pair? val)
-      (make-combine-markup
-        (make-with-color-markup white (make-ekm-char-markup (cdr val)))
-        (make-ekm-char-markup (car val)))
-      (make-ekm-char-markup val))))
+  (ekm:note (ekm:assld ekm-notehead-tab grob log dir)))
 
 #(define ((ekm-notehead dir) grob)
   (grob-interpret-markup grob (ekm-note grob #f dir)))
 
 #(define (ekm-stem-attachment grob)
-  (let* ((stm (ly:grob-object grob 'stem))
-         (dir (ly:grob-property stm 'direction))
+  (let* ((stem (ly:grob-object grob 'stem))
+         (dir (ly:grob-property stem 'direction))
          (d (ekm:assld ekm-notehead-tab grob #f dir))
          (md (ekm:md-glyph grob (if (pair? d) (car d) d))))
     (if (< dir 0) (second md) (third md))))
+
+#(define-markup-command (ekm-note-by-number layout props log dot-count dir)
+  (integer? integer? number?)
+  #:properties ((font-size 0)
+                (style '())
+                (flag-style '())
+                (dots-direction 0))
+
+  (define (dots style note x)
+   (if (positive? dot-count)
+    (let* ((val (ekm:asstl 'dot style))
+           (dot (ekm:text layout props (car val))))
+     (ly:stencil-add
+      (ly:stencil-translate
+        (ekm-cat-dots dot-count dot)
+        (cons
+          (+ (cdr x)
+             (* (ekm-extent dot X)
+                (if (and (> log 2) (positive? dir))
+                  (list-ref val (- (min log (1+ (length val))) 2)) 1)))
+          (/ dots-direction 2)))
+      note))
+    note))
+
+  (let ((val (ekm:asst 'note style log dir)))
+   (if val
+    ;; precomposed
+    (let ((note (interpret-markup layout props (ekm:note val))))
+      (dots style note (ly:stencil-extent note X)))
+    ;; composite
+    (let*
+     ((staff-space (ly:output-def-lookup layout 'staff-space))
+      (scale
+       (/ (ly:output-def-lookup layout 'output-scale)
+          (ly:output-def-lookup (ly:parser-lookup '$defaultpaper) 'output-scale)))
+      (size
+       (* (/ (ly:output-def-lookup layout 'text-font-size 11)
+             (ly:output-def-lookup
+              (ly:parser-lookup '$defaultpaper) 'text-font-size 11))
+          (if (= scale staff-space)
+           (magstep font-size)
+           (/ (* staff-space (magstep font-size)) scale))))
+      (val (ekm:asst ekm-notehead-tab style log dir))
+      (head (interpret-markup layout props (ekm:note val)))
+      (headx (ly:stencil-extent head X))
+      (md (ekm:md-glyph head val))
+      (md (if (negative? dir) (second md) (third md)))
+      (attach (cons (interval-index headx (car md))
+                    (interval-index (ly:stencil-extent head Y) (cdr md))))
+      (thickness (* size (ekm:md 'stemThickness)))
+      (stemx (car attach))
+      (stems (ekm:sym (second (ekm:assq ekm-stemlength-tab flag-style)) dir))
+      (stemy (* dir size
+                (if (> log 2) (list-ref stems (- log 2)) (car stems))))
+      ;; stem
+      (sil
+       (and
+        (> log 0)
+        (not (= dir CENTER))
+        (ly:round-filled-box
+          (if (< (abs (car md)) 0.001) ; epsilon
+            (ordered-cons
+              (- stemx (* 0.5 thickness))
+              (+ stemx (* 0.5 thickness)))
+            (ordered-cons
+              stemx
+              (+ stemx (* (- (sign dir)) thickness))))
+          (ordered-cons stemy (cdr attach))
+          (/ thickness 3))))
+      ;; stem + flag
+      (sil
+       (if (and sil (> log 2))
+        (ly:stencil-add
+         (ly:stencil-translate
+          (ekm:text layout props (ekm:asst ekm-flag-tab flag-style log dir))
+          (cons
+            (- (car attach) (if (negative? dir) 0 thickness))
+            (* dir size (car stems))))
+         sil)
+        sil))
+      ;; stem + flag + head
+      (sil (if sil (ly:stencil-add sil head) head))
+      (sil (dots flag-style sil headx)))
+     sil))))
+
+#(define-markup-command (ekm-note layout props dur dir)
+  (ly:duration? number?)
+  #:properties (ekm-note-by-number-markup)
+  (ekm-note-by-number-markup layout props
+    (ly:duration-log dur)
+    (ly:duration-dot-count dur)
+    dir))
 
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
@@ -733,17 +1100,17 @@ ekmNameHeadsTiMinor =
                nhl))
              (h (- top (car bot)))
              (cp (and (< h 3) (list-ref d h)))
-             (stm (ly:grob-object grob 'stem))
-             (dir (ekm-dir stm))
+             (stem (ly:grob-object grob 'stem))
+             (dir (ekm-dir stem))
              (md (ekm:md-glyph (cdr bot)
                   (or cp (if (>= dir 0) (fourth d) (sixth d))))))
         (ly:grob-set-property! (cdr bot) 'stem-attachment
           (if (< dir 0) (second md) (third md)))
-        (ly:grob-set-property! stm 'avoid-note-head #t)
-        (ly:grob-set-property! stm 'note-collision-threshold 0)
+        (ly:grob-set-property! stem 'avoid-note-head #t)
+        (ly:grob-set-property! stem 'note-collision-threshold 0)
         (if (and (< dir 0) (> h 0))
-          (ly:grob-set-property! stm 'stem-begin-position
-            (+ (ly:grob-property stm 'stem-begin-position) (seventh d))))
+          (ly:grob-set-property! stem 'stem-begin-position
+            (+ (ly:grob-property stem 'stem-begin-position) (seventh d))))
         (ly:grob-set-property! (cdr bot) 'transparent #f)
         (ly:grob-set-property! (cdr bot) 'stencil
           (grob-interpret-markup grob
@@ -886,25 +1253,25 @@ ekmMakeClusters =
   (ly:stem::print grob)))
 
 #(define (ekm-flag grob)
-  (let* ((stm (ly:grob-parent grob X))
-         (dir (ly:grob-property stm 'direction))
-         (log (ly:grob-property stm 'duration-log))
+  (let* ((stem (ly:grob-parent grob X))
+         (dir (ly:grob-property stem 'direction))
+         (log (ly:grob-property stem 'duration-log))
          (style (ly:grob-property grob 'style))
          (len (first (ekm:assq ekm-stemlength-tab style)))
-         (flg (grob-interpret-markup grob
+         (flag (grob-interpret-markup grob
                 (make-ekm-text-markup (ekm:asst ekm-flag-tab style log dir)))))
     (ly:stencil-translate
       (if (equal? "grace" (ly:grob-property grob 'stroke-style))
         (let ((sym (ekm:asst 'grace style log dir)))
           (ly:stencil-add
-            flg
+            flag
             (grob-interpret-markup grob
               (make-translate-scaled-markup
                 (cdr sym)
                 (make-ekm-text-markup (car sym))))))
-        flg)
+        flag)
       (cons
-        (- (* (ly:grob-property stm 'thickness) (ly:staff-symbol-line-thickness grob)))
+        (- (* (ly:grob-property stem 'thickness) (ly:staff-symbol-line-thickness grob)))
         (- (list-ref (if (< dir 0) (car len) (cdr len)) (- log 2)))))))
 
 ekmFlag =
@@ -1515,11 +1882,13 @@ ekmBreathing =
 #(define ((ekm-repeat-tremolo text) grob)
   (let* ((style (ly:grob-property grob 'shape))
          (cnt (min (ly:grob-property grob 'flag-count) 5))
-         (stm (ly:grob-parent grob X))
-         (dir (ly:grob-property stm 'direction))
+         (stem (ly:grob-parent grob X))
+         (dir (ly:grob-property stem 'direction))
          (y (if (eq? 'ekm style)
-              (* (- (interval-length (ly:grob-property stm 'Y-extent)) 1.96) -0.5 dir)
-              (* (1- cnt) -0.4 dir))))
+              (* (- (interval-length (ly:grob-property stem 'Y-extent)) 1.96) -0.5 dir)
+              (* (1- cnt)
+                 (if (inf? (car (ly:grob-property stem 'X-extent))) 0.4 -0.4)
+                 dir))))
     (ly:stencil-translate
       (grob-interpret-markup grob
         (if text
@@ -1545,17 +1914,17 @@ ekmTremolo =
 %% Symbol on stem
 
 #(define ((ekm-stem text) grob)
-  (let* ((stm (ly:stem::print grob))
+  (let* ((stem (ly:stem::print grob))
          (dir (ly:grob-property grob 'direction))
          (sym (grob-interpret-markup grob
            (make-ekm-ctext-markup STEMCX
              (or (and (string? text) (ekm:assid 'stem text dir))
                  text)))))
-    (if (null? stm)
+    (if (null? stem)
       empty-stencil
       ;; set center of symbol relative to stem start at 1.5 + 0.3366 = 1.8366
       (ly:stencil-combine-at-edge
-        stm Y (- dir) sym (- (* (ekm-extent sym Y) -0.5) 1.8366)))))
+        stem Y (- dir) sym (- (* (ekm-extent sym Y) -0.5) 1.8366)))))
 
 ekmStem =
 #(define-music-function (text music)
@@ -1684,12 +2053,12 @@ ekmArpeggioNormal = {
 #(define-markup-command (ekm-tuplet-note layout props dur)
   (ly:duration?)
   (interpret-markup layout props
-    (make-fontsize-markup -5
+   (make-fontsize-markup -5
+    (make-override-markup '(style . metronome)
       (make-ekm-note-by-number-markup
-        'metronome
         (ly:duration-log dur)
         (ly:duration-dot-count dur)
-        UP))))
+        UP)))))
 
 #(define-public (ekm-tuplet-number::calc-denominator-text grob)
   ((ekm-tuplet-number #f 0) grob))
@@ -1773,7 +2142,10 @@ ekmPlayWith =
 #(define-markup-command (ekm-default-string-number layout props txt)
   (string?)
   (interpret-markup layout props
-    (make-circle-markup (make-fontsize-markup -6 txt))))
+   (make-fontsize-markup -3
+    (make-override-markup '(circle-padding . 0.1)
+     (make-circle-markup
+      (make-sans-markup txt))))))
 
 #(define-markup-command (ekm-string-number layout props txt)
   (number-or-string?)
@@ -2319,18 +2691,6 @@ ekmFuncList =
                  (ekm:assid 'script "dfermata"))))
     (ekm:text layout props (ekm:sym val direction))))
 
-#(define-markup-command (ekm-note-by-number layout props style log dots dir)
-  (symbol? integer? integer? ly:dir?)
-  (let* ((note (interpret-markup layout props
-                 (ekm-note style log dir)))
-         (val (ekm:asstl 'dot style))
-         (dot (ekm:text layout props (car val))))
-    (ly:stencil-stack note X RIGHT
-      (ekm-cat-dots dots dot)
-      (* (ekm-extent dot X)
-         (if (and (<= 3 log) (< 0 dir))
-           (list-ref val (- (min log 5) 2)) 1)))))
-
 #(define-markup-command (ekm-misc layout props key dir)
   (symbol? ly:dir?)
   (ekm:text layout props (or (ekm:assid 'misc key dir) 0)))
@@ -2699,33 +3059,6 @@ ekmMetronome =
     (0 (#xE156 . #xE1AD))
     (1 (#xE15E . #xE1AE))
     (2 (#xE166 . #xE1AF)))
-  ;; individual notes
-  (note
-    (-1 . #xE1D0)
-    (0 . #xE1D2)
-    (1  #xE1D4 . #xE1D3)
-    (2  #xE1D6 . #xE1D5)
-    (3  #xE1D8 . #xE1D7)
-    (4  #xE1DA . #xE1D9)
-    (5  #xE1DC . #xE1DB)
-    (6  #xE1DE . #xE1DD)
-    (7  #xE1E0 . #xE1DF)
-    (8  #xE1E2 . #xE1E1)
-    (9  #xE1E4 . #xE1E3)
-    (10 #xE1E6 . #xE1E5))
-  (metronome
-    (-1 . #xECA0)
-    (0 . #xECA2)
-    (1  #xECA4 . #xECA3)
-    (2  #xECA6 . #xECA5)
-    (3  #xECA8 . #xECA7)
-    (4  #xECAA . #xECA9)
-    (5  #xECAC . #xECAB)
-    (6  #xECAE . #xECAD)
-    (7  #xECB0 . #xECAF)
-    (8  #xECB2 . #xECB1)
-    (9  #xECB4 . #xECB3)
-    (10 #xECB6 . #xECB5))
   )
 
   (flag
@@ -2789,13 +3122,15 @@ ekmMetronome =
   )
 
   (dot
-  (default   #xE1E7 0 0 0)
-  (note      #xE1E7 -0.2 0.7 0.7)
-  (metronome #xECB7 0.2 0.7 0.7)
-  (straight  #xE1E7 -0.8 -0.8 0.3)
-  (short     #xE1E7 -0.8 -0.8 0.5)
-  (beamed    #xE1E7 -1.4 -1.4 -1.4)
-  (text      #xE1FC 0 0 0)
+  (default #xE1E7 1.8 2.5)
+  (short #xE1E7 1 1 2.2)
+  (straight #xE1E7 1 1 2.0)
+  (note #xE1E7 0.5)
+  (metronome #xECB7 0.5)
+  (note-short #xE1E7 -0.8 -0.8 0.6)
+  (note-straight #xE1E7 -0.8 -0.8 0.5)
+  (note-beamed #xE1E7 -1.3)
+  (text #xE1FC 0)
   )
 
   (script (#t
@@ -2822,6 +3157,8 @@ ekmMetronome =
   ("reverseturn" . #xE568)
   ("slashturn" . #xE569)
   ("haydnturn" . #xE56F)
+  ("dupbow" #xE613 . #xE612)
+  ("ddownbow" #xE611 . #xE610)
   ("upbow" . #xE612)
   ("downbow" . #xE610)
   ("flageolet" . #xE614)
@@ -2830,9 +3167,10 @@ ekmMetronome =
   ("snappizzicato" #xE630 . #xE631)
   ("stopped" . #xE633)
   ("upedalheel" . #xE661)
+  ("pedalheelcircle" . #xE663)
+  ("dpedaltoe" . #xE665)
   ("dpedalheel" . #xE662)
   ("upedaltoe" . #xE664)
-  ("dpedaltoe" . #xE665)
   ("dfermata" #xE4C1 . #xE4C0)
   ("dshortfermata" #xE4C5 . #xE4C4)
   ("dlongfermata" #xE4C7 . #xE4C6)
@@ -2877,26 +3215,71 @@ ekmMetronome =
   (bracketed #xED8C . #xED8D)
   ))
 
+  (number
+  (serif .
+    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
+  (sans .
+    ,make-sans-markup)
+  (time .
+    #xE080)
+  (time-turned .
+    #xECE0)
+  (time-reversed .
+    #xECF0)
+  (tuplet .
+    #xE880)
+  (fingering .
+    #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
+  (fingering-italic .
+    #xED80)
+  (fbass .
+    #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
+  (func .
+    #xEA70)
+  (typewriter .
+    ,make-typewriter-markup)
+  (string
+    (0  . #xE833)
+    (1  . #xE834)
+    (2  . #xE835)
+    (3  . #xE836)
+    (4  . #xE837)
+    (5  . #xE838)
+    (6  . #xE839)
+    (7  . #xE83A)
+    (8  . #xE83B)
+    (9  . #xE83C)
+    (10 . #xE84A)
+    (11 . #xE84B)
+    (12 . #xE84C)
+    (13 . #xE84D))
+  (scale
+    (1 . #xEF00)
+    (2 . #xEF01)
+    (3 . #xEF02)
+    (4 . #xEF03)
+    (5 . #xEF04)
+    (6 . #xEF05)
+    (7 . #xEF06)
+    (8 . #xEF07)
+    (9 . #xEF08))
+  (ekm
+    (string . ,make-ekm-default-string-number-markup)
+    (scale . ,make-ekm-default-scale-number-markup))
+  )
+
   (time (#t
   ("+" . #xE08C)
   ("/+" . #xE08D)
   ("//" . #xE08E)
+  ((4 . 4) . #xE08A)
+  ((2 . 2) . #xE08B)
   ("C" . #xE08A)
   ("|C" . #xE08B)
   ("|2" . #xEC85)
   ("|3" . #xEC86)
   ("X" . #xE09C)
   ("~" . #xE09D)
-  (time-x . #xE09C)
-  (time-penderecki . #xE09D)
-  ))
-
-  (time-sub (#t
-  (1/4 . #xE097)
-  (1/2 . #xE098)
-  (3/4 . #xE099)
-  (1/3 . #xE09A)
-  (2/3 . #xE09B)
   ))
 
   (colon (#t
@@ -2920,15 +3303,6 @@ ekmMetronome =
     (1 . #xE008)
     (+inf.0 . #xE009))
   )
-
-  (shared (#t #t
-  (" " . ,(markup #:hspace 1))
-  ("____" . ,(markup #:hspace 4))
-  ("___" . ,(markup #:hspace 2))
-  ("__" . ,(markup #:hspace 0.78))
-  ("_" . ,(markup #:hspace 0.17))
-  ("'" . #f)
-  ))
 
   (dynamic (#t
   ("p" . #xE520)
@@ -3197,59 +3571,6 @@ ekmMetronome =
     (":" . #xE88A)
   ))
 
-  (number
-  (time .
-    #xE080)
-  (time-turned .
-    #xECE0)
-  (time-reversed .
-    #xECF0)
-  (tuplet .
-    #xE880)
-  (fingering .
-    #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
-  (fingering-italic .
-    #xED80)
-  (fbass .
-    #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
-  (func .
-    #xEA70)
-  (sans .
-    ,make-sans-markup)
-  (serif .
-    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
-  (typewriter .
-    ,make-typewriter-markup)
-  (string
-    (0  . #xE833)
-    (1  . #xE834)
-    (2  . #xE835)
-    (3  . #xE836)
-    (4  . #xE837)
-    (5  . #xE838)
-    (6  . #xE839)
-    (7  . #xE83A)
-    (8  . #xE83B)
-    (9  . #xE83C)
-    (10 . #xE84A)
-    (11 . #xE84B)
-    (12 . #xE84C)
-    (13 . #xE84D))
-  (scale
-    (1 . #xEF00)
-    (2 . #xEF01)
-    (3 . #xEF02)
-    (4 . #xEF03)
-    (5 . #xEF04)
-    (6 . #xEF05)
-    (7 . #xEF06)
-    (8 . #xEF07)
-    (9 . #xEF08))
-  (ekm
-    (string . ,make-ekm-default-string-number-markup)
-    (scale . ,make-ekm-default-scale-number-markup))
-  )
-
   (tremolo
   (beam-like
     (1 . #xE220)
@@ -3341,12 +3662,43 @@ ekmMetronome =
        (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3)))
   )
 
+  (note
+  (ekm
+    (0 . #f))
+  (note
+    (-1 . #xE1D0)
+    (0 . #xE1D2)
+    (1  #xE1D4 . #xE1D3)
+    (2  #xE1D6 . #xE1D5)
+    (3  #xE1D8 . #xE1D7)
+    (4  #xE1DA . #xE1D9)
+    (5  #xE1DC . #xE1DB)
+    (6  #xE1DE . #xE1DD)
+    (7  #xE1E0 . #xE1DF)
+    (8  #xE1E2 . #xE1E1)
+    (9  #xE1E4 . #xE1E3)
+    (10 #xE1E6 . #xE1E5))
+  (metronome
+    (-1 . #xECA0)
+    (0 . #xECA2)
+    (1  #xECA4 . #xECA3)
+    (2  #xECA6 . #xECA5)
+    (3  #xECA8 . #xECA7)
+    (4  #xECAA . #xECA9)
+    (5  #xECAC . #xECAB)
+    (6  #xECAE . #xECAD)
+    (7  #xECB0 . #xECAF)
+    (8  #xECB2 . #xECB1)
+    (9  #xECB4 . #xECB3)
+    (10 #xECB6 . #xECB5))
+  )
+
   (percent (#t
   ("/" . #xE504)
   ("//" . #xE501)
   ("%" . #xE500)
   ("%%" . #xE501)
-  ;("%%%%" . #xE502) ; not used
+  ("%%%%" . #xE502) ; not used
   ))
 
   (harp (#t #t
@@ -3474,6 +3826,23 @@ ekmMetronome =
     (0 #xE5E0 . #xE5D0))
   )
 
+  (sign
+  (serif
+    "/" "/" #f "+")
+  (time
+    #f #xE08E #xEC84 #xE08D)
+  )
+
+  (fraction
+  (ekm)
+  (time
+    (1/4 . #xE097)
+    (1/2 . #xE098)
+    (3/4 . #xE099)
+    (1/3 . #xE09A)
+    (2/3 . #xE09B))
+  )
+
   (parens
   (default
     (accidental #xE26A . #xE26B)
@@ -3488,6 +3857,15 @@ ekmMetronome =
   (angle
     (dynamic ("<" -0.5 -1) . (">" -0.5 -1)))
   )
+
+  (shared (#t #t
+  (" " . ,(markup #:hspace 1))
+  ("____" . ,(markup #:hspace 4))
+  ("___" . ,(markup #:hspace 2))
+  ("__" . ,(markup #:hspace 0.78))
+  ("_" . ,(markup #:hspace 0.17))
+  ("'" . #f)
+  ))
 
   (fbass (#t
   ("2\\+"  . #xEA53)
@@ -3795,7 +4173,8 @@ ekmSmuflOn =
       \set cueClefTranspositionFormatter = #ekm-clef-mod
     #})
     (on 'time #{
-      \override Timing.TimeSignature.stencil = #ekm-timesig
+      \override Timing.TimeSignature.stencil =
+        #(if (ly:version? < '(2 26)) ekm-timesig ekm-time-signature)
     #})
     (on 'notehead #{
       \override NoteHead.stencil = #(ekm-notehead #f)

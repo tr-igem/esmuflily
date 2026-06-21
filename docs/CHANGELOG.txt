@@ -660,3 +660,34 @@ January 2021 - May 2021:
   selects superscript (small) variants.
 - ekmd-bravura.scm: Add "chord" type table with superscript variants.
 - ekmd-ekmelos.scm: Add "chord" type table with quadruple sharp/flat.
+
+2026-06-21:
+- Change "\ekm-number" to draw rational numbers as vulgar or mixed fractions
+  in different styles (issue #53).
+- Add type table "sign" for signs (fraction slash, plus) in numbers.
+- Add type table "fraction" for precomposed fractions in LP 2.26
+  replacing type table "time-sub".
+- Remove type table "time-sub".
+- Add "\ekm-join-line" like "\line" but with a separator.
+- Add "ekm:kern" similar to ekm:stencil-kern in Ekmelily.
+- Change "\ekm-note-by-number" to support properties and variable
+  stem length like "\note-by-number" (issue #54), and precomposed notes.
+  The style is now a property instead of a parameter.
+- Add "\ekm-note" as a wrapper around "\ekm-note-by-number".
+- Add "ekm:note" creating a note head markup.
+- Change "\ekm-compound-meter" and add stencil "ekm-time-signature"
+  to support the new time signature format of LP 2.26 (issue #52).
+- Add type table "note" for precomposed notes separated from the
+  type table "notehead".
+- Fix in type table "dot" some padding values.
+- Rename in type table "dot" the styles "short", "straight", and "beamed"
+  to "note-*" to distinguish note styles from flag styles (required in
+  "\ekm-note-by-number").
+- Change "ekm:md-glyph" to accept a stencil alternative to a grob
+  (used in "\ekm-note-by-number").
+- Change "\ekm-tuplet-note" for new "\ekm-note-by-number".
+- ekmd-ekmelos.scm: Add type table "note" and rename the styles "short",
+  "straight", and "beamed" to "note-*".
+- Fix in "ekm-repeat-tremolo" the tremolo position on whole notes (issue #55).
+- Fix "\ekm-default-string-number" using sans font for clearer appearance.
+- Add in type table "script" symbols for upbow, downbow, and pedal.
