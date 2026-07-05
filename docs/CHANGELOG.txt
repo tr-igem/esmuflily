@@ -691,3 +691,8 @@ January 2021 - May 2021:
 - Fix in "ekm-repeat-tremolo" the tremolo position on whole notes (issue #55).
 - Fix "\ekm-default-string-number" using sans font for clearer appearance.
 - Add in type table "script" symbols for upbow, downbow, and pedal.
+
+2026-07-05:
+- Fix cyclic dependency bug in "ekm-percent" stencil (issue #57).
+- Remove whiteout of finger numbers in "\ekm-fret-diagram-terse".
+- Fix "ekm-control" to round level for precomposed glyphs.

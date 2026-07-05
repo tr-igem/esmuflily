@@ -1858,20 +1858,7 @@ ekmBreathing =
   (ekm-ctext grob 0 (ekm:assid 'percent "//")))
 
 #(define (ekm-percent grob)
-  (let* ((sym (ekm:assid 'percent "%"))
-         (lb (ly:spanner-bound grob LEFT))
-         (rb (ly:spanner-bound grob RIGHT))
-         (refp (ly:grob-common-refpoint lb rb X))
-         (sp (ly:grob-property grob
-               'spacing-pair
-               '(break-alignment . break-alignment)))
-         (l (ly:paper-column::break-align-width lb (car sp)))
-         (r (ly:paper-column::break-align-width rb (cdr sp))))
-    (ly:stencil-translate-axis
-      (ekm-ctext grob CXY sym)
-      (+ (* 0.5 (- (car r) (cdr l)))
-        (- (cdr l) (ly:grob-relative-coordinate grob refp X)))
-      X)))
+  (ekm-ctext grob 0 (ekm:assid 'percent "%")))
 
 #(define (ekm-doublepercent grob)
   (ekm-ctext grob CXY (ekm:assid 'percent "%%")))
@@ -2256,9 +2243,8 @@ ekmPlayWith =
               (ly:stencil-translate
                 (centered-stencil
                   (interpret-markup layout props
-                    (make-whiteout-markup
-                      (make-fontsize-markup -7
-                        (make-ekm-number-markup finger (fourth d))))))
+                    (make-fontsize-markup -7
+                      (make-ekm-number-markup finger (fourth d)))))
                 (cons (second d) ynum))
               point-stencil))
           sil))
@@ -2627,7 +2613,7 @@ ekmFuncList =
               (if (negative? level) (* (exp (* level 0.05 (log 10))) 100) level))))
          (sub (ekm:asst 'level style -1 #f))
          (pre (if (pair? sub)
-                (ekm:asst 'level style lv #f)
+                (ekm:asst 'level style (round lv) #f)
                 (ekm:asslim 'level style (* (round (/ lv sub)) sub) #f))))
     (list
       (make-ekm-text-markup (or pre (car sub)))
