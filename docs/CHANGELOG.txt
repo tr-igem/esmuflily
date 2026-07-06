@@ -696,3 +696,9 @@ January 2021 - May 2021:
 - Fix cyclic dependency bug in "ekm-percent" stencil (issue #57).
 - Remove whiteout of finger numbers in "\ekm-fret-diagram-terse".
 - Fix "ekm-control" to round level for precomposed glyphs.
+
+2026-07-07:
+- Fix "ekm-repeat-tremolo" for size of tremolo bars in CueVoice (issue #56).
+  Support cue style tremolo glyphs if any.
+  Switch back to LilyPond output for beamed notes.
+- Add in type table "tremolo" new style "cue".

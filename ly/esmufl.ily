@@ -1867,24 +1867,37 @@ ekmBreathing =
 %% Tremolo mark
 
 #(define ((ekm-repeat-tremolo text) grob)
-  (let* ((style (ly:grob-property grob 'shape))
-         (cnt (min (ly:grob-property grob 'flag-count) 5))
-         (stem (ly:grob-parent grob X))
-         (dir (ly:grob-property stem 'direction))
-         (y (if (eq? 'ekm style)
-              (* (- (interval-length (ly:grob-property stem 'Y-extent)) 1.96) -0.5 dir)
-              (* (1- cnt)
-                 (if (inf? (car (ly:grob-property stem 'X-extent))) 0.4 -0.4)
-                 dir))))
-    (ly:stencil-translate
+  (let ((stem (ly:grob-parent grob X)))
+   (if (null? (ly:grob-object stem 'beam))
+    (let* ((style (ly:grob-property grob 'shape))
+           (cnt (min (ly:grob-property grob 'flag-count) 5))
+           (thickness (ly:grob-property grob 'beam-thickness))
+           (dir (ly:grob-property stem 'direction))
+           (y (if (eq? 'ekm style)
+                (* (- (interval-length (ly:grob-property stem 'Y-extent)) 1.96) -0.5 dir)
+                (* (1- cnt)
+                   (if (inf? (car (ly:grob-property stem 'X-extent))) 0.4 -0.4)
+                   dir))))
+     (ly:stencil-translate
       (grob-interpret-markup grob
         (if text
           (make-ekm-ctext-markup STEMCXY
             (or (and (string? text) (ekm:assid 'stem text dir))
                 text))
           (make-ekm-text-markup
-            (ekm:asst 'tremolo style cnt dir))))
-      (cons 0 y))))
+           (if (< thickness 0.48)
+            (or (ekm:asst 'tremolo 'cue cnt dir)
+                (let* ((bar (grob-interpret-markup grob
+                             (make-ekm-text-markup
+                              (ekm:asst 'tremolo style 1 dir))))
+                       (bar (ly:stencil-scale bar 1 (/ thickness 0.48))))
+                 (make-stencil-markup
+                  (ly:stencil-aligned-to
+                    (stack-stencils Y UP (- 0.5 thickness) (make-list cnt bar))
+                    Y 0))))
+            (ekm:asst 'tremolo style cnt dir)))))
+      (cons 0 y)))
+   (ly:stem-tremolo::print grob))))
 
 ekmTremolo =
 #(define-music-function (text music)
@@ -3570,6 +3583,8 @@ ekmMetronome =
     (3 . #xE227)
     (4 . #xE228)
     (5 . #xE229))
+  (cue
+    (1 . #f))
   )
 
   (stem (#t
