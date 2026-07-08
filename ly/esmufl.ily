@@ -1641,6 +1641,50 @@ ekmScriptSmall =
         dir))))
 
 
+#(define ekm-toe-heel-tab '(
+  rtoe ltoe rheel lheel
+))
+
+#(define (ekm-toe-heel grob left right)
+
+  (define (assoc tab art comp)
+    (let ((v (list-ref tab
+              (list-index (lambda (x) (eq? x art)) ekm-toe-heel-tab))))
+      (cons* (ekm:assid 'toeheel (car v)) v comp)))
+
+  (if (eq? 'ekm (ly:grob-property grob 'font-encoding #f))
+   (let* ((style (ly:grob-property grob 'toe-heel-style 'default))
+         (tab (assoc-get style toe-heel-styles))
+         (r (assoc tab right '()))
+         (l (assoc tab left (cdr r)))
+         (comp (ekm:assid 'toeheel (cdr l))))
+    (grob-interpret-markup grob
+     (if comp
+      (make-ekm-text-markup comp)
+      ((if (eqv? (cdr (second l)) UP) make-overtie-markup make-undertie-markup)
+       (make-concat-markup
+        (list (make-ekm-text-markup (caar l))
+              (make-hspace-markup (abs (+ (cdar l) (cdar r))))
+              (make-ekm-text-markup (caar r))))))))
+   (toe-heel-subst-stencil grob left right)))
+
+rtoeheel =
+  \tweak stencil #(lambda (grob) (ekm-toe-heel grob 'rtoe 'rheel))
+  \rtoe
+
+ltoeheel =
+  \tweak stencil #(lambda (grob) (ekm-toe-heel grob 'ltoe 'lheel))
+  \ltoe
+
+rheeltoe =
+  \tweak stencil #(lambda (grob) (ekm-toe-heel grob 'rheel 'rtoe))
+  \rheel
+
+lheeltoe =
+  \tweak stencil #(lambda (grob) (ekm-toe-heel grob 'lheel 'ltoe))
+  \lheel
+
+
 %% Multi-segment spanner
 
 #(define (ekm-segment-spanner grob tab tempo text)
@@ -3702,6 +3746,16 @@ ekmMetronome =
   ("%%%%" . #xE502) ; not used
   ))
 
+  (toeheel (#t
+  (toe #xE665 . -0.1)
+  (vartoe #xE664 . 0.1)
+  (varheel #xE662 . -0.1)
+  (heel #xE661 . 0.1)
+  (heelcircle #xE663 . 0)
+  (((heel . ,UP) (toe . ,UP)) . #xE674)
+  (((toe . ,UP) (heel . ,UP)) . #xE675)
+  ))
+
   (harp (#t #t
   ("^"  . #xE680)
   ("-"  . #xE681)
@@ -4206,6 +4260,7 @@ ekmSmuflOn =
     #})
     (on 'script #{
       \override Script.stencil = #ekm-script
+      \override Script.font-encoding = #'ekm
     #})
     (on 'lv #{
       \override LaissezVibrerTie.stencil = #ekm-lvtie
@@ -4322,6 +4377,7 @@ ekmSmuflOff =
     #})
     (on 'script #{
       \revert Script.stencil
+      \revert Script.font-encoding
     #})
     (on 'lv #{
       \revert LaissezVibrerTie.stencil

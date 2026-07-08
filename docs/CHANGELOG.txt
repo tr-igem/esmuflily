@@ -702,3 +702,9 @@ January 2021 - May 2021:
   Support cue style tremolo glyphs if any.
   Switch back to LilyPond output for beamed notes.
 - Add in type table "tremolo" new style "cue".
+
+2026-07-09:
+- Add stencil "ekm-toe-heel", table "ekm-toe-heel-tab",
+  and type table "toeheel" for toe-heel substitutions.
+- Redefine "rtoeheel", "ltoeheel", "rheeltoe", "lheeltoe"
+  for SMuFL output if "script" switch is on.
