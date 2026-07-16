@@ -62,6 +62,9 @@
       (string? x)
       (pair? x)))
 
+#(define (ekm-type? x)
+  (or (symbol? x) (pair? x)))
+
 
 %% Markup and stencils
 
@@ -272,6 +275,11 @@
     val
     (if (or (null? (cdr val)) (negative? dir)) (car val) (cdr val))))
 
+#(define (ekm:symbol val dir)
+  (if (or (not dir) (not-pair? val) (markup-function? (car val)))
+    val
+    (if (or (null? (cdr val)) (negative? dir)) (car val) (cdr val))))
+
 #(define (ekm:assq tab key)
   (or (assq-ref tab key) (cdar tab)))
 
@@ -312,32 +320,54 @@
   (if (string-prefix? (caar tab) def) (car tab)
   (ekm:asstk (cdr tab) def))))
 
-#(define (ekm:tokens tab def tokens)
+#(define ekm:num (string->char-set "0123456789/"))
+
+#(define (ekm:tokens type style dir tokens def)
+ (let ((tab (if (symbol? type) (ekm:assid type #f) type)))
   (let cvt ((k '()) (v '()) (d def))
     (if (string-null? d)
-      (cons* (reverse k) (reverse v))
+      (if tokens (cons* (reverse k) (reverse v)) (reverse v))
       (let ((f (or (ekm:asstk tab d)
-                   (ekm:asstk ekm-shared-tab d))))
-        (if (not f)
-          (begin
-            (ly:warning "Definition string has unknown characters `~a'" d)
-            (cvt k v ""))
+                   (ekm:asstk ekm-shared-tab d)
+                   (let ((i (string-skip d ekm:num)))
+                    (if i (if (= 0 i) #f i) (string-length d))))))
+        (cond
+         ((not f)
+          (ly:warning "Definition string has unknown characters `~a'" d)
+          (cvt k v ""))
+         ((pair? f)
           (cvt
-            (if (and tokens (cdr f)) (cons* (car f) k) k)
-            (cons* (make-ekm-text-markup (cdr f)) v)
-            (substring d (string-length (car f)))))))))
+           (if (and tokens (cdr f)) (cons* (car f) k) k)
+           (cons* (make-ekm-text-markup (ekm:symbol (cdr f) dir)) v)
+           (substring d (string-length (car f)))))
+         (else
+          (cvt
+           k
+           (cons* (make-ekm-number-markup style (substring d 0 f)) v)
+           (substring d f)))))))))
 
-#(define-markup-command (ekm-def layout props tab def)
-  (pair? string?)
+#(define (ekm:def-prefix def)
+  (let ((pfx (and (not (string-null? def)) (eqv? #\* (string-ref def 0)))))
+   (cons pfx (if pfx (string-drop def 1) def))))
+
+#(define-markup-command (ekm-def layout props type def)
+  (ekm-type? string?)
+  #:properties ((number-style #f))
   (stack-stencil-line 0
-    (interpret-markup-list layout props
-      (cdr (ekm:tokens tab def #f)))))
+   (interpret-markup-list layout props
+    (ekm:tokens
+     type
+     (cond
+      ((symbol? number-style) number-style)
+      ((symbol? type) type)
+      (else 'default))
+     #f #f def))))
 
 
 %% Number
 
-#(define-markup-command (ekm-number layout props style num)
-  (symbol? number?)
+#(define-markup-command (ekm-number layout props style arg)
+  (symbol? number-or-string?)
   #:properties
    ((font-size 0)
     (mixed #t)
@@ -434,7 +464,8 @@
              (let ((w (interval-union (ly:stencil-extent n X) (ly:stencil-extent d X))))
               (list n (bar (car w) 0 (cdr w) 0) d))))))))))
 
-  (let* ((n (truncate num))
+  (let* ((num (if (string? arg) (string->number arg 10) arg))
+         (n (truncate num))
          (small (< fraction-size 0))
          (line (memq fraction-style '(horizontal line)))
          (slash (memq fraction-style '(diagonal slash))))
@@ -616,7 +647,7 @@
           (if paren (ekm:sym paren LEFT) 0)
           (if tr
             tr
-            (make-ekm-def-markup (ekm:asstl 'fingering 'italic) trans))
+            (make-ekm-finger-markup (string-append "*" trans)))
           (if paren (ekm:sym paren RIGHT) 0)))))))
 
 
@@ -1078,6 +1109,13 @@ ekmNameHeadsTi =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName tiName)
 ekmNameHeadsTiMinor =
 \set shapeNoteStyles = ##(laName tiName doName reName miName faName soName)
+
+#(define-markup-command (ekm-rhythm layout props def)
+  (string?)
+  (let ((def (ekm:def-prefix def)))
+   (stack-stencil-line 0
+    (interpret-markup-list layout props
+     (ekm:tokens 'rhythm 'default (ekm:mv (car def)) #f (cdr def))))))
 
 
 %% Note cluster
@@ -1570,7 +1608,7 @@ ekmFlag =
     (let ((sym (ekm:assid 'dynamic def MAIN)))
       (if sym
         (make-ekm-text-markup sym)
-        (make-ekm-def-markup (ekm:assid 'dynamic #f) def)))))
+        (make-ekm-def-markup 'dynamic def)))))
 
 #(define (ekm-dyntext grob)
   (let ((def (ly:grob-property grob 'text)))
@@ -2064,15 +2102,14 @@ ekmArpeggioNormal = {
 #(define-markup-command (ekm-ottavation layout props def)
   (string?)
   (interpret-markup layout props
-    (make-ekm-def-markup (ekm:assid 'ottava #f) def)))
+    (make-ekm-def-markup 'ottava def)))
 
 #(define-public (ekm-ottavation style)
-  (let ((tab (ekm:assid 'ottava #f)))
-    (append-map (lambda (e)
-      (list
-        (cons (car e) (make-ekm-def-markup tab (ekm:sym (cdr e) UP)))
-        (cons (- (car e)) (make-ekm-def-markup tab (ekm:sym (cdr e) DOWN)))))
-      (ekm:asstl 'ottavation style))))
+  (append-map (lambda (e)
+    (list
+      (cons (car e) (make-ekm-def-markup 'ottava (ekm:sym (cdr e) UP)))
+      (cons (- (car e)) (make-ekm-def-markup 'ottava (ekm:sym (cdr e) DOWN)))))
+    (ekm:asstl 'ottavation style)))
 
 
 %% Tuplet number
@@ -2141,11 +2178,15 @@ ekmArpeggioNormal = {
 
 #(define-markup-command (ekm-finger layout props def)
   (string?)
-  (let ((it (eqv? #\* (string-ref def 0))))
-    (interpret-markup layout props
-      (make-ekm-def-markup
-        (ekm:asstl 'fingering (if it 'italic 'default))
-        (if it (string-drop def 1) def)))))
+  (let ((def (ekm:def-prefix def)))
+   (stack-stencil-line 0
+    (interpret-markup-list layout props
+     (ekm:tokens
+      'fingering
+      (if (car def) 'fingering-italic 'fingering)
+      (ekm:mv (car def))
+      #f
+      (cdr def))))))
 
 #(define ((ekm-fingering size) grob)
   (let ((def (ly:grob-property grob 'text)))
@@ -2210,7 +2251,7 @@ ekmPlayWith =
 #(define-markup-command (ekm-piano-pedal layout props def)
   (string?)
   (interpret-markup layout props
-    (make-ekm-def-markup (ekm:assid 'pedal #f) def)))
+    (make-ekm-def-markup 'pedal def)))
 
 #(define (ekm-pedal grob)
   (grob-interpret-markup grob
@@ -2221,7 +2262,7 @@ ekmPlayWith =
 
 #(define-markup-command (ekm-harp-pedal layout props def)
   (string?)
-  (let* ((p (ekm:tokens (ekm:assid 'harp #f) def #t))
+  (let* ((p (ekm:tokens 'harp 'default #f #t def))
          (l (length (car p)))
          (d (fold (lambda (k i r) (if (string=? "|" k) (cons* i r) r))
                   '() (car p) (iota l)))
@@ -2506,7 +2547,7 @@ ekmBendAfter =
 #(define-markup-command (ekm-analytics layout props def)
   (string?)
   (interpret-markup layout props
-    (make-ekm-def-markup (ekm:assid 'analytics #f) def)))
+    (make-ekm-def-markup 'analytics def)))
 
 
 %% Function theory
@@ -2517,7 +2558,7 @@ ekmBendAfter =
 #(define (ekm-func layout props size def)
   (interpret-markup layout props
     (make-fontsize-markup size
-    (make-ekm-def-markup (ekm:assid 'func #f) def))))
+    (make-ekm-def-markup 'func def))))
 
 #(define-markup-command (ekm-func layout props def)
   (string?)
@@ -2595,7 +2636,7 @@ ekmFunc =
          (i (string-index mdef ekm-func-sep))
          (mk (markup
                #:override `(font-size . ,size)
-               #:ekm-def (ekm:assid 'func #f) (if i (substring mdef 0 i) mdef))))
+               #:ekm-def 'func (if i (substring mdef 0 i) mdef))))
     (case sfx
       ((#\-) #{
         \once \override TextSpanner.direction = #DOWN
@@ -3259,10 +3300,8 @@ ekmMetronome =
   ))
 
   (number
-  (serif .
-    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
-  (sans .
-    ,make-sans-markup)
+  (default .
+    ,make-simple-markup)
   (time .
     #xE080)
   (time-turned .
@@ -3279,6 +3318,10 @@ ekmMetronome =
     #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
   (func .
     #xEA70)
+  (serif .
+    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
+  (sans .
+    ,make-sans-markup)
   (typewriter .
     ,make-typewriter-markup)
   (string
@@ -3463,18 +3506,7 @@ ekmMetronome =
     (7 #xEAF4 . #xEB02))
   )
 
-  (fingering
-  (default
-    ("0" . #xED10)
-    ("1" . #xED11)
-    ("2" . #xED12)
-    ("3" . #xED13)
-    ("4" . #xED14)
-    ("5" . #xED15)
-    ("6" . #xED24)
-    ("7" . #xED25)
-    ("8" . #xED26)
-    ("9" . #xED27)
+  (fingering (#t #t
     ("th" . #xE624)
     ("ht" . #xE625)
     ("p" . #xED17)
@@ -3489,10 +3521,10 @@ ekmMetronome =
     ("o" . #xED1F)
     ("q" . #xED8E)
     ("s" . #xED8F)
-    ("(" . #xED28)
-    (")" . #xED29)
-    ("[" . #xED2A)
-    ("]" . #xED2B)
+    ("(" #xED28 . #xED8A)
+    (")" #xED29 . #xED8B)
+    ("[" #xED2A . #xED8C)
+    ("]" #xED2B . #xED8D)
     ("." . #xED2C)
     ("," . #xED2D)
     ("/" . #xED2E)
@@ -3505,29 +3537,8 @@ ekmMetronome =
     ("LE" . #xE671)
     ("L" . #xE670)
     ("S" . ,(markup #:ekm-scoop UP))
-    ("P" . ,(markup #:ekm-scoop DOWN)))
-  (italic
-    ("0" . #xED80)
-    ("1" . #xED81)
-    ("2" . #xED82)
-    ("3" . #xED83)
-    ("4" . #xED84)
-    ("5" . #xED85)
-    ("6" . #xED86)
-    ("7" . #xED87)
-    ("8" . #xED88)
-    ("9" . #xED89)
-    ("(" . #xED8A)
-    (")" . #xED8B)
-    ("[" . #xED8C)
-    ("]" . #xED8D)
-    ("." . #xED2C)
-    ("," . #xED2D)
-    ("/" . #xED2E)
-    ("~~" . #xED20)
-    ("~" . #xED21)
-    ("-" . #xED22))
-  )
+    ("P" . ,(markup #:ekm-scoop DOWN))
+  ))
 
   (pedal (#t #t
   ("Ped." . #xE650)
@@ -3922,6 +3933,63 @@ ekmMetronome =
   ("'" . #f)
   ))
 
+  (rhythm (#t #t
+  ("8["
+    (#xE1F0 #xE1F7)
+  . (#xE1F1 #xE1F8))
+  ("8.["
+    (#xE1F0 #xE1F7 #xE1FC #xE1F7)
+  . (#xE1F1 #xE1F8 #xE1FC #xE1F8))
+  ("8..["
+    (#xE1F0 #xE1F7 #xE1FC #xE1F7 #xE1FC #xE1F7)
+  . (#xE1F1 #xE1F8 #xE1FC #xE1F8 #xE1FC #xE1F8))
+  ("8-"
+    (#xE1F2 #xE1F7)
+  . (#xE1F3 #xE1F8))
+  ("16["
+    (#xE1F0 #xE1F9)
+  . (#xE1F1 #xE1FA))
+  ("16.["
+    (#xE1F0 #xE1F9 #xE1FC #xE1F9)
+  . (#xE1F1 #xE1FA #xE1FC #xE1FA))
+  ("16-"
+    (#xE1F4 #xE1F9)
+  . (#xE1F5 #xE1FA))
+  ("16+"
+    (#xE1F2 #xE1F9)
+  . (#xE1F3 #xE1FA))
+  ("32["
+    (#xE1F1 #xE1FB))
+  ("32-"
+    (#xE1F6 #xE1FB))
+  ("32+"
+    (#xE1F5 #xE1FB))
+  ("(3"
+    ,(markup #:ekm-concat (list #xE1FE (markup #:hspace 1) #xE1FF))
+  . ,(markup #:ekm-concat (list #xE201 (markup #:hspace 1) #xE202)))
+  ("n" #xE1F0 . #xE1F1)
+  ("8]" #xE1F2 . #xE1F3)
+  ("16]" #xE1F4 . #xE1F5)
+  ("32]" . #xE1F6)
+  ("8_" #xE1F7 . #xE1F8)
+  ("16_" #xE1F9 . #xE1FA)
+  ("32_" . #xE1FB)
+  ("." . #xE1FC)
+  ("~" . #xE1FD)
+  ("16" #xECA9 . #xE1D9)
+  ("1"  #xECA2 . #xE1D2)
+  ("2"  #xECA3 . #xE1D3)
+  ("4"  #xECA5 . #xE1D5)
+  ("8"  #xECA7 . #xE1D7)
+  ("32" #xECAB . #xE1DB)
+  ("(" #xE1FE . #xE201)
+  ("3" #xE1FF . #xE202)
+  (")" #xE200 . #xE203)
+  ("=" .
+    ,(markup #:ekm-concat (list (markup #:hspace 1) #xE08F (markup #:hspace 1))))
+  (" " . #f)
+  ))
+
   (fbass (#t
   ("2\\+"  . #xEA53)
   ("4\\+"  . #xEA56)
@@ -3989,16 +4057,6 @@ ekmMetronome =
   ))
 
   (func (#t #t
-  ("0" . #xEA70)
-  ("1" . #xEA71)
-  ("2" . #xEA72)
-  ("3" . #xEA73)
-  ("4" . #xEA74)
-  ("5" . #xEA75)
-  ("6" . #xEA76)
-  ("7" . #xEA77)
-  ("8" . #xEA78)
-  ("9" . #xEA79)
   ("<" . #xEA7A)
   (">" . #xEA7C)
   ("-" . ,(markup #:with-dimensions-from #:ekm-char #xEA70 #:ekm-char #xEA7B))

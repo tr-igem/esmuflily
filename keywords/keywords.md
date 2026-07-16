@@ -25,7 +25,9 @@ Esmuflily
     \ekmStaffDivider
     \ekmSlashSeparator
 
+    \ekm-note
     \ekm-note-by-number
+    \ekm-rhythm
     \ekmNameHeads
     \ekmNameHeadsMinor
     \ekmNameHeadsTi

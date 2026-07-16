@@ -662,7 +662,7 @@ January 2021 - May 2021:
 - ekmd-ekmelos.scm: Add "chord" type table with quadruple sharp/flat.
 
 2026-06-21:
-- Change "\ekm-number" to draw rational numbers as vulgar or mixed fractions
+- Extend "\ekm-number" to draw rational numbers as vulgar or mixed fractions
   in different styles (issue #53).
 - Add type table "sign" for signs (fraction slash, plus) in numbers.
 - Add type table "fraction" for precomposed fractions in LP 2.26
@@ -670,12 +670,12 @@ January 2021 - May 2021:
 - Remove type table "time-sub".
 - Add "\ekm-join-line" like "\line" but with a separator.
 - Add "ekm:kern" similar to ekm:stencil-kern in Ekmelily.
-- Change "\ekm-note-by-number" to support properties and variable
+- Extend "\ekm-note-by-number" to support properties and variable
   stem length like "\note-by-number" (issue #54), and precomposed notes.
   The style is now a property instead of a parameter.
 - Add "\ekm-note" as a wrapper around "\ekm-note-by-number".
 - Add "ekm:note" creating a note head markup.
-- Change "\ekm-compound-meter" and add stencil "ekm-time-signature"
+- Rewrite "\ekm-compound-meter" and add stencil "ekm-time-signature"
   to support the new time signature format of LP 2.26 (issue #52).
 - Add type table "note" for precomposed notes separated from the
   type table "notehead".
@@ -683,9 +683,9 @@ January 2021 - May 2021:
 - Rename in type table "dot" the styles "short", "straight", and "beamed"
   to "note-*" to distinguish note styles from flag styles (required in
   "\ekm-note-by-number").
-- Change "ekm:md-glyph" to accept a stencil alternative to a grob
+- Extend "ekm:md-glyph" to accept a stencil alternative to a grob
   (used in "\ekm-note-by-number").
-- Change "\ekm-tuplet-note" for new "\ekm-note-by-number".
+- Adapt "\ekm-tuplet-note" for new "\ekm-note-by-number".
 - ekmd-ekmelos.scm: Add type table "note" and rename the styles "short",
   "straight", and "beamed" to "note-*".
 - Fix in "ekm-repeat-tremolo" the tremolo position on whole notes (issue #55).
@@ -708,3 +708,29 @@ January 2021 - May 2021:
   and type table "toeheel" for toe-heel substitutions.
 - Redefine "rtoeheel", "ltoeheel", "rheeltoe", "lheeltoe"
   for SMuFL output if "script" switch is on.
+
+2026-07-14:
+- Extend "ekm:tokens" to draw numbers (digits and "/") with "\ekm-number"
+  in any number style independent of the token table (issue #58).
+  Support two forms of symbols in a token table.
+- Extend "\ekm-def" to accept a type symbol alternative to a token table,
+  and property "number-style" for digits.
+- Add predicate "ekm-type?".
+- Add "ekm:symbol" to allow single markup in type tables with two forms
+  (required for "shared" in "ekm:tokens").
+- Add table "ekm:num" with digits and "/".
+- Add "ekm:def-prefix" for definition strings with prefix `*`.
+- Extend "\ekm-number" to accept a string alternative to a number.
+- Add in type table "number" new style "default".
+- Modify type table "fingering" from a style table into a token table.
+  Remove digit symbols (reside in type table "number").
+  Some entries now have 2 symbols for default and italic.
+- Remove digit symbols from type table "func" (reside in type table "number").
+- Adapt "\ekm-finger" for new type table "fingering".
+- Adapt "ekm-clef-mod" to draw clef modifiers with "\ekm-finger".
+- Adapt "\ekm-harp-pedal" for new "ekm:tokens".
+- Adapt "\ekm-dynamic", "\ekm-ottavation", "ekm-ottavation",
+  "\ekm-piano-pedal", "\ekm-analytics", "ekm-func", "\ekmFunc"
+  for new "\ekm-def".
+- Add "\ekm-rhythm" and type table "rhythm" to draw rhythmic patterns
+  (issue #59).
