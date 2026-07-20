@@ -734,3 +734,13 @@ January 2021 - May 2021:
   for new "\ekm-def".
 - Add "\ekm-rhythm" and type table "rhythm" to draw rhythmic patterns
   (issue #59).
+
+2026-07-20:
+- Redefine "\arpeggioArrowUp", "\arpeggioArrowDown", and "\arpeggioNormal"
+  for SMuFL output if "arpeggio" switch is on.
+  They replace the "\ekmArpeggio*" variants which are now equal to the
+  LP commands and deprecated.
+- Set property "font-series" to "'ekm" in grobs "Script" and "Arpeggio"
+  as a flag for switch on.
+- Extend "ekm-default-string-number" with property "style".
+- Move "\fontsize" from "\ekm-string-number" to stencil "ekm-stringnumber".

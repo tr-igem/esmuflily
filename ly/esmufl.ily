@@ -1690,7 +1690,7 @@ ekmScriptSmall =
               (list-index (lambda (x) (eq? x art)) ekm-toe-heel-tab))))
       (cons* (ekm:assid 'toeheel (car v)) v comp)))
 
-  (if (eq? 'ekm (ly:grob-property grob 'font-encoding #f))
+  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
    (let* ((style (ly:grob-property grob 'toe-heel-style 'default))
          (tab (assoc-get style toe-heel-styles))
          (r (assoc tab right '()))
@@ -2060,13 +2060,14 @@ ekmScoop =
 %% Arpeggio
 
 #(define (ekm-arpeggio grob)
-  (let* ((style (ly:grob-property grob 'style 'default))
-         (dir (ly:grob-property grob 'arpeggio-direction 0))
-         (sym (ekm:asst 'arpeggio style dir dir))
-         (bot (make-ekm-text-markup (first sym)))
-         (top (make-ekm-text-markup (third sym)))
-         (pos (ly:grob-property grob 'positions))
-         (cnt (inexact->exact (round
+  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
+   (let* ((style (ly:grob-property grob 'style 'default))
+          (dir (ly:grob-property grob 'arpeggio-direction 0))
+          (sym (ekm:asst 'arpeggio style dir dir))
+          (bot (make-ekm-text-markup (first sym)))
+          (top (make-ekm-text-markup (third sym)))
+          (pos (ly:grob-property grob 'positions))
+          (cnt (inexact->exact (round
                 (- (interval-length pos) (ekm-dim grob bot X) (ekm-dim grob top X))))))
     (ly:stencil-translate
       (ly:stencil-rotate
@@ -2078,23 +2079,39 @@ ekmScoop =
               (list top))))
         90 -1 0)
       ;; for left bearing -60 upm
-      (cons 0.3 (- (car pos) 0.4)))))
+      (cons 0.3 (- (car pos) 0.4))))
+   (ly:arpeggio::print grob)))
 
-ekmArpeggioArrowUp = {
-  \revert Arpeggio.X-extent
-  \override Arpeggio.arpeggio-direction = #UP
-}
-ekmArpeggioArrowDown = {
-  \revert Arpeggio.X-extent
-  \override Arpeggio.arpeggio-direction = #DOWN
-}
-ekmArpeggioNormal = {
-  \revert Arpeggio.stencil
-  \revert Arpeggio.X-extent
-  \revert Arpeggio.arpeggio-direction
-  \revert Arpeggio.dash-definition
-  \override Arpeggio.stencil = #ekm-arpeggio
-}
+arpeggioArrowUp =
+#(define-music-function () ()
+  #{
+    \revert Arpeggio.stencil
+    \revert Arpeggio.X-extent
+    \override Arpeggio.arpeggio-direction = #UP
+    \override Arpeggio.stencil = #ekm-arpeggio
+  #})
+ekmArpeggioArrowUp = \arpeggioArrowUp
+
+arpeggioArrowDown =
+#(define-music-function () ()
+  #{
+    \revert Arpeggio.stencil
+    \revert Arpeggio.X-extent
+    \override Arpeggio.arpeggio-direction = #DOWN
+    \override Arpeggio.stencil = #ekm-arpeggio
+  #})
+ekmArpeggioArrowDown = \arpeggioArrowDown
+
+arpeggioNormal =
+#(define-music-function () ()
+  #{
+    \revert Arpeggio.stencil
+    \revert Arpeggio.X-extent
+    \revert Arpeggio.arpeggio-direction
+    \revert Arpeggio.dash-definition
+    \override Arpeggio.stencil = #ekm-arpeggio
+  #})
+ekmArpeggioNormal = \arpeggioNormal
 
 
 %% Ottavation
@@ -2226,24 +2243,28 @@ ekmPlayWith =
 
 #(define-markup-command (ekm-default-string-number layout props txt)
   (string?)
+  #:properties ((style 'sans))
   (interpret-markup layout props
    (make-fontsize-markup -3
     (make-override-markup '(circle-padding . 0.1)
      (make-circle-markup
-      (make-sans-markup txt))))))
+      (make-ekm-number-markup
+       (if (and (symbol? style) (not (eq? 'string style))) style 'sans)
+       txt))))))
 
 #(define-markup-command (ekm-string-number layout props txt)
   (number-or-string?)
   (let ((num (if (number? txt) txt (string->number txt 10))))
     (interpret-markup layout props
       (if num
-        (make-fontsize-markup 3 (make-ekm-number-markup 'string (round num)))
-        (make-italic-markup txt)))))
+       (make-ekm-number-markup 'string (round num))
+       (make-italic-markup txt)))))
 
 #(define (ekm-stringnumber grob)
   (grob-interpret-markup grob
+   (make-fontsize-markup 3
     (make-ekm-string-number-markup
-      (ly:grob-property grob 'text))))
+      (ly:grob-property grob 'text)))))
 
 
 %% Piano pedal
@@ -4318,7 +4339,7 @@ ekmSmuflOn =
     #})
     (on 'script #{
       \override Script.stencil = #ekm-script
-      \override Script.font-encoding = #'ekm
+      \override Script.font-series = #'ekm
     #})
     (on 'lv #{
       \override LaissezVibrerTie.stencil = #ekm-lvtie
@@ -4344,6 +4365,7 @@ ekmSmuflOn =
     #})
     (on 'arpeggio #{
       \override Arpeggio.stencil = #ekm-arpeggio
+      \override Arpeggio.font-series = #'ekm
     #})
     (on 'tuplet #{
       \override TupletNumber.text = #ekm-tuplet-number::calc-denominator-text
@@ -4435,7 +4457,7 @@ ekmSmuflOff =
     #})
     (on 'script #{
       \revert Script.stencil
-      \revert Script.font-encoding
+      \revert Script.font-series
     #})
     (on 'lv #{
       \revert LaissezVibrerTie.stencil
@@ -4459,6 +4481,7 @@ ekmSmuflOff =
     #})
     (on 'arpeggio #{
       \revert Arpeggio.stencil
+      \revert Arpeggio.font-series
     #})
     (on 'tuplet #{
       \revert TupletNumber.text
