@@ -1331,17 +1331,22 @@ ekmFlag =
            (lbar (ekm:text layout props (ekm:sym (cddr sym) LEFT)))
            (rbar (ekm:text layout props (ekm:sym (cddr sym) RIGHT)))
            (edge (ekm-extent lbar X)) ; to overlap with bar
-           (w (- width (* edge 1.5)))
+           (w (- width (* edge 1.8)))
            (hbar (if (car sym) (ekm:text layout props (car sym)) #f))
            (hbar (if (second sym)
-                  (ly:stencil-scale hbar (/ w (ekm-extent hbar X)) 1)
+                  (let* ((x (ekm-extent hbar X))
+                         (c (inexact->exact (truncate (/ w x)))))
+                   (if (zero? c)
+                    (ly:stencil-scale hbar (/ w x) 1)
+                    (stack-stencil-line 0
+                     (make-list c (ly:stencil-scale hbar (/ w c x) 1)))))
                   (make-filled-box-stencil (cons 0 w)
                     (if hbar
                       (ly:stencil-extent hbar Y)
                       (symmetric-interval
                         (* 0.5 (magstep font-size) (ekm:md 'hBarThickness))))))))
       (stack-stencil-line
-        (- (* edge 0.25))
+        (- (* edge 0.1))
         (list lbar hbar rbar)))
     (let* ((ssp (or ssp (ly:output-def-lookup layout 'staff-space)))
            (cts
