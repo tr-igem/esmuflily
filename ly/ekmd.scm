@@ -29,6 +29,9 @@
 (use-modules
   ((ice-9 rdelim) #:select (read-delimited)))
 
+(if (not (equal? "2" (major-version)))
+  (use-modules (ice-9 copy-tree)))
+
 (define-public ekmd:dir #f)
 (define-public ekmd:defaults '())
 (define-public ekmd:glyphs '())
@@ -196,10 +199,12 @@
                     (getenv "XDG_DATA_DIRS"))
               (list "~/Library/Application Support"
                     "/Library/Application Support"))))
-         (ls (map (lambda (l)
-              (string-join
+         (ls (filter-map (lambda (l)
+              (if l
+               (string-join
                 (append! (string-split l #\\) (list "SMuFL/Fonts" font))
-                "/"))
+                "/")
+               #f))
               ls)))
     (if (string-null? dir) ls (cons* dir ls))))
 
