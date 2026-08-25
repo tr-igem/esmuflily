@@ -744,3 +744,9 @@ January 2021 - May 2021:
   as a flag for switch on.
 - Extend "ekm-default-string-number" with property "style".
 - Move "\fontsize" from "\ekm-string-number" to stencil "ekm-stringnumber".
+
+2026-08-25:
+- Fix "ekm-segment-spanner" for spanner over 3 or more staves (issue #64).
+- Redefine "\xNotesOn", "\xNote", "\deadNotesOn", and "\deadNote"
+  for SMuFL output if "notehead" switch is on.
+  Add "ekm-cross-style" (issue #66).

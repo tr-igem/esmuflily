@@ -1101,6 +1101,25 @@ ekmSlashSeparator =
     (ly:duration-dot-count dur)
     dir))
 
+#(define (ekm-cross-style grob)
+  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
+    'cross
+    (cross-style grob)))
+
+xNotesOn = {
+  \temporary \override NoteHead.style = #ekm-cross-style
+  \temporary \override TabNoteHead.style = #ekm-cross-style
+}
+
+xNote =
+#(define-music-function (note) (ly:music?)
+  (if (eq? (ly:music-property note 'name) 'NoteEvent)
+    #{ \tweak style #ekm-cross-style $note #}
+    #{ \xNotesOn $note \xNotesOff #}))
+
+deadNotesOn = \xNotesOn
+deadNote = #xNote
+
 ekmNameHeads =
 \set shapeNoteStyles = ##(doName reName miName faName soName laName siName)
 ekmNameHeadsMinor =
@@ -1731,29 +1750,60 @@ lheeltoe =
 %% Multi-segment spanner
 
 #(define (ekm-segment-spanner grob tab tempo text)
-  (let* ((lsil (ly:stencil-translate-axis
+  (let* ((sil (ly:grob-property grob 'stencil))
+         (lsil (ly:stencil-translate-axis
                 (ekm-ctext grob 0 (or (ekm:sym text LEFT) 0))
-                (car (ly:stencil-extent (ly:grob-property grob 'stencil) X))
+                (car (ly:stencil-extent sil X))
                 X))
          (rsil (ekm-ctext grob 0 (or (if (pair? text) (cdr text) #f) 0)))
-         (siblings (ly:spanner-broken-into (ly:grob-original grob)))
-         (len (fold (lambda (p l)
+         (lext (ekm-extent lsil X))
+         (rext (ekm-extent rsil X))
+         (orig (ly:grob-original grob))
+         (siblings (if (ly:grob? orig) (ly:spanner-broken-into orig) '()))
+         (len
+          (fold (lambda (g l)
            (cons*
-             (+ (first l)
-                (- (interval-length
-                     (ly:stencil-extent (ly:grob-property p 'stencil) X))
-                   (ekm-extent lsil X)
-                   (ekm-extent rsil X)))
-             (if (eq? p grob) (list (car l)) l)))
+            (+ (first l)
+               (- (interval-length
+                   (ly:stencil-extent (ly:grob-property g 'stencil)X))
+                  lext rext))
+            (if (eq? g grob) (list (car l)) l)))
            '(0)
            (if (null? siblings) (list grob) siblings)))
+
          (tmp (if (pair? tempo) tempo (cons tempo tempo)))
          (tmp (cons (round (car tmp)) (round (cdr tmp))))
          (tmpdir (- (cdr tmp) (car tmp)))
          (tmpcnt (1+ (abs tmpdir)))
          (tmplen (/ (first len) tmpcnt))
          (tmpidx (iota tmpcnt (car tmp) (if (<= 0 tmpdir) 1 -1)))
-         (len (reverse len)))
+         (len (take-right len 2)))
+
+    (define (segments)
+      (let-values (((i prv) (floor/ (second len) tmplen))
+                   ((j rem) (floor/ (first len) tmplen)))
+        (if (= i j)
+          (list
+            (cons
+              (list-ref tmpidx (inexact->exact i))
+              (- (first len) (second len)))
+            '(#t . 0))
+          (append
+            (list
+              (cons
+                (if (> 0.1 prv) #f (list-ref tmpidx (inexact->exact i)))
+                (- tmplen prv)))
+            (map
+              (lambda (s) (cons s tmplen))
+              (list-tail
+                (take tmpidx (inexact->exact j))
+                (inexact->exact (if (> 0.1 prv) i (1+ i)))))
+            (list
+              (cons
+                (if (> 0.1 rem) #f (list-ref tmpidx (inexact->exact j)))
+                rem)
+              '(#t . 0))))))
+
     (fold (lambda (s sil)
       (if (car s)
         (ly:stencil-stack
@@ -1769,23 +1819,7 @@ lheeltoe =
           0)
         sil))
       lsil
-      (let-values (((i prv) (floor/ (first len) tmplen))
-                   ((j rem) (floor/ (second len) tmplen)))
-        (append
-          (list
-            (cons
-              (if (> 0.1 prv) #f (list-ref tmpidx (inexact->exact i)))
-              (- tmplen prv)))
-          (map
-            (lambda (s) (cons s tmplen))
-            (list-tail
-              (take tmpidx (inexact->exact j))
-              (inexact->exact (if (= 0 prv) i (1+ i)))))
-          (list
-            (cons
-              (if (> 0.1 rem) #f (list-ref tmpidx (inexact->exact j)))
-              rem)
-            '(#t . 0)))))))
+      (segments))))
 
 #(define (ekm-spanner grob)
   (let ((tab (ekm:asstl 'spanner (ly:grob-property grob 'style 'line))))
@@ -4316,6 +4350,7 @@ ekmSmuflOn =
         #(if (ly:version? < '(2 26)) ekm-timesig ekm-time-signature)
     #})
     (on 'notehead #{
+      \override NoteHead.font-series = #'ekm
       \override NoteHead.stencil = #(ekm-notehead #f)
       \override NoteHead.stem-attachment = #ekm-stem-attachment
       \override AmbitusNoteHead.stencil = #(ekm-notehead 0)
@@ -4434,6 +4469,7 @@ ekmSmuflOff =
       \revert Timing.TimeSignature.stencil
     #})
     (on 'notehead #{
+      \revert NoteHead.font-series
       \revert NoteHead.stencil
       \revert NoteHead.stem-attachment
       \revert AmbitusNoteHead.stencil
