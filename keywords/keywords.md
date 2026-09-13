@@ -16,7 +16,11 @@ Esmuflily
     \ekmSmuflOn
     \ekmSmuflOff
 
+    \ekmLigaClefsOn
+    \ekmLigaClefsOff
     ekm:clef-change-font-size
+    \ekm-clef
+    \ekm-clef-modifier
 
     \ekm-compound-meter
     \ekmCompoundMeter
@@ -123,13 +127,16 @@ Esmuflily
     \ekm-text
     \ekm-concat
     \ekm-line
+    \ekm-join-line
+    \ekm-combine
     \ekm-cchar
     \ekm-ctext
-    \ekm-combine
-    \ekm-def
     \ekm-number
-    \ekm-orient
+    \ekm-with-parens
+    \ekm-lily
+    \ekm-def
     \ekm-label
+    \ekm-orient
     \ekm-script
 
     \ekmMergeType

@@ -750,3 +750,38 @@ January 2021 - May 2021:
 - Redefine "\xNotesOn", "\xNote", "\deadNotesOn", and "\deadNote"
   for SMuFL output if "notehead" switch is on.
   Add "ekm-cross-style" (issue #66).
+
+2026-09-13:
+- Add in type table "number" the style table "clef-modifier".
+- Remove type table "clef-mod".
+- Add to "\ekm-number" new property "fall-back-style" for use with
+  precomposed number styles ("clef-modifier", "string", "scale").
+- Add in type table "number" in each style table with precomposed numbers
+  an entry "ekm" with fall-back data.
+  Remove separate style table "ekm".
+- Replace "\ekm-default-string-number" with "ekm-string-fall-back",
+  and "\ekm-default-scale-number" with "ekm-scale-fall-back".
+- Modify type table "parens" and redefine "ekm-parens" to draw all SMuFL parentheses
+  (issue #67).
+- Adapt "\ekmParensDyn", "\ekmParensHairpin", and "ekm-calc-parenthesis-stencils"
+  and add "ekm-dynamic-parens" for new parenthesis support.
+- Replace in "\ekmParensDyn" and "\ekmParensHairpin" space tokens by
+  padding constants.
+- Add command "\ekm-with-parens".
+- Add command "\ekm-lily" and table "ekm:lily-style" to draw with LilyPond fonts.
+- Remove in type tables "number" and "parens" the style tables "sans", "serif",
+  and "typewriter" now combined in style table "default" using "\ekm-lily".
+- Add aux. procedure "ekm:identity".
+- Add commands "\ekm-clef" and "\ekm-clef-modifier" to draw ligated clefs
+  (issue #65).
+- Adapt stencil "ekm-clef" and transposition formatter "ekm-clef-mod".
+- Add stencil "ekm-clef-modifier".
+- Add parent-alignment-X function "ekm-clef-modifier-alignment".
+- Add number "ekm:clef-modifier-font-size" for ligated modifiers.
+- Add in type table "clef" entries of ligated clefs with prefix "_".
+- Adapt "ekm-init-clef" to ignore entries of ligated clefs.
+- Add in type table "clef" offset data for the positioning of modifiers.
+- Add "ekm-clef-offset" to read offset data.
+- Add "ekm:make-clef-set" and replace "\clef" and "\cueClef" to use it
+  instead of "make-clef-set" and "make-cue-clef-set".
+- Add music functions "\ekmLigaClefsOn" and "\ekmLigaClefsOff".

@@ -144,6 +144,22 @@
           txt)
         txt)))))
 
+#(define ekm:lily-style `(
+  (default . ,make-simple-markup)
+  (sans . ,make-sans-markup)
+  (serif . ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
+  (typewriter . ,make-typewriter-markup)))
+
+#(define-markup-command (ekm-lily layout props txt style)
+  (ekm-extext? symbol?)
+  (if (not txt)
+    empty-stencil
+    (interpret-markup layout props
+     ((or (assq-ref ekm:lily-style style) make-simple-markup)
+      (if (ekm-cp? txt)
+       (if (zero? txt) point-stencil (ly:wide-char->utf-8 txt))
+       txt)))))
+
 #(define-markup-command (ekm-concat layout props args)
   (cheap-list?)
   (stack-stencil-line 0
@@ -197,6 +213,8 @@
         X))))
     (car sil)
     (cdr sil)))
+
+#(define (ekm:identity x . y) x)
 
 
 #(define-public CX #b101)
@@ -373,12 +391,13 @@
     (mixed #t)
     (fraction-style 'default)
     (fraction-size -6)
-    (fraction-align -1) ; DOWN
+    (fraction-align -1)
     (bar-thickness 0.15)
     (x-padding 0.2)
     (xy-padding 0.1)
     (y-padding 0.1)
-    (word-space))
+    (word-space)
+    (fall-back-style '()))
 
   (define (integer num dir frac)
     (ly:stencil-aligned-to
@@ -388,16 +407,19 @@
        (let ((tab (ekm:asstl 'number style)))
         (cond
          ((pair? tab)
-          (let ((sym (or (assv-ref tab num)
-                         (assq-ref (ekm:asstl 'number 'ekm) style))))
-            (if (procedure? sym)
-              (sym (number->string num 10))
-              (make-ekm-text-markup sym))))
+          (let ((sym (assv-ref tab num)))
+           (if sym
+            (make-ekm-text-markup sym)
+            (let* ((sym (assv-ref tab 'ekm))
+                   (style (if (symbol? fall-back-style) fall-back-style (car sym))))
+             ((cdr sym) (make-override-markup '(fall-back-style . ())
+                         (make-ekm-number-markup style num)))))))
          ((procedure? tab)
-          (tab (number->string num 10)))
+          (tab (number->string num 10) style))
          (else
           (let digit ((f (not num)) (n num) (l '()))
-            (if f (make-ekm-concat-markup l)
+           (if f
+            (make-ekm-concat-markup l)
             (digit
               (< n 10)
               (quotient n 10)
@@ -614,41 +636,167 @@
   (let init ((t (or tab (ekm:assid 'clef #f))))
     (if (null? t) #t
     (let ((sym (ekm:sym (cdar t) MAIN)))
-      (if (not (string-prefix? "clefs." (caar t)))
-        (if (or (not-pair? sym) (null? (cdr sym)))
+      (if (not (or (string-prefix? "clefs." (caar t))
+                   (string-prefix? "_" (caar t))))
+        (if (or (not-pair? sym) (null? (cdr sym)) (pair? (second sym)))
           (add-new-clef (caar t) (caar t) 0 0 0)
           (add-new-clef (caar t) (caar t) (second sym) (third sym) (fourth sym))))
       (init (cdr t))))))
 
 #(define-public ekm:clef-change-font-size '(1.5 . -2))
+#(define-public ekm:clef-modifier-font-size 4)
+
+#(define (ekm-clef-offset name dir)
+  (let ((sym (ekm:assid 'clef name MAIN)))
+   (ekm:sym
+    (if (pair? sym)
+     ((if (pair? (second sym)) cdr cddddr) sym)
+     '((0 0 0)))
+    dir)))
+
+#(define-markup-command (ekm-clef-modifier layout props trans style)
+  (number-or-string? symbol?)
+  (let ((num (make-ekm-number-markup 'clef-modifier trans)))
+   (interpret-markup layout props
+    (if (eq? 'default style)
+     num
+     (make-ekm-with-parens-markup 'clef-modifier style num)))))
+
+#(define-markup-command (ekm-clef layout props name mode)
+  (string? symbol?)
+
+  (define (draw name change)
+    (let* ((val (ekm:assid 'clef name))
+           (sym (ekm:sym val (ekm:mv change)))
+           (mk (make-ekm-text-markup
+                (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))))
+      (and val
+       (interpret-markup layout props
+        (if change
+         (make-fontsize-markup
+          (if (pair? sym)
+           (second sym)
+           ((if sym car cdr) ekm:clef-change-font-size))
+          mk)
+         mk)))))
+
+  (let* ((name (string-split name #\_))
+         (len (length name))
+         (trans (if (< len 3) 0 (or (string->number (second name) 10) 0)))
+         (dir (sign trans))
+         (trans (if (or (zero? trans) (eq? 'default mode)) #f trans))
+         (style (if (< len 3) 'default (string->symbol (third name))))
+         (change (string=? "change" (last name)))
+         (name (first name)))
+   (if trans
+    (let* ((fmt "_~a_~d_~a")
+           (clef (draw (format #f fmt name trans style) change)))
+     (or
+      clef
+      (let* ((name-liga (format #f fmt name dir mode))
+             (clef (draw name-liga change))
+             (name (if clef name-liga name))
+             (clef (or clef (draw name change))))
+        (if clef
+         (let* ((offset (ekm-clef-offset name dir))
+                (modifier
+                 (make-ekm-clef-modifier-markup (abs trans) style))
+                (modifier
+                 (interpret-markup layout props
+                  (make-fontsize-markup
+                   (if change (cdr ekm:clef-change-font-size) 0)
+                   modifier)))
+                (xext (ly:stencil-extent clef X))
+                (yext (ly:stencil-extent clef Y)))
+          (ly:stencil-add
+           clef
+           (ly:stencil-translate
+            (ly:stencil-aligned-to (ly:stencil-aligned-to
+             modifier X (first offset)) Y (- dir))
+            (cons
+             (+ (interval-center xext)
+                (* 0.5 (interval-length xext) (second offset)))
+             (+ (interval-bound yext dir)
+                (* 0.5 (interval-length yext) (third offset)))))))
+         empty-stencil))))
+    (or (draw name change) empty-stencil))))
 
 #(define (ekm-clef grob)
-  (let* ((name (ly:grob-property grob 'glyph-name))
-         (ch (string-suffix? "_change" name))
-         (val (ekm:assid 'clef (if ch (string-drop-right name 7) name)))
-         (sym (ekm:sym val (ekm:mv ch)))
-         (mk (make-ekm-text-markup
-              (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))))
-    (grob-interpret-markup grob
-      (if ch
-        (make-fontsize-markup
-          (if (pair? sym)
-            (second sym)
-            ((if sym car cdr) ekm:clef-change-font-size))
-          mk)
-        mk))))
+  (grob-interpret-markup grob
+   (make-ekm-clef-markup
+    (ly:grob-property grob 'glyph-name)
+    (ly:grob-property grob 'font-series 'default))))
+
+#(define (ekm-clef-modifier grob)
+  (let* ((parent (ly:grob-parent grob Y)))
+   (if (eq? 'default (ly:grob-property parent 'font-series 'default))
+    (let* ((change
+            (string-suffix? "_change" (ly:grob-property parent 'glyph-name "")))
+           (size
+            (+ ekm:clef-modifier-font-size
+             (if change
+              (cdr ekm:clef-change-font-size)
+              (ly:grob-property parent 'font-size 0)))))
+     (grob-interpret-markup grob
+      (make-fontsize-markup size
+       (ly:grob-property grob 'text ""))))
+    empty-stencil)))
+
+#(define (ekm-clef-modifier-alignment grob)
+  (let* ((parent (ly:grob-parent grob Y))
+         (name (ly:grob-property parent 'glyph-name))
+         (i (string-index name #\_))
+         (name (if i (string-take name i) name))
+         (dir (ly:grob-property grob 'direction UP)))
+   (second (ekm-clef-offset name dir))))
 
 #(define (ekm-clef-mod trans style)
-  (let* ((tr (ekm:assid 'clef-mod trans))
-         (paren (ekm:assid 'clef-mod style)))
-    (make-hcenter-in-markup 1.5
-      (make-fontsize-markup 2.7
-        (make-ekm-concat-markup (list
-          (if paren (ekm:sym paren LEFT) 0)
-          (if tr
-            tr
-            (make-ekm-finger-markup (string-append "*" trans)))
-          (if paren (ekm:sym paren RIGHT) 0)))))))
+  (make-vcenter-markup
+   (make-ekm-clef-modifier-markup trans style)))
+
+#(define (ekm:make-clef-set name cue)
+  (let* ((clef ((if cue make-cue-clef-set make-clef-set) name))
+         (tab
+          (if cue
+          '((cueClefGlyph . "")
+            (cueClefTransposition . 0)
+            (cueClefTranspositionStyle . default))
+          '((clefGlyph . "")
+            (clefTransposition . 0)
+            (clefTranspositionStyle . default)))))
+   (for-each (lambda (m)
+    (let ((e (assq (ly:music-property m 'symbol) tab)))
+     (if e (set-cdr! e (ly:music-property m 'value)))))
+    (extract-named-music clef 'PropertySet))
+   (for-each (lambda (m)
+    (if (eq? (caar tab) (ly:music-property m 'symbol))
+     (ly:music-set-property! m 'value
+      (format #f "~a_~d_~a"
+       (cdar tab)
+       (if (zero? (cdadr tab)) 0 (* (sign (cdadr tab)) (1+ (abs (cdadr tab)))))
+       (cdaddr tab)))))
+    (extract-named-music clef 'PropertySet))
+   clef))
+
+clef =
+#(define-music-function (name) (string?)
+  (ekm:make-clef-set name #f))
+
+cueClef =
+#(define-music-function (name) (string?)
+  (ekm:make-clef-set name #t))
+
+ekmLigaClefsOn = {
+  \override Staff.Clef.font-series = #'liga
+  \override Staff.CueClef.font-series = #'liga
+  \override Staff.CueEndClef.font-series = #'liga
+}
+
+ekmLigaClefsOff = {
+  \revert Staff.Clef.font-series
+  \revert Staff.CueClef.font-series
+  \revert Staff.CueEndClef.font-series
+}
 
 
 %% Time signature
@@ -1516,21 +1664,40 @@ ekmFlag =
 
 %% Parenthesis
 
-#(define (ekm-parens-align val dir)
-  (let ((sym (ekm:sym val dir)))
-    (if (not-pair? sym)
-      (make-ekm-text-markup sym)
-      (make-general-align-markup Y (second sym)
-        (make-fontsize-markup (third sym)
-          (if (string? (first sym))
-            (make-sans-markup (first sym))
-            (make-ekm-text-markup (first sym))))))))
+#(define ekm-parens-style '(
+  (default . 0)
+  (parens . 0)
+  (parenthesized . 0)
+  (bracket . 1)
+  (bracketed . 1)
+  (brace . 2)
+  (angle . 3)))
 
-#(define (ekm-parens style name)
-  (let* ((p (ekm:asst 'parens style name #f)))
-    (cons
-      (ekm-parens-align p LEFT)
-      (ekm-parens-align p RIGHT))))
+#(define (ekm-parens use-style fall-back-style style)
+  (let* ((tab (ekm:asstl 'parens use-style))
+         (style (if (number? style) style (assq-ref ekm-parens-style style)))
+         (sym (and tab style
+                   (if (< style (length tab)) (list-ref tab style) (first tab)))))
+   (cond
+    ((eq? #f sym)
+     '(#f . #f))
+    ((symbol? (car sym))
+     (let ((p (ekm-parens
+               (if (symbol? fall-back-style) fall-back-style (car sym)) 'ekm style)))
+      (cons ((cdr sym) (car p) use-style)
+            ((cdr sym) (cdr p) use-style))))
+    (else
+     sym))))
+
+#(define-markup-command (ekm-with-parens layout props use-style style arg)
+  (symbol? symbol? markup?)
+  #:properties ((fall-back-style '()))
+  (let ((p (ekm-parens use-style fall-back-style style)))
+   (interpret-markup layout props
+    (make-concat-markup (list
+     (make-ekm-text-markup (car p))
+     arg
+     (make-ekm-text-markup (cdr p)))))))
 
 
 %% System start delimiter
@@ -1639,17 +1806,21 @@ ekmFlag =
     (grob-interpret-markup grob
       (if (string? def) (make-ekm-dynamic-markup def) def))))
 
+#(define (ekm-dynamic-parens sym style)
+  (make-general-align-markup Y -0.5
+   (make-fontsize-markup -1
+    (make-ekm-lily-markup sym 'sans))))
+
 ekmParensDyn =
 #(define-event-function (style dyn)
   (symbol? ly:event?)
-  (let ((p (ekm-parens style 'dynamic))
-        (sp (make-ekm-text-markup (assoc-ref ekm-shared-tab "_"))))
+  (let ((p (ekm-parens 'dynamic #f style)))
     (make-music 'AbsoluteDynamicEvent
       'text
       (make-concat-markup (list
-        (car p) sp
+        (car p) (make-hspace-markup 0.6)
         (make-ekm-dynamic-markup (ly:music-property dyn 'text))
-        sp (cdr p))))))
+        (make-hspace-markup 0.2) (cdr p))))))
 
 ekmParensHairpin =
 #(define-music-function (style)
@@ -1657,11 +1828,10 @@ ekmParensHairpin =
   #{
     \once \override Hairpin.stencil =
     #(lambda (grob)
-      (let* ((p (ekm-parens style 'hairpin))
+      (let* ((p (ekm-parens 'hairpin #f style))
              (l (ekm-ctext grob CY (car p)))
              (r (ekm-ctext grob CY (cdr p)))
-             (sp (ekm-ctext grob 0 (assoc-ref ekm-shared-tab "__")))
-             (sp (ekm-extent sp X))
+             (sp 0.6)
              (x (+ (ekm-extent l X) sp)))
         (ly:grob-set-property! grob 'shorten-pair (cons x x))
         (ly:stencil-combine-at-edge
@@ -1882,7 +2052,7 @@ ekmStartTrillSpan =
       UP)))
 
 #(define (ekm-calc-parenthesis-stencils grob)
-  (let ((p (ekm-parens (ly:grob-property grob 'style) 'accidental)))
+  (let ((p (ekm-parens 'accidental #f (ly:grob-property grob 'style))))
     (list (ekm-ctext grob CX (car p))
           (ekm-ctext grob CX (cdr p)))))
 
@@ -2280,16 +2450,10 @@ ekmPlayWith =
 
 %% String number
 
-#(define-markup-command (ekm-default-string-number layout props txt)
-  (string?)
-  #:properties ((style 'sans))
-  (interpret-markup layout props
-   (make-fontsize-markup -3
-    (make-override-markup '(circle-padding . 0.1)
-     (make-circle-markup
-      (make-ekm-number-markup
-       (if (and (symbol? style) (not (eq? 'string style))) style 'sans)
-       txt))))))
+#(define (ekm-string-fall-back arg)
+  (make-fontsize-markup -3
+  (make-override-markup '(circle-padding . 0.1)
+  (make-circle-markup arg))))
 
 #(define-markup-command (ekm-string-number layout props txt)
   (number-or-string?)
@@ -2888,14 +3052,12 @@ ekmMetronome =
     music)
   music)
 
-#(define-markup-command (ekm-default-scale-number layout props txt)
-  (string?)
-  (interpret-markup layout props
-    (make-general-align-markup Y DOWN
-    (make-fontsize-markup 4.5
-    (make-sans-markup
-    (make-override-markup '(baseline-skip . 1.2)
-    (make-center-column-markup (list "⌃" txt))))))))
+#(define (ekm-scale-fall-back arg)
+  (make-general-align-markup Y DOWN
+  (make-fontsize-markup 4.5
+  (make-override-markup '(baseline-skip . 1.2)
+  (make-center-column-markup
+   (list (make-sans-markup "⌃") arg))))))
 
 
 %% Types table
@@ -3334,12 +3496,24 @@ ekmMetronome =
   ))
 
   (clef (#t
-  ("clefs.G" #xE050 . #xE07A)
-  ("clefs.GG" #xE055 . #f)
-  ("clefs.tenorG" #xE056 . #f)
+  ("clefs.G" (#xE050 (0 0 0) . (0 0.36 0)) . #xE07A)
+  ("_clefs.G_-8_default" #xE052 . #f)
+  ("_clefs.G_-8_parenthesized" #xE057 . #f)
+  ("_clefs.G_8_default" #xE053 . #f)
+  ("_clefs.G_-15_default" #xE051 . #f)
+  ("_clefs.G_15_default" #xE054 . #f)
+  ("_clefs.G_-1_liga" (#xE058 (,RIGHT -0.05 0.28)) . #f)
+  ("_clefs.G_1_liga" (#xE059 (,LEFT 0.42 -0.25)) . #f)
+  ("clefs.F" (#xE062 (0 -0.3 0) . (0 -0.25 0)) . #xE07C)
+  ("_clefs.F_-8_default" #xE064 . #f)
+  ("_clefs.F_8_default" #xE065 . #f)
+  ("_clefs.F_-15_default" #xE063 . #f)
+  ("_clefs.F_15_default" #xE066 . #f)
   ("clefs.C" #xE05C . #xE07B)
+  ("_clefs.C_-8_default" #xE05D . #f)
+  ("clefs.GG" (#xE055 (0 -0.05 0) . (0 0.18 0)) . #f)
+  ("clefs.tenorG" (#xE056 (0 -0.25 0) . (0 0.07 0)) . #f)
   ("clefs.varC" #xE05C . #xE07B)
-  ("clefs.F" #xE062 . #xE07C)
   ("clefs.percussion" #xE069 . #f)
   ("clefs.varpercussion" #xE06A . #f)
   ("semipitched" #xE06B . #f)
@@ -3352,16 +3526,9 @@ ekmMetronome =
   ("clefs.neomensural.c" #xE060 . #f)
   ))
 
-  (clef-mod (#t
-  ("8" . #xE07D)
-  ("15" . #xE07E)
-  (parenthesized #xED8A . #xED8B)
-  (bracketed #xED8C . #xED8D)
-  ))
-
   (number
   (default .
-    ,make-simple-markup)
+    ,make-ekm-lily-markup)
   (time .
     #xE080)
   (time-turned .
@@ -3374,16 +3541,14 @@ ekmMetronome =
     #(#xED10 #xED11 #xED12 #xED13 #xED14 #xED15 #xED24 #xED25 #xED26 #xED27))
   (fingering-italic .
     #xED80)
+  (clef-modifier
+    (8 . #xE07D)
+    (15 . #xE07E)
+    (ekm fingering-italic . ,identity))
   (fbass .
     #(#xEA50 #xEA51 #xEA52 #xEA54 #xEA55 #xEA57 #xEA5B #xEA5D #xEA60 #xEA61))
   (func .
     #xEA70)
-  (serif .
-    ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
-  (sans .
-    ,make-sans-markup)
-  (typewriter .
-    ,make-typewriter-markup)
   (string
     (0  . #xE833)
     (1  . #xE834)
@@ -3398,7 +3563,8 @@ ekmMetronome =
     (10 . #xE84A)
     (11 . #xE84B)
     (12 . #xE84C)
-    (13 . #xE84D))
+    (13 . #xE84D)
+    (ekm sans . ,ekm-string-fall-back))
   (scale
     (1 . #xEF00)
     (2 . #xEF01)
@@ -3408,10 +3574,8 @@ ekmMetronome =
     (6 . #xEF05)
     (7 . #xEF06)
     (8 . #xEF07)
-    (9 . #xEF08))
-  (ekm
-    (string . ,make-ekm-default-string-number-markup)
-    (scale . ,make-ekm-default-scale-number-markup))
+    (9 . #xEF08)
+    (ekm sans . ,ekm-scale-fall-back))
   )
 
   (time (#t
@@ -3971,17 +4135,47 @@ ekmMetronome =
 
   (parens
   (default
-    (accidental #xE26A . #xE26B)
-    (dynamic ("(" -0.5 -1) . (")" -0.5 -1))
-    (hairpin #xE542 . #xE543))
-  (bracket
-    (accidental #xE26C . #xE26D)
-    (dynamic ("[" -0.5 -1) . ("]" -0.5 -1))
-    (hairpin #xE544 . #xE545))
-  (brace
-    (dynamic ("{" -0.5 -1) . ("}" -0.5 -1)))
-  (angle
-    (dynamic ("<" -0.5 -1) . (">" -0.5 -1)))
+    (ekm . ,make-ekm-lily-markup))
+  (ekm
+    (#x28 . #x29)
+    (#x5B . #x5D)
+    (#x7B . #x7D)
+    (#x3C . #x3E))
+  (dynamic
+    (ekm . ,ekm-dynamic-parens))
+  (hairpin
+    (#xE542 . #xE543)
+    (#xE544 . #xE545))
+  (clef-modifier
+    (fingering-italic . ,ekm:identity))
+  (fingering
+    (#xED28 . #xED29)
+    (#xED2A . #xED2B))
+  (fingering-italic
+    (#xED8A . #xED8B)
+    (#xED8C . #xED8D))
+  (time
+    (#xE092 . #xE093)
+    (#xEC82 . #xEC83))
+  ;(time-turned)
+  ;(time-reversed)
+  ;(tuplet)
+  (chord
+    (#xE875 . #xE876)
+    (#xE877 . #xE878))
+  (fbass
+    (#xEA6A . #xEA6B)
+    (#xEA68 . #xEA69))
+  (func
+    (#xEA91 . #xEA92)
+    (#xEA8F . #xEA90)
+    #f
+    (#xEA93 . #xEA94))
+  (notehead
+    (#xE0F5 . #xE0F6))
+  (accidental
+    (#xE26A . #xE26B)
+    (#xE26C . #xE26D))
   )
 
   (shared (#t #t
@@ -4342,6 +4536,8 @@ ekmSmuflOn =
       \override Clef.stencil = #ekm-clef
       \override CueClef.stencil = #ekm-clef
       \override CueEndClef.stencil = #ekm-clef
+      \override ClefModifier.stencil = #ekm-clef-modifier
+      \override ClefModifier.parent-alignment-X = #ekm-clef-modifier-alignment
       \set clefTranspositionFormatter = #ekm-clef-mod
       \set cueClefTranspositionFormatter = #ekm-clef-mod
     #})
@@ -4462,6 +4658,8 @@ ekmSmuflOff =
       \revert Clef.stencil
       \revert CueClef.stencil
       \revert CueEndClef.stencil
+      \revert ClefModifier.stencil
+      \revert ClefModifier.parent-alignment-X
       \unset clefTranspositionFormatter
       \unset cueClefTranspositionFormatter
     #})
