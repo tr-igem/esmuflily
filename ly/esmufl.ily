@@ -150,15 +150,26 @@
   (serif . ,(if (ly:version? < '(2 25)) make-roman-markup make-serif-markup))
   (typewriter . ,make-typewriter-markup)))
 
-#(define-markup-command (ekm-lily layout props txt style)
-  (ekm-extext? symbol?)
+#(define-markup-command (ekm-lily layout props style txt)
+  (symbol? ekm-extext?)
   (if (not txt)
     empty-stencil
     (interpret-markup layout props
      ((or (assq-ref ekm:lily-style style) make-simple-markup)
       (if (ekm-cp? txt)
-       (if (zero? txt) point-stencil (ly:wide-char->utf-8 txt))
-       txt)))))
+        (if (zero? txt) point-stencil (ly:wide-char->utf-8 txt))
+      (if (pair? txt)
+        (if (ekm-cp? (car txt))
+          (if (ekm-cdr-cp? txt)
+            (apply string (map integer->char txt))
+            (make-override-markup
+             `(font-features .
+               ,(if (number? (cadr txt))
+                  (list (format #f "salt ~a" (cadr txt)))
+                  (cdr txt)))
+              (ly:wide-char->utf-8 (car txt))))
+          txt)
+        txt))))))
 
 #(define-markup-command (ekm-concat layout props args)
   (cheap-list?)
@@ -214,7 +225,7 @@
     (car sil)
     (cdr sil)))
 
-#(define (ekm:identity x . y) x)
+#(define (ekm:identity x y) y)
 
 
 #(define-public CX #b101)
@@ -415,7 +426,7 @@
              ((cdr sym) (make-override-markup '(fall-back-style . ())
                          (make-ekm-number-markup style num)))))))
          ((procedure? tab)
-          (tab (number->string num 10) style))
+          (tab style (number->string num 10)))
          (else
           (let digit ((f (not num)) (n num) (l '()))
            (if f
@@ -1102,6 +1113,57 @@ ekmCadenzaOn =
       #})))
 
 
+%% Metronome mark
+
+#(define-public (ekm-format-metronome event context)
+  (let* ((precision (ly:context-property context 'tempoCountPrecision 1))
+         (show (not (ly:context-property context 'tempoHideNote #f)))
+         (text (ly:event-property event 'text))
+         (dur (ly:event-property event 'tempo-unit))
+         (count (ly:event-property event 'metronome-count))
+         (format-number (lambda (count)
+          (and (positive? count) (finite? count)
+               (positive? precision) (finite? precision)
+               (let* ((count (inexact->exact count))
+                      (precision (inexact->exact precision))
+                      (rounded (* (round (/ count precision)) precision)))
+                 (number->string (if (integer? rounded)
+                                     rounded
+                                     (exact->inexact rounded)))))))
+         (note
+          (and show
+               (ly:duration? dur)
+               (make-general-align-markup Y DOWN
+                (make-smaller-markup
+                 (make-ekm-note-by-number-markup
+                  (ly:duration-log dur)
+                  (ly:duration-dot-count dur)
+                  UP)))))
+         (count-markup
+          (cond
+           ((number? count)
+            (format-number count))
+           ((number-pair? count)
+            (make-concat-markup (list
+             (format-number (car count))
+             (make-ekm-lily-markup 'default '(#x2009 #x2013 #x2009)) ; THSP EN-DASH
+             (format-number (cdr count)))))
+           (else #f)))
+         (note-markup
+           (and note
+                count-markup
+                (make-line-markup (list note "=" count-markup))))
+         (text-markup
+          (and (not (null? text)) (make-bold-markup text))))
+    (if text-markup
+      (if note-markup
+        (make-line-markup (list
+          text-markup
+          (make-ekm-with-parens-markup 'default 'parens note-markup)))
+        text-markup)
+      (or note-markup (make-null-markup)))))
+
+
 %% Staff divider / separator
 
 ekmStaffDivider =
@@ -1684,8 +1746,8 @@ ekmFlag =
     ((symbol? (car sym))
      (let ((p (ekm-parens
                (if (symbol? fall-back-style) fall-back-style (car sym)) 'ekm style)))
-      (cons ((cdr sym) (car p) use-style)
-            ((cdr sym) (cdr p) use-style))))
+      (cons ((cdr sym) use-style (car p))
+            ((cdr sym) use-style (cdr p)))))
     (else
      sym))))
 
@@ -1806,10 +1868,10 @@ ekmFlag =
     (grob-interpret-markup grob
       (if (string? def) (make-ekm-dynamic-markup def) def))))
 
-#(define (ekm-dynamic-parens sym style)
+#(define (ekm-dynamic-parens style sym)
   (make-general-align-markup Y -0.5
    (make-fontsize-markup -1
-    (make-ekm-lily-markup sym 'sans))))
+    (make-ekm-lily-markup 'sans sym))))
 
 ekmParensDyn =
 #(define-event-function (style dyn)
@@ -4545,6 +4607,10 @@ ekmSmuflOn =
       \override Timing.TimeSignature.stencil =
         #(if (ly:version? < '(2 26)) ekm-timesig ekm-time-signature)
     #})
+    (on 'metronome #{
+      \set metronomeMarkFormatter = #ekm-format-metronome
+      \override MetronomeMark.style = #'metronome
+    #})
     (on 'notehead #{
       \override NoteHead.font-series = #'ekm
       \override NoteHead.stencil = #(ekm-notehead #f)
@@ -4665,6 +4731,10 @@ ekmSmuflOff =
     #})
     (on 'time #{
       \revert Timing.TimeSignature.stencil
+    #})
+    (on 'metronome #{
+      \unset metronomeMarkFormatter
+      \revert MetronomeMark.style
     #})
     (on 'notehead #{
       \revert NoteHead.font-series

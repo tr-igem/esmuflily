@@ -751,7 +751,7 @@ January 2021 - May 2021:
   for SMuFL output if "notehead" switch is on.
   Add "ekm-cross-style" (issue #66).
 
-2026-09-13:
+2026-09-13 (v2.1):
 - Add in type table "number" the style table "clef-modifier".
 - Remove type table "clef-mod".
 - Add to "\ekm-number" new property "fall-back-style" for use with
@@ -785,3 +785,10 @@ January 2021 - May 2021:
 - Add "ekm:make-clef-set" and replace "\clef" and "\cueClef" to use it
   instead of "make-clef-set" and "make-cue-clef-set".
 - Add music functions "\ekmLigaClefsOn" and "\ekmLigaClefsOff".
+
+2026-09-16 (v2.2):
+- Add SMuFL switch "metronome" and metronome mark formatter "ekm-format-metronome"
+  to draw notes in "\tempo" with "\ekm-note-by-number" (issue #68).
+- Change argument order in "\ekm-lily", "ekm:identity", and "ekm-dynamic-parens".
+- Adapt "\ekm-number" and "ekm-parens" for new argument order.
+- Extend "\ekm-lily" to fully support EXTEXT arguments, ie. also lists.
