@@ -31,6 +31,9 @@
       (9  #xF498 . #xF497)
       (10 #xF49A . #xF499))
   )
+  (clef (#t
+    ("_clefs.G_-1_liga" (#xE058 (,RIGHT ,DOWN -0.2 0)) . #f)
+    ("_clefs.G_1_liga" (#xE059 (,LEFT ,DOWN 0.1 -0.31)) . #f)))
   (number
     (string (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C))
     (scale ()))

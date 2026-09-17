@@ -13,6 +13,13 @@
       (+inf.0 ((#xE000 4) -10200/1000 #f 66/1000 870/1000 12/43 21/43)))
     (bracket
       (+inf.0 (#f -1020/1000 #f #xE004 #xE003 0 #f))))
+  (clef (#t
+    ("clefs.G" (#xE050 (,CENTER ,UP -0.05 0) . (,CENTER ,DOWN 0.3 0)) . #xE07A)
+    ("_clefs.G_-8_parenthesized" . #f)
+    ("_clefs.G_-1_liga" . #f)
+    ("_clefs.G_1_liga" . #f)
+    ("clefs.F" (#xE062 (,LEFT ,UP -0.17 0.36) . (,CENTER ,DOWN -0.2 0)) . #xE07C)
+    ("clefs.C" (#xE05C (,CENTER ,UP 0.3 0) . (,CENTER ,DOWN 0.35 0)) . #xE07B)))
   (number
     (string (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C))
     (scale ()))

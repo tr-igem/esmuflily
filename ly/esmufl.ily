@@ -336,7 +336,7 @@
 
 #(define (ekm:asslim type style size dir)
   (let ((e (let sel ((t (ekm:asstl type style)))
-              (if (or (not t) (null? t)) 0
+              (if (null? t) 0
               (if (<= size (caar t)) (cdar t)
               (sel (cdr t)))))))
     (ekm:sym e dir)))
@@ -662,7 +662,7 @@
    (ekm:sym
     (if (pair? sym)
      ((if (pair? (second sym)) cdr cddddr) sym)
-     '((0 0 0)))
+     `((,CENTER ,(- dir) 0 0)))
     dir)))
 
 #(define-markup-command (ekm-clef-modifier layout props trans style)
@@ -679,9 +679,9 @@
   (define (draw name change)
     (let* ((val (ekm:assid 'clef name))
            (sym (ekm:sym val (ekm:mv change)))
-           (mk (make-ekm-text-markup
-                (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))))
-      (and val
+           (draw-sym (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))
+           (mk (make-ekm-text-markup draw-sym)))
+      (and draw-sym
        (interpret-markup layout props
         (if change
          (make-fontsize-markup
@@ -723,12 +723,12 @@
            clef
            (ly:stencil-translate
             (ly:stencil-aligned-to (ly:stencil-aligned-to
-             modifier X (first offset)) Y (- dir))
+             modifier X (first offset)) Y (second offset))
             (cons
              (+ (interval-center xext)
-                (* 0.5 (interval-length xext) (second offset)))
+                (* 0.5 (interval-length xext) (third offset)))
              (+ (interval-bound yext dir)
-                (* 0.5 (interval-length yext) (third offset)))))))
+                (* 0.5 (interval-length yext) (fourth offset)))))))
          empty-stencil))))
     (or (draw name change) empty-stencil))))
 
@@ -759,7 +759,7 @@
          (i (string-index name #\_))
          (name (if i (string-take name i) name))
          (dir (ly:grob-property grob 'direction UP)))
-   (second (ekm-clef-offset name dir))))
+   (third (ekm-clef-offset name dir))))
 
 #(define (ekm-clef-mod trans style)
   (make-vcenter-markup
@@ -1556,7 +1556,7 @@ ekmFlag =
   (symbol? boolean? boolean? index? integer? number? number? boolean-or-number?)
   #:properties ((font-size 0))
   (if (> measures limit)
-    (let* ((sym (or (ekm:asstl 'mmrest style) '(#f #f . #f)))
+    (let* ((sym (ekm:asstl 'mmrest style))
            (lbar (ekm:text layout props (ekm:sym (cddr sym) LEFT)))
            (rbar (ekm:text layout props (ekm:sym (cddr sym) RIGHT)))
            (edge (ekm-extent lbar X)) ; to overlap with bar
@@ -1738,7 +1738,7 @@ ekmFlag =
 #(define (ekm-parens use-style fall-back-style style)
   (let* ((tab (ekm:asstl 'parens use-style))
          (style (if (number? style) style (assq-ref ekm-parens-style style)))
-         (sym (and tab style
+         (sym (and style
                    (if (< style (length tab)) (list-ref tab style) (first tab)))))
    (cond
     ((eq? #f sym)
@@ -3558,23 +3558,23 @@ ekmMetronome =
   ))
 
   (clef (#t
-  ("clefs.G" (#xE050 (0 0 0) . (0 0.36 0)) . #xE07A)
+  ("clefs.G" (#xE050 (,CENTER ,UP 0 0) . (,CENTER ,DOWN 0.36 0)) . #xE07A)
   ("_clefs.G_-8_default" #xE052 . #f)
   ("_clefs.G_-8_parenthesized" #xE057 . #f)
   ("_clefs.G_8_default" #xE053 . #f)
   ("_clefs.G_-15_default" #xE051 . #f)
   ("_clefs.G_15_default" #xE054 . #f)
-  ("_clefs.G_-1_liga" (#xE058 (,RIGHT -0.05 0.28)) . #f)
-  ("_clefs.G_1_liga" (#xE059 (,LEFT 0.42 -0.25)) . #f)
-  ("clefs.F" (#xE062 (0 -0.3 0) . (0 -0.25 0)) . #xE07C)
+  ("_clefs.G_-1_liga" (#xE058 (,RIGHT ,DOWN 0 0)) . #f)
+  ("_clefs.G_1_liga" (#xE059 (,LEFT ,DOWN 0.44 -0.25)) . #f)
+  ("clefs.F" (#xE062 (,CENTER ,UP -0.3 0) . (,CENTER ,DOWN -0.2 0)) . #xE07C)
   ("_clefs.F_-8_default" #xE064 . #f)
   ("_clefs.F_8_default" #xE065 . #f)
   ("_clefs.F_-15_default" #xE063 . #f)
   ("_clefs.F_15_default" #xE066 . #f)
   ("clefs.C" #xE05C . #xE07B)
   ("_clefs.C_-8_default" #xE05D . #f)
-  ("clefs.GG" (#xE055 (0 -0.05 0) . (0 0.18 0)) . #f)
-  ("clefs.tenorG" (#xE056 (0 -0.25 0) . (0 0.07 0)) . #f)
+  ("clefs.GG" (#xE055 (,CENTER ,UP -0.05 0) . (,CENTER ,DOWN 0.18 0)) . #f)
+  ("clefs.tenorG" (#xE056 (,CENTER ,UP -0.25 0) . (,CENTER ,DOWN 0.07 0)) . #f)
   ("clefs.varC" #xE05C . #xE07B)
   ("clefs.percussion" #xE069 . #f)
   ("clefs.varpercussion" #xE06A . #f)

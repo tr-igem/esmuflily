@@ -792,3 +792,13 @@ January 2021 - May 2021:
 - Change argument order in "\ekm-lily", "ekm:identity", and "ekm-dynamic-parens".
 - Adapt "\ekm-number" and "ekm-parens" for new argument order.
 - Extend "\ekm-lily" to fully support EXTEXT arguments, ie. also lists.
+
+2026-09-17 (v2.3):
+- Add in type table `clef` the Y self-alignment (issue #69).
+- Fix "\ekm-clef", "ekm-clef-offset", and "ekm-clef-modifier-alignment"
+  for Y alignment.
+- Fix "draw" in "\ekm-clef" to draw a pure instead of a ligated clef if it is #f.
+- ekmd-ekmelos.scm: Fix type table `clef`.
+- ekmd-bravura.scm, ekmd-petaluma.scm, ekmd-sebastian.scm:
+  Add type table `clef`.
+- Fix "ekm:asslim", "\ekm-mmr", and "ekm-parens" for "ekm:asstl" never returning #f.
