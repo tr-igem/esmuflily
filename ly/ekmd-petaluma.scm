@@ -35,6 +35,11 @@
     ("_clefs.G_-1_liga" (#xE058 (,RIGHT ,DOWN -0.2 0)) . #f)
     ("_clefs.G_1_liga" (#xE059 (,LEFT ,DOWN 0.1 -0.31)) . #f)))
   (number
-    (string (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C))
-    (scale ()))
+    (string
+      (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C)
+      (ekm tuplet . ,(lambda (x) (make-fontsize-markup 3 (ekm-string-fall-back x)))))
+    (scale
+      (ekm tuplet . ,ekm-scale-fall-back)))
+  (toeheel (#t
+    (tie (draw (0.75 . 0.75) 3.0 3.5 2.0))))
 ))

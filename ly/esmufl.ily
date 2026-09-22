@@ -65,6 +65,9 @@
 #(define (ekm-type? x)
   (or (symbol? x) (pair? x)))
 
+#(define (ekm-draw? x)
+  (and (pair? x) (eq? 'draw (car x))))
+
 
 %% Markup and stencils
 
@@ -154,7 +157,8 @@
   (symbol? ekm-extext?)
   (if (not txt)
     empty-stencil
-    (interpret-markup layout props
+    (interpret-markup layout
+     (cons '((font-series . ())) props)
      ((or (assq-ref ekm:lily-style style) make-simple-markup)
       (if (ekm-cp? txt)
         (if (zero? txt) point-stencil (ly:wide-char->utf-8 txt))
@@ -1541,13 +1545,6 @@ ekmMakeClusters =
         (- (* (ly:grob-property stem 'thickness) (ly:staff-symbol-line-thickness grob)))
         (- (list-ref (if (< dir 0) (car len) (cdr len)) (- log 2)))))))
 
-ekmFlag =
-#(define-music-function (style)
-  (symbol?)
-  #{
-    \override Flag.style = #style
-  #})
-
 
 %% Rest
 
@@ -1934,6 +1931,30 @@ ekmScriptSmall =
           (assq-ref (ekm:asstl 'spanner style) 'text))
         dir))))
 
+#(define-markup-command (ekm-toe-heel-tie layout props left right)
+  (ekm-extext? ekm-extext?)
+  #:properties
+   ((direction)
+    (x-padding 0))
+  (let ((mk (make-concat-markup
+             (list (make-ekm-text-markup left)
+                   (make-hspace-markup x-padding)
+                   (make-ekm-text-markup right))))
+        (tie (ekm:sym (ekm:assid 'toeheel 'tie) direction)))
+   (if (ekm-draw? tie)
+    (interpret-markup layout props
+     (make-override-markup
+      (map cons '(shorten-pair height-limit thickness offset) (cdr tie))
+      (make-tie-markup mk)))
+    (ly:stencil-aligned-to
+     (ly:stencil-add
+      (ly:stencil-aligned-to
+        (interpret-markup layout props mk)
+        X 0)
+      (ly:stencil-aligned-to
+        (interpret-markup layout props (make-ekm-text-markup tie))
+        X 0))
+     X LEFT))))
 
 #(define ekm-toe-heel-tab '(
   rtoe ltoe rheel lheel
@@ -1955,11 +1976,10 @@ ekmScriptSmall =
     (grob-interpret-markup grob
      (if comp
       (make-ekm-text-markup comp)
-      ((if (eqv? (cdr (second l)) UP) make-overtie-markup make-undertie-markup)
-       (make-concat-markup
-        (list (make-ekm-text-markup (caar l))
-              (make-hspace-markup (abs (+ (cdar l) (cdar r))))
-              (make-ekm-text-markup (caar r))))))))
+      (make-override-markup
+       `((direction . ,(cdr (second l)))
+         (x-padding . ,(abs (+ (cdar l) (cdar r)))))
+       (make-ekm-toe-heel-tie-markup (caar l) (caar r))))))
    (toe-heel-subst-stencil grob left right)))
 
 rtoeheel =
@@ -2317,7 +2337,7 @@ ekmScoop =
               (cons
                 (make-music 'FingeringEvent
                   'text (if (<= 0 dir) "S" "P")
-                  'tweaks (list (cons 'stencil (ekm-fingering 0))))
+                  'tweaks `((stencil . ,(ekm-fingering 5))))
                 (ly:music-property m 'articulations)))
             (make-music 'EventChord
               'elements (list m)))
@@ -2361,7 +2381,6 @@ arpeggioArrowUp =
     \override Arpeggio.arpeggio-direction = #UP
     \override Arpeggio.stencil = #ekm-arpeggio
   #})
-ekmArpeggioArrowUp = \arpeggioArrowUp
 
 arpeggioArrowDown =
 #(define-music-function () ()
@@ -2371,7 +2390,6 @@ arpeggioArrowDown =
     \override Arpeggio.arpeggio-direction = #DOWN
     \override Arpeggio.stencil = #ekm-arpeggio
   #})
-ekmArpeggioArrowDown = \arpeggioArrowDown
 
 arpeggioNormal =
 #(define-music-function () ()
@@ -2382,7 +2400,6 @@ arpeggioNormal =
     \revert Arpeggio.dash-definition
     \override Arpeggio.stencil = #ekm-arpeggio
   #})
-ekmArpeggioNormal = \arpeggioNormal
 
 
 %% Ottavation
@@ -2477,16 +2494,28 @@ ekmArpeggioNormal = \arpeggioNormal
       (cdr def))))))
 
 #(define ((ekm-fingering size) grob)
-  (let ((def (ly:grob-property grob 'text)))
-    (if (string? def)
-      (grob-interpret-markup grob
-        (make-fontsize-markup (+ size 5)
-          (make-ekm-finger-markup def)))
-      (ly:text-interface::print grob))))
+  (let ((def (ly:grob-property grob 'text))
+        (ekm (eq? 'ekm (ly:grob-property grob 'font-series #f))))
+   (if (and (string? def)
+             (or ekm (string=? "th" def)))
+    (grob-interpret-markup grob
+      (if ekm
+        (make-fontsize-markup size
+          (make-ekm-finger-markup def))
+        #{ \markup \scale #(cons (magstep size) (magstep size))
+                   \musicglyph "scripts.thumb" #}))
+    (ly:text-interface::print grob))))
+
+thumb =
+#(define-event-function () ()
+  (make-music 'FingeringEvent
+   'text "th"
+   'tweaks `((stencil . ,(ekm-fingering 5)))))
 
 ekmPlayWith =
 #(define-music-function (hand start music)
-  (ly:dir? boolean? ly:music?)
+  (ly:dir? number? ly:music?)
+  (let ((start (< start 0)))
   #{
     \set fingeringOrientations = #(if start '(left) '(right))
     \override Fingering.padding = #0.2
@@ -2507,7 +2536,7 @@ ekmPlayWith =
       music)
     \revert Fingering.padding
     \unset fingeringOrientations
-  #})
+  #}))
 
 
 %% String number
@@ -4049,6 +4078,7 @@ ekmMetronome =
   (varheel #xE662 . -0.1)
   (heel #xE661 . 0.1)
   (heelcircle #xE663 . 0)
+  (tie (draw (0.85 . 0.85) 1.5 1.5 2.5))
   (((heel . ,UP) (toe . ,UP)) . #xE674)
   (((toe . ,UP) (heel . ,UP)) . #xE675)
   ))
@@ -4673,8 +4703,10 @@ ekmSmuflOn =
       \override TupletNumber.text = #ekm-tuplet-number::calc-denominator-text
     #})
     (on 'fingering #{
-      \override Fingering.stencil = #(ekm-fingering 0)
-      \override StrokeFinger.stencil = #(ekm-fingering -5)
+      \override Fingering.stencil = #(ekm-fingering 5)
+      \override Fingering.font-series = #'ekm
+      \override StrokeFinger.stencil = #(ekm-fingering 0)
+      \override StrokeFinger.font-series = #'ekm
     #})
     (on 'stringnumber #{
       \override StringNumber.stencil = #ekm-stringnumber
@@ -4797,7 +4829,9 @@ ekmSmuflOff =
     #})
     (on 'fingering #{
       \revert Fingering.stencil
+      \revert Fingering.font-series
       \revert StrokeFinger.stencil
+      \revert StrokeFinger.font-series
     #})
     (on 'stringnumber #{
       \revert StringNumber.stencil

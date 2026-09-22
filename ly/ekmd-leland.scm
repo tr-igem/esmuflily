@@ -7,6 +7,8 @@
   (mmrest
     (default #f #f . #f))
   (number
-    (string ())
-    (scale ()))
+    (string
+      (ekm sans . ,ekm-string-fall-back))
+    (scale
+      (ekm sans . ,ekm-scale-fall-back)))
 ))

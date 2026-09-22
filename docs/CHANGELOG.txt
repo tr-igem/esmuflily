@@ -794,11 +794,29 @@ January 2021 - May 2021:
 - Extend "\ekm-lily" to fully support EXTEXT arguments, ie. also lists.
 
 2026-09-17 (v2.3):
-- Add in type table `clef` the Y self-alignment (issue #69).
+- Add in type table "clef" the Y self-alignment (issue #69).
 - Fix "\ekm-clef", "ekm-clef-offset", and "ekm-clef-modifier-alignment"
   for Y alignment.
 - Fix "draw" in "\ekm-clef" to draw a pure instead of a ligated clef if it is #f.
-- ekmd-ekmelos.scm: Fix type table `clef`.
+- ekmd-ekmelos.scm: Fix type table "clef".
 - ekmd-bravura.scm, ekmd-petaluma.scm, ekmd-sebastian.scm:
-  Add type table `clef`.
+  Add type table "clef".
 - Fix "ekm:asslim", "\ekm-mmr", and "ekm-parens" for "ekm:asstl" never returning #f.
+
+2026-09-22 (v2.4):
+- ekmd-petaluma.scm, ekmd-sebastian.scm, ekmd-leland.scm:
+  Fix in type table "number" missing fall back style (issue #70).
+- Change argument in "\ekmPlayWith" from boolean to number (issue #71).
+- Remove deprecated commands "\ekmFlag", "\ekmArpeggioArrowUp",
+  "\ekmArpeggioArrowDown", "\ekmArpeggioNormal" (issue #72).
+- Redefine "\thumb" for SMuFL output if "fingering" switch is on.
+- Fix stencil "ekm-fingering" for "\thumb" and change size argument.
+- Fix "\ekmScoop" for "ekm-fingering" size.
+- ekmd-ekmelos.scm: Add in type table "chord" superscript (small) variants.
+- Fix "ekm-toe-heel" to support tie properties or symbols.
+- Add predicate "ekm-draw?".
+- Add command "\ekm-toe-heel-tie".
+- Add in type table "toeheel" tie properties.
+- ekmd-ekmelos.scm: Add in type table "toeheel" tie symbols.
+- ekmd-petaluma.scm: Add in type table "toeheel" tie properties.
+- Reset in "ekm-lily" property "font-series". Value "'ekm" may cause errors.

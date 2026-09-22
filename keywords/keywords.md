@@ -39,8 +39,6 @@ Esmuflily
 
     \ekmMakeClusters
 
-    \ekmFlag
-
     \ekm-rest
     \ekm-rest-by-number
     \ekm-multi-measure-rest-by-number
@@ -65,10 +63,6 @@ Esmuflily
     \ekmStem
     \ekm-scoop
     \ekmScoop
-
-    \ekmArpeggioArrowUp
-    \ekmArpeggioArrowDown
-    \ekmArpeggioNormal
 
     \ekm-ottavation
     ekm-ottavation
@@ -138,6 +132,7 @@ Esmuflily
     \ekm-label
     \ekm-orient
     \ekm-script
+    \ekm-toe-heel-tie
 
     \ekmMergeType
 

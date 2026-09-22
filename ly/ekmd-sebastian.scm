@@ -21,6 +21,9 @@
     ("clefs.F" (#xE062 (,LEFT ,UP -0.17 0.36) . (,CENTER ,DOWN -0.2 0)) . #xE07C)
     ("clefs.C" (#xE05C (,CENTER ,UP 0.3 0) . (,CENTER ,DOWN 0.35 0)) . #xE07B)))
   (number
-    (string (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C))
-    (scale ()))
+    (string
+      (0 . #xE833) (1 . #xE834) (2 . #xE835) (3 . #xE836) (4 . #xE837) (5 . #xE838) (6 . #xE839) (7 . #xE83A) (8 . #xE83B) (9 . #xE83C)
+      (ekm sans . ,ekm-string-fall-back))
+    (scale
+      (ekm sans . ,ekm-scale-fall-back)))
 ))

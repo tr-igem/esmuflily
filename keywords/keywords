@@ -20,7 +20,6 @@ ekm:clef-change-font-size
 \ekmNameHeadsTi
 \ekmNameHeadsTiMinor
 \ekmMakeClusters
-\ekmFlag
 \ekm-rest
 \ekm-rest-by-number
 \ekm-multi-measure-rest-by-number
@@ -40,9 +39,6 @@ ekm:clef-change-font-size
 \ekmStem
 \ekm-scoop
 \ekmScoop
-\ekmArpeggioArrowUp
-\ekmArpeggioArrowDown
-\ekmArpeggioNormal
 \ekm-ottavation
 ekm-ottavation
 \ekm-tuplet-note
@@ -98,6 +94,7 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-label
 \ekm-orient
 \ekm-script
+\ekm-toe-heel-tie
 \ekmMergeType
 
 \ekmStyle
