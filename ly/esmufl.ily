@@ -679,40 +679,76 @@
 
 #(define-markup-command (ekm-clef layout props name mode)
   (string? symbol?)
+  #:properties
+   ((font-size 0)
+    (Y-offset 0)
+    (x-padding 0.8))
 
-  (define (draw name change)
+  (define (draw name change sil)
     (let* ((val (ekm:assid 'clef name))
            (sym (ekm:sym val (ekm:mv change)))
-           (draw-sym (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))
-           (mk (make-ekm-text-markup draw-sym)))
-      (and draw-sym
+           (mk (ekm:sym (or sym (ekm:sym val MAIN)) MAIN))
+           (mk (and mk (make-ekm-text-markup mk))))
+      (if mk
        (interpret-markup layout props
-        (if change
+        (if (eq? #t change)
          (make-fontsize-markup
           (if (pair? sym)
            (second sym)
            ((if sym car cdr) ekm:clef-change-font-size))
           mk)
-         mk)))))
+         mk))
+       (and sil empty-stencil))))
 
   (let* ((name (string-split name #\_))
          (len (length name))
-         (trans (if (< len 3) 0 (or (string->number (second name) 10) 0)))
+         (trans (or (and (> len 2) (string->number (second name) 10)) 0))
          (dir (sign trans))
-         (trans (if (or (zero? trans) (eq? 'default mode)) #f trans))
          (style (if (< len 3) 'default (string->symbol (third name))))
+         (attr (if (< len 4) #f (string->symbol (fourth name))))
          (change (string=? "change" (last name)))
-         (name (first name)))
-   (if trans
-    (let* ((fmt "_~a_~d_~a")
-           (clef (draw (format #f fmt name trans style) change)))
+         (name (first name))
+         (fmt "_~a_~d_~a"))
+   (cond
+    ((eq? 'arrow attr)
+     (draw (format #f fmt name dir attr) change #t))
+    ((eq? 'schaeffer mode)
+     (let* ((fname (format #f fmt name 0 mode))
+            (clef (draw fname #f #t)))
+      (if (and (or change (eq? 'on attr)) (not (eq? 'off attr)))
+        (ly:stencil-add
+         clef
+         (ly:stencil-translate
+          (draw fname 'on #t)
+          (cons (- (ekm-extent clef X))
+                (if (string=? "clefs.G" name) 2 -2))))
+        clef)))
+    ((or (zero? trans) (eq? 'default mode))
+     (draw name change #t))
+    ((eq? 'sorabji mode)
+     (let* ((clef
+             (and (or (not change) (eq? 'on attr))
+                  (not (eq? 'off attr))
+                  (draw name change #f)))
+            (modifier
+             (ly:stencil-translate
+              (draw (format #f fmt "" trans mode) #f #t)
+              (cons 0 (- Y-offset)))))
+      (if clef
+        (ly:stencil-combine-at-edge
+         clef X RIGHT modifier
+         (* x-padding (magstep font-size)))
+        modifier)))
+    (else
      (or
-      clef
-      (let* ((name-liga (format #f fmt name dir mode))
-             (clef (draw name-liga change))
-             (name (if clef name-liga name))
-             (clef (or clef (draw name change))))
-        (if clef
+      (draw (format #f fmt name trans
+              (if (eq? 'liga mode) style (format #f "~a_~a" style mode)))
+            change #f)
+      (let* ((fname (format #f fmt name dir mode))
+             (clef (draw fname change #f))
+             (name (if clef fname name))
+             (clef (or clef (draw name change #t))))
+       (if clef
          (let* ((offset (ekm-clef-offset name dir))
                 (modifier
                  (make-ekm-clef-modifier-markup (abs trans) style))
@@ -733,18 +769,20 @@
                 (* 0.5 (interval-length xext) (third offset)))
              (+ (interval-bound yext dir)
                 (* 0.5 (interval-length yext) (fourth offset)))))))
-         empty-stencil))))
-    (or (draw name change) empty-stencil))))
+         empty-stencil)))))))
 
 #(define (ekm-clef grob)
   (grob-interpret-markup grob
-   (make-ekm-clef-markup
-    (ly:grob-property grob 'glyph-name)
-    (ly:grob-property grob 'font-series 'default))))
+   (make-override-markup
+    `(Y-offset . ,(ly:grob-property grob 'Y-offset))
+     (make-ekm-clef-markup
+      (ly:grob-property grob 'glyph-name)
+      (ly:grob-property grob 'font-series 'default)))))
 
 #(define (ekm-clef-modifier grob)
   (let* ((parent (ly:grob-parent grob Y)))
-   (if (eq? 'default (ly:grob-property parent 'font-series 'default))
+   (if (memq (ly:grob-property parent 'font-series 'default)
+             '(default schaeffer))
     (let* ((change
             (string-suffix? "_change" (ly:grob-property parent 'glyph-name "")))
            (size
@@ -769,8 +807,21 @@
   (make-vcenter-markup
    (make-ekm-clef-modifier-markup trans style)))
 
+#(define ekm:clef-attr `(
+  (#\+ #f . on)
+  (#\- #f . off)
+  (#\_ ,DOWN . arrow)
+  (#\^ ,UP . arrow)
+))
+
 #(define (ekm:make-clef-set name cue)
-  (let* ((clef ((if cue make-cue-clef-set make-clef-set) name))
+  (let* ((len (string-length name))
+         (attr
+          (and (> len 1)
+               (assoc-ref ekm:clef-attr (string-ref name (1- len)))))
+         (clef
+          ((if cue make-cue-clef-set make-clef-set)
+            (if attr (string-drop-right name 1) name)))
          (tab
           (if cue
           '((cueClefGlyph . "")
@@ -786,10 +837,13 @@
    (for-each (lambda (m)
     (if (eq? (caar tab) (ly:music-property m 'symbol))
      (ly:music-set-property! m 'value
-      (format #f "~a_~d_~a"
+      (format #f "~a_~d_~a~@[_~a~]"
        (cdar tab)
-       (if (zero? (cdadr tab)) 0 (* (sign (cdadr tab)) (1+ (abs (cdadr tab)))))
-       (cdaddr tab)))))
+       (or (and attr (car attr))
+           (if (zero? (cdadr tab)) 0
+               (* (sign (cdadr tab)) (1+ (abs (cdadr tab))))))
+       (cdaddr tab)
+       (and attr (cdr attr))))))
     (extract-named-music clef 'PropertySet))
    clef))
 
@@ -801,17 +855,19 @@ cueClef =
 #(define-music-function (name) (string?)
   (ekm:make-clef-set name #t))
 
-ekmLigaClefsOn = {
-  \override Staff.Clef.font-series = #'liga
-  \override Staff.CueClef.font-series = #'liga
-  \override Staff.CueEndClef.font-series = #'liga
-}
+ekmClefMode =
+#(define-music-function (mode) (symbol?)
+  #{
+    \revert Staff.Clef.font-series
+    \revert Staff.CueClef.font-series
+    \revert Staff.CueEndClef.font-series
+    \override Staff.Clef.font-series = #mode
+    \override Staff.CueClef.font-series = #mode
+    \override Staff.CueEndClef.font-series = #mode
+  #})
 
-ekmLigaClefsOff = {
-  \revert Staff.Clef.font-series
-  \revert Staff.CueClef.font-series
-  \revert Staff.CueEndClef.font-series
-}
+ekmClefNormal = \ekmClefMode #'default
+ekmLigaClefsOn = \ekmClefMode #'liga
 
 
 %% Time signature
@@ -1047,13 +1103,16 @@ ekmCompoundMeter =
              (let ((h (ss 2)))
               (make-line-stencil (* bar-thickness (magstep font-size))
                (* 0.4 (- h)) (- h) (* 0.4 h) h)))
-           (interpret-markup layout props (translate 0 -2 (number den)))))))
+           (interpret-markup layout props
+            (make-general-align-markup Y UP
+             (translate 0 -2 (number den))))))))
        ;; num den
        (else
         (make-left-align-markup
          (make-combine-markup
           (make-center-align-markup num)
-          (make-center-align-markup (translate 0 -2 (number den)))))))))
+          (make-general-align-markup Y UP
+           (make-center-align-markup (translate 0 -2 (number den))))))))))
 
   (define (element sig)
     (cond
@@ -3615,6 +3674,14 @@ ekmMetronome =
   ("bridge" #xE078 . #f)
   ("accordion" #xE079 . #f)
   ("clefs.neomensural.c" #xE060 . #f)
+  ("_clefs.G_-1_arrow" (#xE05B (,RIGHT ,UP 0.3 0.16)) . #f)
+  ("_clefs.G_1_arrow" (#xE05A (,LEFT ,DOWN 0.08 -0.18)) . #f)
+  ("_clefs.F_-1_arrow" (#xE068 (,CENTER ,UP -0.22 0)) . #f)
+  ("_clefs.F_1_arrow" (#xE067 (,CENTER ,DOWN -0.22 0)) . #f)
+  ("_clefs.C_-1_arrow" (#xE05F (,CENTER ,UP -0.84 0)) . #f)
+  ("_clefs.C_1_arrow" (#xE05E (,CENTER ,DOWN -0.76 0)) . #f)
+  ("_clefs.G_0_schaeffer" #xE06F . #xE070)
+  ("_clefs.F_0_schaeffer" #xE06F . #xE070)
   ))
 
   (number

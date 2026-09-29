@@ -820,3 +820,21 @@ January 2021 - May 2021:
 - ekmd-ekmelos.scm: Add in type table "toeheel" tie symbols.
 - ekmd-petaluma.scm: Add in type table "toeheel" tie properties.
 - Reset in "ekm-lily" property "font-series". Value "'ekm" may cause errors.
+
+2026-09-30 (v2.5):
+- Add in "\ekm-clef" support for arrow clefs with clef mode "arrow"
+  and for Schaeffer clefs with clef mode "schaeffer" (issue #65,#75).
+- Add in "\ekm-clef" support for Sorabji octave indicators with clef
+  mode "sorabji" (issue #74).
+- Fix stencil "ekm-clef" to pass "Y-offset" (for "sorabji").
+- Add in "ekm:make-clef-set" and "\ekm-clef" support for an optional
+  clef attribute.
+- Add table "ekm:clef-attr".
+- Add music functions "\ekmClefMode" and "\ekmClefNormal".
+- Remove obsolete "\ekmLigaClefsOff".
+  "\ekmLigaClefsOn" is deprecated.
+- ekmd-ekmelos.scm: Add in type table "clef" arrow clef positions and
+  Sorabji octave indicators.
+- ekmd-petaluma.scm: Add in type table "clef" arrow clef positions.
+- Fix in "\ekm-compound-meter" vertical alignment of the denominator
+  (required by Petaluma).
