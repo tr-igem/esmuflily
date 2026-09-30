@@ -821,7 +821,7 @@ January 2021 - May 2021:
 - ekmd-petaluma.scm: Add in type table "toeheel" tie properties.
 - Reset in "ekm-lily" property "font-series". Value "'ekm" may cause errors.
 
-2026-09-30 (v2.5):
+2026-09-30:
 - Add in "\ekm-clef" support for arrow clefs with clef mode "arrow"
   and for Schaeffer clefs with clef mode "schaeffer" (issue #65,#75).
 - Add in "\ekm-clef" support for Sorabji octave indicators with clef
@@ -838,3 +838,12 @@ January 2021 - May 2021:
 - ekmd-petaluma.scm: Add in type table "clef" arrow clef positions.
 - Fix in "\ekm-compound-meter" vertical alignment of the denominator
   (required by Petaluma).
+
+2026-10-01:
+- Redefine "\romanStringNumbers" and "\arabicStringNumbers",
+  and fix stencil "ekm-stringnumber" for SMuFL output (issue #76).
+- Add in "\ekm-string-number" property "size" for numbers,
+  and "\ekm-lily" for strings.
+- Add auxiliary functions for SMuFL mode stored in grob property "font-series"
+  (as a workaround for a more suitable property):
+  "ekm?", "ekm-mode", "\ekmOn", "\ekmOff".

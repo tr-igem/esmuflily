@@ -69,6 +69,29 @@
   (and (pair? x) (eq? 'draw (car x))))
 
 
+%% SMuFL mode
+
+#(define (ekm? grob)
+  (eq? 'ekm (ly:grob-property grob 'font-series #f)))
+
+#(define (ekm-mode grob)
+  (ly:grob-property grob 'font-series 'default))
+
+ekmOn =
+#(define-music-function (name sil) (symbol? scheme?)
+  #{
+    \override #`(,name font-series) = #'ekm
+    \override #`(,name stencil) = #sil
+  #})
+
+ekmOff =
+#(define-music-function (name) (symbol?)
+  #{
+    \revert #`(,name font-series)
+    \revert #`(,name stencil)
+  #})
+
+
 %% Markup and stencils
 
 #(define-markup-command (ekm-str layout props str)
@@ -777,12 +800,11 @@
     `(Y-offset . ,(ly:grob-property grob 'Y-offset))
      (make-ekm-clef-markup
       (ly:grob-property grob 'glyph-name)
-      (ly:grob-property grob 'font-series 'default)))))
+      (ekm-mode grob)))))
 
 #(define (ekm-clef-modifier grob)
   (let* ((parent (ly:grob-parent grob Y)))
-   (if (memq (ly:grob-property parent 'font-series 'default)
-             '(default schaeffer))
+   (if (memq (ekm-mode parent) '(default schaeffer))
     (let* ((change
             (string-suffix? "_change" (ly:grob-property parent 'glyph-name "")))
            (size
@@ -1375,7 +1397,7 @@ ekmSlashSeparator =
     dir))
 
 #(define (ekm-cross-style grob)
-  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
+  (if (ekm? grob)
     'cross
     (cross-style grob)))
 
@@ -2026,7 +2048,7 @@ ekmScriptSmall =
               (list-index (lambda (x) (eq? x art)) ekm-toe-heel-tab))))
       (cons* (ekm:assid 'toeheel (car v)) v comp)))
 
-  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
+  (if (ekm? grob)
    (let* ((style (ly:grob-property grob 'toe-heel-style 'default))
          (tab (assoc-get style toe-heel-styles))
          (r (assoc tab right '()))
@@ -2410,7 +2432,7 @@ ekmScoop =
 %% Arpeggio
 
 #(define (ekm-arpeggio grob)
-  (if (eq? 'ekm (ly:grob-property grob 'font-series #f))
+  (if (ekm? grob)
    (let* ((style (ly:grob-property grob 'style 'default))
           (dir (ly:grob-property grob 'arpeggio-direction 0))
           (sym (ekm:asst 'arpeggio style dir dir))
@@ -2554,7 +2576,7 @@ arpeggioNormal =
 
 #(define ((ekm-fingering size) grob)
   (let ((def (ly:grob-property grob 'text))
-        (ekm (eq? 'ekm (ly:grob-property grob 'font-series #f))))
+        (ekm (ekm? grob)))
    (if (and (string? def)
              (or ekm (string=? "th" def)))
     (grob-interpret-markup grob
@@ -2607,17 +2629,36 @@ ekmPlayWith =
 
 #(define-markup-command (ekm-string-number layout props txt)
   (number-or-string?)
+  #:properties
+   ((size 0))
   (let ((num (if (number? txt) txt (string->number txt 10))))
     (interpret-markup layout props
       (if num
-       (make-ekm-number-markup 'string (round num))
-       (make-italic-markup txt)))))
+       (make-fontsize-markup size
+        (make-ekm-number-markup 'string (round num)))
+       (make-italic-markup (make-ekm-lily-markup 'default txt))))))
 
 #(define (ekm-stringnumber grob)
-  (grob-interpret-markup grob
-   (make-fontsize-markup 3
-    (make-ekm-string-number-markup
-      (ly:grob-property grob 'text)))))
+  (if (ekm? grob)
+   (grob-interpret-markup grob
+    (make-override-markup '(size . 2)
+     (make-ekm-string-number-markup
+       (ly:grob-property grob 'text))))
+   (if (eq? 'arabic (ly:grob-property grob 'number-type))
+    (print-circled-text-callback grob)
+    (ly:text-interface::print grob))))
+
+romanStringNumbers = {
+  \override StringNumber.number-type = #'roman-upper
+  \override StringNumber.font-encoding = #'latin1
+  \override StringNumber.font-shape = #'italic
+  \override StringNumber.stencil = #ekm-stringnumber
+}
+arabicStringNumbers = {
+  \revert StringNumber.number-type
+  \revert StringNumber.font-encoding
+  \revert StringNumber.font-shape
+}
 
 
 %% Piano pedal
@@ -4709,8 +4750,7 @@ ekmSmuflOn =
       \override MetronomeMark.style = #'metronome
     #})
     (on 'notehead #{
-      \override NoteHead.font-series = #'ekm
-      \override NoteHead.stencil = #(ekm-notehead #f)
+      \ekmOn #'NoteHead #(ekm-notehead #f)
       \override NoteHead.stem-attachment = #ekm-stem-attachment
       \override AmbitusNoteHead.stencil = #(ekm-notehead 0)
     #})
@@ -4737,8 +4777,7 @@ ekmSmuflOn =
       \override DynamicText.stencil = #ekm-dyntext
     #})
     (on 'script #{
-      \override Script.stencil = #ekm-script
-      \override Script.font-series = #'ekm
+      \ekmOn #'Script #ekm-script
     #})
     (on 'lv #{
       \override LaissezVibrerTie.stencil = #ekm-lvtie
@@ -4763,20 +4802,17 @@ ekmSmuflOn =
       \override StemTremolo.stencil = #(ekm-repeat-tremolo #f)
     #})
     (on 'arpeggio #{
-      \override Arpeggio.stencil = #ekm-arpeggio
-      \override Arpeggio.font-series = #'ekm
+      \ekmOn #'Arpeggio #ekm-arpeggio
     #})
     (on 'tuplet #{
       \override TupletNumber.text = #ekm-tuplet-number::calc-denominator-text
     #})
     (on 'fingering #{
-      \override Fingering.stencil = #(ekm-fingering 5)
-      \override Fingering.font-series = #'ekm
-      \override StrokeFinger.stencil = #(ekm-fingering 0)
-      \override StrokeFinger.font-series = #'ekm
+      \ekmOn #'Fingering #(ekm-fingering 5)
+      \ekmOn #'StrokeFinger #(ekm-fingering 0)
     #})
     (on 'stringnumber #{
-      \override StringNumber.stencil = #ekm-stringnumber
+      \ekmOn #'StringNumber #ekm-stringnumber
     #})
     (on 'fbass #{
       \set figuredBassFormatter = #ekm-fbass
@@ -4836,8 +4872,7 @@ ekmSmuflOff =
       \revert MetronomeMark.style
     #})
     (on 'notehead #{
-      \revert NoteHead.font-series
-      \revert NoteHead.stencil
+      \ekmOff #'NoteHead
       \revert NoteHead.stem-attachment
       \revert AmbitusNoteHead.stencil
     #})
@@ -4864,8 +4899,7 @@ ekmSmuflOff =
       \revert DynamicText.stencil
     #})
     (on 'script #{
-      \revert Script.stencil
-      \revert Script.font-series
+      \ekmOff #'Script
     #})
     (on 'lv #{
       \revert LaissezVibrerTie.stencil
@@ -4888,20 +4922,17 @@ ekmSmuflOff =
       \revert StemTremolo.stencil
     #})
     (on 'arpeggio #{
-      \revert Arpeggio.stencil
-      \revert Arpeggio.font-series
+      \ekmOff #'Arpeggio
     #})
     (on 'tuplet #{
       \revert TupletNumber.text
     #})
     (on 'fingering #{
-      \revert Fingering.stencil
-      \revert Fingering.font-series
-      \revert StrokeFinger.stencil
-      \revert StrokeFinger.font-series
+      \ekmOff #'Fingering
+      \ekmOff #'StrokeFinger
     #})
     (on 'stringnumber #{
-      \revert StringNumber.stencil
+      \ekmOff #'StringNumber
     #})
     (on 'fbass #{
       \unset figuredBassFormatter
