@@ -575,6 +575,67 @@ ekmOff =
       '(#t (-1 . 0) (1 . 0)))))
 
 
+%% Segment bar
+
+#(define-markup-command (ekm-segment-bar layout props sym len axis)
+  (pair? number? integer?)
+  #:properties
+   ((font-size 0)
+    (padding -0.08))
+
+  (define (extent sil x dir)
+    (if x (ekm-extent sil X)
+          (abs (interval-bound (ly:stencil-extent sil Y) dir))))
+
+  (define (orient proc h v x)
+    (if x (proc h v) (proc v h)))
+
+  (define (scale sil f x)
+    (if x (ly:stencil-scale sil f 1) (ly:stencil-scale sil 1 f)))
+
+  (define (translate sil ofs x)
+    (ly:stencil-translate sil (if x (cons ofs 0) (cons 0 ofs))))
+
+  (let* ((x (eqv? X axis))
+         (lbar (ekm:text layout props (ekm:sym (cdr sym) LEFT)))
+         (rbar (ekm:text layout props (ekm:sym (cdr sym) RIGHT)))
+         (lext (extent lbar x UP))
+         (rext (extent rbar x DOWN))
+         (dist (- len lext rext (* 2 padding)))
+         (thickness
+          (and
+           (pair? (car sym)) (eq? 'draw (caar sym))
+           (cond
+            ((symbol? (cdar sym))
+              (symmetric-interval
+                (* 0.5 (magstep font-size) (ekm:md (cdar sym)))))
+            ((number-pair? (cdar sym))
+              (cdar sym))
+            (else
+              (ly:stencil-extent
+                (ekm:text layout props (cdar sym))
+                (other-axis axis))))))
+         (bar
+          (cond
+           ((< dist (abs (* 2 padding)))
+            empty-stencil)
+           (thickness
+            (orient make-filled-box-stencil (cons 0 dist) thickness x))
+           (else
+            (let* ((sil (ekm:text layout props (car sym)))
+                   (sil (if x sil (ly:stencil-aligned-to sil Y DOWN)))
+                   (size (+ (extent sil x UP) padding))
+                   (cnt (inexact->exact (truncate (/ dist size)))))
+             (if (zero? cnt)
+              (scale sil (/ dist size) x)
+              (stack-stencils axis RIGHT padding
+               (make-list cnt (scale sil (/ dist cnt size) x)))))))))
+    (ly:stencil-add
+      (translate (if x (ly:stencil-aligned-to rbar X RIGHT) rbar) len x)
+      (translate bar (+ lext padding) x)
+      lbar)))
+
+
 %% Orientation
 
 #(define-public N 2)
@@ -1444,47 +1505,34 @@ ekmNameHeadsTiMinor =
                   (if (< p (car b)) (cons p nh) b)))
                (cons 999 #f)
                nhl))
-             (d (ekm:assld (assq-ref ekm:types 'cluster) (cdr bot) #f #f))
+             (sym (ekm:assld (assq-ref ekm:types 'cluster) (cdr bot) #f #f))
              (top (fold (lambda (nh t)
                 (ly:grob-set-property! nh 'style 'default)
                 (max t (ly:grob-property nh 'staff-position)))
                -999
                nhl))
-             (h (- top (car bot)))
-             (cp (and (< h 3) (list-ref d h)))
+             (dist (- top (car bot)))
+             (seg (fourth sym))
+             (cp (and (< dist 3) (list-ref sym dist)))
              (stem (ly:grob-object grob 'stem))
              (dir (ekm-dir stem))
              (md (ekm:md-glyph (cdr bot)
-                  (or cp (if (>= dir 0) (fourth d) (sixth d))))))
+                  (or cp (if (< dir 0) (cadr seg) (cddr seg))))))
         (ly:grob-set-property! (cdr bot) 'stem-attachment
           (if (< dir 0) (second md) (third md)))
         (ly:grob-set-property! stem 'avoid-note-head #t)
         (ly:grob-set-property! stem 'note-collision-threshold 0)
-        (if (and (< dir 0) (> h 0))
+        (if (and (< dir 0) (> dist 0))
           (ly:grob-set-property! stem 'stem-begin-position
-            (+ (ly:grob-property stem 'stem-begin-position) (seventh d))))
+            (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
         (ly:grob-set-property! (cdr bot) 'transparent #f)
         (ly:grob-set-property! (cdr bot) 'stencil
-          (grob-interpret-markup grob
-            (make-with-dimensions-from-markup
-              (make-ekm-char-markup (car d))
-              (if cp
-                (make-ekm-char-markup cp)
-                (make-combine-markup
-                  (let bar ((m (make-ekm-char-markup (sixth d)))
-                            (y (- h 3)))
-                    (if (>= 0 y)
-                      m
-                      (bar
-                        (make-combine-markup
-                          m
-                          (make-translate-markup
-                            (cons 0 (+ 0.5 (* 0.5 y)))
-                            (make-ekm-char-markup (fifth d))))
-                        (1- y))))
-                  (make-translate-markup
-                    (cons 0 (* 0.5 h))
-                    (make-ekm-char-markup (fourth d)))))))))
+         (grob-interpret-markup grob
+          (make-with-dimensions-from-markup
+            (make-ekm-char-markup (car sym))
+            (if cp
+              (make-ekm-char-markup cp)
+              (make-ekm-segment-bar-markup seg (* 0.5 dist) Y))))))
       '())))
 
 ekmMakeClusters =
@@ -1634,27 +1682,8 @@ ekmMakeClusters =
   (symbol? boolean? boolean? index? integer? number? number? boolean-or-number?)
   #:properties ((font-size 0))
   (if (> measures limit)
-    (let* ((sym (ekm:asstl 'mmrest style))
-           (lbar (ekm:text layout props (ekm:sym (cddr sym) LEFT)))
-           (rbar (ekm:text layout props (ekm:sym (cddr sym) RIGHT)))
-           (edge (ekm-extent lbar X)) ; to overlap with bar
-           (w (- width (* edge 1.8)))
-           (hbar (if (car sym) (ekm:text layout props (car sym)) #f))
-           (hbar (if (second sym)
-                  (let* ((x (ekm-extent hbar X))
-                         (c (inexact->exact (truncate (/ w x)))))
-                   (if (zero? c)
-                    (ly:stencil-scale hbar (/ w x) 1)
-                    (stack-stencil-line 0
-                     (make-list c (ly:stencil-scale hbar (/ w c x) 1)))))
-                  (make-filled-box-stencil (cons 0 w)
-                    (if hbar
-                      (ly:stencil-extent hbar Y)
-                      (symmetric-interval
-                        (* 0.5 (magstep font-size) (ekm:md 'hBarThickness))))))))
-      (stack-stencil-line
-        (- (* edge 0.1))
-        (list lbar hbar rbar)))
+    (interpret-markup layout props
+      (make-ekm-segment-bar-markup (ekm:asstl 'mmrest style) width X))
     (let* ((ssp (or ssp (ly:output-def-lookup layout 'staff-space)))
            (cts
              (let cnt ((m measures) (d '(8 4 2 1)) (c '()))
@@ -3854,7 +3883,7 @@ ekmMetronome =
   )
 
   (mmrest
-  (default #xE4F0 #t #xE4EF . #xE4F1)
+  (default #xE4F0 #xE4EF . #xE4F1)
   )
 
   (spanner
@@ -4119,26 +4148,18 @@ ekmMetronome =
 
   (cluster
   (default
-    (-1 (#xE0A0 #xE124 #xE128 #xE12C #xE12D #xE12E 0))
-    (0 (#xE0A2 #xE125 #xE129 #xE12F #xE130 #xE131 0))
-    (1 (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0) .
-       (#xE0A3 #xE126 #xE12A #xE132 #xE133 #xE134 0))
-    (2 (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0) .
-       (#xE0A4 #xE127 #xE12B #xE135 #xE136 #xE137 0)))
+    (-1 (#xE0A0 #xE124 #xE128 (#xE12D #xE12E . #xE12C) 0))
+    (0 (#xE0A2 #xE125 #xE129 (#xE130 #xE131 . #xE12F) 0))
+    (1 (#xE0A3 #xE126 #xE12A (#xE133 #xE134 . #xE132) 0))
+    (2 (#xE0A4 #xE127 #xE12B (#xE136 #xE137 . #xE135) 0)))
   (harmonic
-    (0 (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0) .
-       (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0))
-    (1 (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5) .
-       (#xE0DD #xE138 #xE13A #xE13C #xE13D #xE13E 0.5))
-    (2 (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4) .
-       (#xE0DB #xE139 #xE13B #xE13F #xE140 #xE141 0.4)))
+    (0 (#xE0DD #xE138 #xE13A (#xE13D #xE13E . #xE13C) 0))
+    (1 (#xE0DD #xE138 #xE13A (#xE13D #xE13E . #xE13C) 0.5))
+    (2 (#xE0DB #xE139 #xE13B (#xE140 #xE141 . #xE13F) 0.4)))
   (square
-    (0 (#xE0B8 #f #f #xE145 #xE146 #xE147 0) .
-       (#xE0B8 #f #f #xE145 #xE146 #xE147 0))
-    (1 (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3) .
-       (#xE0B8 #f #f #xE145 #xE146 #xE147 -0.3))
-    (2 (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3) .
-       (#xE0B9 #f #f #xE142 #xE143 #xE144 -0.3)))
+    (0 (#xE0B8 #f #f (#xE146 #xE147 . #xE145) 0))
+    (1 (#xE0B8 #f #f (#xE146 #xE147 . #xE145) -0.3))
+    (2 (#xE0B9 #f #f (#xE143 #xE144 . #xE142) -0.3)))
   )
 
   (note
@@ -4726,11 +4747,14 @@ ekmSmuflOn =
           (set! music #{ #music #m #}))))
 
     (on 'staff #{
-      \override Staff.StaffSymbol.thickness = #(/ (ekm:md 'staffLineThickness) 0.1)
-      \override BarLine.hair-thickness = #(/ (ekm:md 'thinBarlineThickness) 0.1)
-      \override BarLine.thick-thickness = #(/ (ekm:md 'thickBarlineThickness) 0.1)
-      \override BarLine.kern = #(/ (ekm:md 'barlineSeparation) 0.1)
-      \override BarLine.segno-kern = #(/ (ekm:md 'barlineSeparation) 0.1)
+      \override Staff.StaffSymbol.thickness =
+        #(* 10 (ekm:md 'staffLineThickness))
+      \override Staff.StaffSymbol.ledger-line-thickness =
+        #(cons (/ (ekm:md 'legerLineThickness) (ekm:md 'staffLineThickness)) 0.1)
+      \override BarLine.hair-thickness = #(* 10 (ekm:md 'thinBarlineThickness))
+      \override BarLine.thick-thickness = #(* 10 (ekm:md 'thickBarlineThickness))
+      \override BarLine.kern = #(* 10 (ekm:md 'barlineSeparation))
+      \override BarLine.segno-kern = #(* 10 (ekm:md 'barlineSeparation))
     #})
     (on 'clef #{
       \override Clef.stencil = #ekm-clef
@@ -4850,6 +4874,7 @@ ekmSmuflOff =
 
     (on 'staff #{
       \revert Staff.StaffSymbol.thickness
+      \revert Staff.StaffSymbol.ledger-line-thickness
       \revert BarLine.hair-thickness
       \revert BarLine.thick-thickness
       \revert BarLine.kern

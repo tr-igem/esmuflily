@@ -847,3 +847,13 @@ January 2021 - May 2021:
 - Add auxiliary functions for SMuFL mode stored in grob property "font-series"
   (as a workaround for a more suitable property):
   "ekm?", "ekm-mode", "\ekmOn", "\ekmOff".
+
+2026-10-07:
+- Add command "\ekm-segment-bar".
+- Fix "\ekm-mmr" and type tyble "mmrest" to use "\ekm-segment-bar"
+  for compressed mmrest.
+- Fix "ekm-cluster" and type table "cluster" to use "\ekm-segment-bar"
+  to allow any middle segment height.
+- Add "legerLineThickness" to SMuFL switch "staff".
+- ekmd-ekmelos.scm: Remove type table "mmrest" (equal default).
+- ekmd-ekmelos.scm: Change "legerLineThickness".
