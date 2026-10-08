@@ -857,3 +857,7 @@ January 2021 - May 2021:
 - Add "legerLineThickness" to SMuFL switch "staff".
 - ekmd-ekmelos.scm: Remove type table "mmrest" (equal default).
 - ekmd-ekmelos.scm: Change "legerLineThickness".
+
+2026-10-08:
+- ekmd-ekmelos.scm: Fix type table "cluster" to use "\ekm-segment-bar".
+- Add flag "ekm:clef-on" and fix "ekm:make-clef-set" for normal LP glyphs.

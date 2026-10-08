@@ -742,6 +742,8 @@ ekmOff =
           (add-new-clef (caar t) (caar t) (second sym) (third sym) (fourth sym))))
       (init (cdr t))))))
 
+#(define ekm:clef-on #f)
+
 #(define-public ekm:clef-change-font-size '(1.5 . -2))
 #(define-public ekm:clef-modifier-font-size 4)
 
@@ -898,37 +900,39 @@ ekmOff =
 ))
 
 #(define (ekm:make-clef-set name cue)
-  (let* ((len (string-length name))
-         (attr
-          (and (> len 1)
-               (assoc-ref ekm:clef-attr (string-ref name (1- len)))))
-         (clef
-          ((if cue make-cue-clef-set make-clef-set)
-            (if attr (string-drop-right name 1) name)))
-         (tab
-          (if cue
-          '((cueClefGlyph . "")
-            (cueClefTransposition . 0)
-            (cueClefTranspositionStyle . default))
-          '((clefGlyph . "")
-            (clefTransposition . 0)
-            (clefTranspositionStyle . default)))))
-   (for-each (lambda (m)
-    (let ((e (assq (ly:music-property m 'symbol) tab)))
-     (if e (set-cdr! e (ly:music-property m 'value)))))
-    (extract-named-music clef 'PropertySet))
-   (for-each (lambda (m)
-    (if (eq? (caar tab) (ly:music-property m 'symbol))
-     (ly:music-set-property! m 'value
-      (format #f "~a_~d_~a~@[_~a~]"
-       (cdar tab)
-       (or (and attr (car attr))
-           (if (zero? (cdadr tab)) 0
-               (* (sign (cdadr tab)) (1+ (abs (cdadr tab))))))
-       (cdaddr tab)
-       (and attr (cdr attr))))))
-    (extract-named-music clef 'PropertySet))
-   clef))
+  (if ekm:clef-on
+   (let* ((len (string-length name))
+          (attr
+           (and (> len 1)
+                (assoc-ref ekm:clef-attr (string-ref name (1- len)))))
+          (clef
+           ((if cue make-cue-clef-set make-clef-set)
+             (if attr (string-drop-right name 1) name)))
+          (tab
+           (if cue
+           '((cueClefGlyph . "")
+             (cueClefTransposition . 0)
+             (cueClefTranspositionStyle . default))
+           '((clefGlyph . "")
+             (clefTransposition . 0)
+             (clefTranspositionStyle . default)))))
+    (for-each (lambda (m)
+     (let ((e (assq (ly:music-property m 'symbol) tab)))
+      (if e (set-cdr! e (ly:music-property m 'value)))))
+     (extract-named-music clef 'PropertySet))
+    (for-each (lambda (m)
+     (if (eq? (caar tab) (ly:music-property m 'symbol))
+      (ly:music-set-property! m 'value
+       (format #f "~a_~d_~a~@[_~a~]"
+        (cdar tab)
+        (or (and attr (car attr))
+            (if (zero? (cdadr tab)) 0
+                (* (sign (cdadr tab)) (1+ (abs (cdadr tab))))))
+        (cdaddr tab)
+        (and attr (cdr attr))))))
+     (extract-named-music clef 'PropertySet))
+    clef)
+   ((if cue make-cue-clef-set make-clef-set) name)))
 
 clef =
 #(define-music-function (name) (string?)
@@ -4757,6 +4761,7 @@ ekmSmuflOn =
       \override BarLine.segno-kern = #(* 10 (ekm:md 'barlineSeparation))
     #})
     (on 'clef #{
+      #(set! ekm:clef-on #t)
       \override Clef.stencil = #ekm-clef
       \override CueClef.stencil = #ekm-clef
       \override CueEndClef.stencil = #ekm-clef
@@ -4881,6 +4886,7 @@ ekmSmuflOff =
       \revert BarLine.segno-kern
     #})
     (on 'clef #{
+      #(set! ekm:clef-on #f)
       \revert Clef.stencil
       \revert CueClef.stencil
       \revert CueEndClef.stencil
