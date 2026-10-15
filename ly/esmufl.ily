@@ -1499,53 +1499,146 @@ ekmNameHeadsTiMinor =
 
 %% Note cluster
 
-#(define (ekm-cluster grob)
-  (let ((nhs (ly:grob-object grob 'note-heads)))
-    (if (ly:grob-array? nhs)
-      (let* ((nhl (ly:grob-array->list nhs))
-             (bot (fold (lambda (nh b)
-                (let ((p (ly:grob-property nh 'staff-position)))
-                  (ly:grob-set-property! nh 'transparent #t)
-                  (if (< p (car b)) (cons p nh) b)))
-               (cons 999 #f)
-               nhl))
-             (sym (ekm:assld (assq-ref ekm:types 'cluster) (cdr bot) #f #f))
-             (top (fold (lambda (nh t)
-                (ly:grob-set-property! nh 'style 'default)
-                (max t (ly:grob-property nh 'staff-position)))
-               -999
-               nhl))
-             (dist (- top (car bot)))
-             (seg (fourth sym))
-             (cp (and (< dist 3) (list-ref sym dist)))
-             (stem (ly:grob-object grob 'stem))
-             (dir (ekm-dir stem))
-             (md (ekm:md-glyph (cdr bot)
-                  (or cp (if (< dir 0) (cadr seg) (cddr seg))))))
-        (ly:grob-set-property! (cdr bot) 'stem-attachment
-          (if (< dir 0) (second md) (third md)))
-        (ly:grob-set-property! stem 'avoid-note-head #t)
-        (ly:grob-set-property! stem 'note-collision-threshold 0)
-        (if (and (< dir 0) (> dist 0))
-          (ly:grob-set-property! stem 'stem-begin-position
-            (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
-        (ly:grob-set-property! (cdr bot) 'transparent #f)
-        (ly:grob-set-property! (cdr bot) 'stencil
-         (grob-interpret-markup grob
-          (make-with-dimensions-from-markup
-            (make-ekm-char-markup (car sym))
-            (if cp
-              (make-ekm-char-markup cp)
-              (make-ekm-segment-bar-markup seg (* 0.5 dist) Y))))))
-      '())))
+#(define (ekm:cluster grob)
+  (let ((notes (ly:grob-object grob 'note-heads)))
+   (if (ly:grob-array? notes)
+     (let* ((notes (ly:grob-array->list notes))
+            (bot (fold (lambda (nh b)
+              (let ((p (ly:grob-property nh 'staff-position)))
+                (ly:grob-set-property! nh 'transparent #t)
+                (if (< p (car b)) (cons p nh) b)))
+              (cons 999 #f)
+              notes))
+            (sym (ekm:assld (assq-ref ekm:types 'cluster) (cdr bot) #f #f))
+            (top (fold (lambda (nh t)
+              (ly:grob-set-property! nh 'style 'default)
+              (max t (ly:grob-property nh 'staff-position)))
+              -999
+              notes))
+            (dist (- top (car bot)))
+            (seg (fourth sym))
+            (cp (and (< dist 3) (list-ref sym dist)))
+            (stem (ly:grob-object grob 'stem))
+            (dir (ekm-dir stem))
+            (md (ekm:md-glyph (cdr bot)
+                 (or cp (if (< dir 0) (cadr seg) (cddr seg))))))
+       (ly:grob-set-property! (cdr bot) 'stem-attachment
+         (if (< dir 0) (second md) (third md)))
+       (ly:grob-set-property! stem 'avoid-note-head #t)
+       (ly:grob-set-property! stem 'note-collision-threshold 0)
+       (if (and (< dir 0) (> dist 0))
+         (ly:grob-set-property! stem 'stem-begin-position
+          (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
+       (ly:grob-set-property! (cdr bot) 'transparent #f)
+       (ly:grob-set-property! (cdr bot) 'stencil
+        (grob-interpret-markup grob
+         (make-with-dimensions-from-markup
+           (make-ekm-char-markup (car sym))
+           (if cp
+             (make-ekm-char-markup cp)
+             (make-ekm-segment-bar-markup seg (* 0.5 dist) Y))))))
+     '())))
 
-ekmMakeClusters =
-#(define-music-function (music)
-  (ly:music?)
+ekmCluster =
+#(define-music-function (music) (ly:music?)
   #{
-    \temporary \override NoteColumn.before-line-breaking = #ekm-cluster
+    \temporary \override NoteColumn.before-line-breaking = #ekm:cluster
     $music
     \revert NoteColumn.before-line-breaking
+  #})
+
+ekmMakeClusters = #ekmCluster
+
+#(define (ekm:cluster-bar cluster)
+  (let* ((notes (ly:grob-object cluster 'notes))
+         (ref (ly:grob-system (first notes)))
+         (bot (ly:grob-relative-coordinate (first notes) ref Y))
+         (top (ly:grob-relative-coordinate (second notes) ref Y))
+         (dist (- top bot))
+         (sym (ekm:assld (assq-ref ekm:types 'cluster) (first notes) #f #f))
+         (cp (and (<= (* 2 dist) 2)
+          (list-ref sym (inexact->exact (truncate (* 2 dist))))))
+         (sil
+          (grob-interpret-markup cluster
+           (if cp
+             (make-ekm-char-markup cp)
+             (make-ekm-segment-bar-markup (fourth sym) dist Y)))))
+   (ly:stencil-translate-axis sil bot Y)))
+
+#(define (ekm:cluster-span cluster)
+  (let* ((notes (ly:grob-object cluster 'notes))
+         (stems (map (lambda (nh) (ly:grob-object nh 'stem)) notes))
+         (down (negative? (apply + (map ekm-dir stems))))
+         (nh ((if down first second) notes))
+         (stem ((if down first second) stems))
+         (sym (ekm:assld (assq-ref ekm:types 'cluster) nh #f #f))
+         (seg (fourth sym))
+         (md (ekm:md-glyph nh (if down (cadr seg) (cddr seg)))))
+   (ly:grob-set-property! nh 'stem-attachment
+     (if down (second md) (third md)))
+   (if down
+     (ly:grob-set-property! stem 'stem-begin-position
+      (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
+   (if (not (eq? (first stems) (second stems)))
+     (ly:grob-set-property! ((if down second first) stems) 'transparent #t))
+   (for-each (lambda (nh)
+     (ly:grob-set-property! nh 'transparent #t))
+     notes)
+   (ly:grob-set-property! cluster 'after-line-breaking
+     (lambda (cluster)
+      (ly:grob-set-property! cluster 'stencil ekm:cluster-bar)))))
+
+#(define-public (ekm:cluster-note nh) #t)
+
+#(define (ekm:cluster? nh)
+  (eq? ekm:cluster-note (ly:grob-property-data nh 'cross-staff)))
+
+#(define (ekm:make-cluster engraver notes)
+  (if (null? notes)
+    #t
+  (if (and (pair? (cdr notes))
+           (ekm:cluster? (first notes)))
+    (let* ((bot (first notes))
+           (top (second notes))
+           (cluster (ly:engraver-make-grob engraver 'NoteHead '()))
+           (stem (ly:grob-object bot 'stem)))
+     (ly:grob-set-property! top 'style
+       (ly:grob-property bot 'style '()))
+     (if (not (ekm:cluster? top)) (begin
+       (ly:grob-set-property! stem 'direction DOWN)
+       (ly:grob-set-property! (ly:grob-object top 'stem) 'direction UP)))
+     (ly:grob-set-property! stem 'note-collision-threshold 0)
+     (ly:grob-set-property! stem 'avoid-note-head #t)
+     (ly:grob-set-parent! cluster X bot)
+     (ly:grob-set-object! cluster 'notes (list bot top))
+     (ly:grob-set-property! cluster 'stencil ekm:cluster-span)
+     (ekm:make-cluster engraver (cddr notes)))
+  (ekm:make-cluster engraver (cdr notes)))))
+
+#(define-public (Ekm_span_cluster_engraver context)
+  (let ((notes '())
+        (sort-notes #f))
+    (make-engraver
+
+      (acknowledgers
+       ((note-head-interface engraver grob source)
+        (set! notes (cons grob notes))))
+
+      ((process-acknowledged engraver)
+       (if (any ekm:cluster? notes)
+        (let ((sn (or sort-notes
+                      (sort notes (lambda (x y) (ly:grob-vertical<? y x))))))
+          (set! sort-notes sn)
+          (ekm:make-cluster engraver sn)))
+       (set! notes '())
+       (set! sort-notes #f)))))
+
+ekmCrossCluster =
+#(define-music-function (music) (ly:music?)
+  #{
+    \temporary \override NoteHead.cross-staff = #ekm:cluster-note
+    $music
+    \revert NoteHead.cross-staff
   #})
 
 

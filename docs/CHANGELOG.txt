@@ -861,3 +861,11 @@ January 2021 - May 2021:
 2026-10-08:
 - ekmd-ekmelos.scm: Fix type table "cluster" to use "\ekm-segment-bar".
 - Add flag "ekm:clef-on" and fix "ekm:make-clef-set" for normal LP glyphs.
+
+2026-10-16:
+- Add engraver "Ekm_span_cluster_engraver" and music function "\ekmCrossCluster"
+  for cross-staff note clusters (issue #2).
+- Add auxiliary procedures for cross-staff note clusters:
+  "ekm:cluster-bar", "ekm:cluster-span", "ekm:cluster?", "ekm:make-cluster".
+- Rename "\ekmMakeClusters" to "\ekmCluster".
+  "\ekmMakeClusters" is deprecated.
