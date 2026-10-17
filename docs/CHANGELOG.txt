@@ -866,6 +866,15 @@ January 2021 - May 2021:
 - Add engraver "Ekm_span_cluster_engraver" and music function "\ekmCrossCluster"
   for cross-staff note clusters (issue #2).
 - Add auxiliary procedures for cross-staff note clusters:
-  "ekm:cluster-bar", "ekm:cluster-span", "ekm:cluster?", "ekm:make-cluster".
+  "ekm:cluster-bar", "ekm:cluster-span", "ekm:cluster-note", "ekm:cluster?",
+  "ekm:make-cluster".
 - Rename "\ekmMakeClusters" to "\ekmCluster".
   "\ekmMakeClusters" is deprecated.
+
+2026-10-18 (v2.6):
+- Fix "\ekmSmuflOn" and "\ekmSmuflOff" to set flag "ekm:clef-on".
+- Add in type table "cluster" style "harmonic" an entry for duration log -1.
+- ekmd-ekmelos.scm: Add in type table "cluster" style "diamond"
+  an entry for duration log -1.
+- Fix "ekm:make-cluster" and "ekm:cluster-span" for stem direction.
+- Add auxiliary procedure "ekm:cluster-stem".

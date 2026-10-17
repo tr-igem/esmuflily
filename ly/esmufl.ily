@@ -1516,27 +1516,27 @@ ekmNameHeadsTiMinor =
               -999
               notes))
             (dist (- top (car bot)))
-            (seg (fourth sym))
-            (cp (and (< dist 3) (list-ref sym dist)))
+            (cp (and (< dist (length (cddr sym)))
+                     (list-ref (cddr sym) dist)))
             (stem (ly:grob-object grob 'stem))
             (dir (ekm-dir stem))
             (md (ekm:md-glyph (cdr bot)
-                 (or cp (if (< dir 0) (cadr seg) (cddr seg))))))
+                 (or cp (if (< dir 0) (cadar sym) (cddar sym))))))
        (ly:grob-set-property! (cdr bot) 'stem-attachment
          (if (< dir 0) (second md) (third md)))
        (ly:grob-set-property! stem 'avoid-note-head #t)
        (ly:grob-set-property! stem 'note-collision-threshold 0)
        (if (and (< dir 0) (> dist 0))
          (ly:grob-set-property! stem 'stem-begin-position
-          (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
+          (+ (ly:grob-property stem 'stem-begin-position) (second sym))))
        (ly:grob-set-property! (cdr bot) 'transparent #f)
        (ly:grob-set-property! (cdr bot) 'stencil
         (grob-interpret-markup grob
          (make-with-dimensions-from-markup
-           (make-ekm-char-markup (car sym))
+           (make-ekm-char-markup (third sym))
            (if cp
              (make-ekm-char-markup cp)
-             (make-ekm-segment-bar-markup seg (* 0.5 dist) Y))))))
+             (make-ekm-segment-bar-markup (first sym) (* 0.5 dist) Y))))))
      '())))
 
 ekmCluster =
@@ -1550,40 +1550,48 @@ ekmCluster =
 ekmMakeClusters = #ekmCluster
 
 #(define (ekm:cluster-bar cluster)
-  (let* ((notes (ly:grob-object cluster 'notes))
-         (ref (ly:grob-system (first notes)))
-         (bot (ly:grob-relative-coordinate (first notes) ref Y))
-         (top (ly:grob-relative-coordinate (second notes) ref Y))
+  (let* ((span (ly:grob-object cluster 'notes))
+         (ref (ly:grob-system (first span)))
+         (bot (ly:grob-relative-coordinate (first span) ref Y))
+         (top (ly:grob-relative-coordinate (second span) ref Y))
          (dist (- top bot))
-         (sym (ekm:assld (assq-ref ekm:types 'cluster) (first notes) #f #f))
-         (cp (and (<= (* 2 dist) 2)
-          (list-ref sym (inexact->exact (truncate (* 2 dist))))))
-         (sil
-          (grob-interpret-markup cluster
-           (if cp
-             (make-ekm-char-markup cp)
-             (make-ekm-segment-bar-markup (fourth sym) dist Y)))))
-   (ly:stencil-translate-axis sil bot Y)))
+         (sym (ekm:assld (assq-ref ekm:types 'cluster) (first span) #f #f))
+         (cp (and (<= (* 2 dist) (length (cdddr sym)))
+                  (list-ref (cddr sym)
+                   (inexact->exact (truncate (* 2 dist)))))))
+   (ly:stencil-translate-axis
+    (grob-interpret-markup cluster
+     (if cp
+      (make-ekm-char-markup cp)
+      (make-ekm-segment-bar-markup (first sym) dist Y)))
+    bot Y)))
+
+#(define (ekm:cluster-stem span default)
+  (let* ((stems (map (lambda (nh) (ly:grob-object nh 'stem)) span))
+         (down
+          (negative? (apply +
+           (map (lambda (stem)
+            (if default
+              (ly:grob-property stem 'default-direction)
+              (ekm-dir stem)))
+            stems)))))
+   (cons* down stems)))
 
 #(define (ekm:cluster-span cluster)
-  (let* ((notes (ly:grob-object cluster 'notes))
-         (stems (map (lambda (nh) (ly:grob-object nh 'stem)) notes))
-         (down (negative? (apply + (map ekm-dir stems))))
-         (nh ((if down first second) notes))
-         (stem ((if down first second) stems))
+  (let* ((span (ly:grob-object cluster 'notes))
+         (stem (ekm:cluster-stem span #f))
+         (down (car stem))
+         (nh ((if down first second) span))
          (sym (ekm:assld (assq-ref ekm:types 'cluster) nh #f #f))
-         (seg (fourth sym))
-         (md (ekm:md-glyph nh (if down (cadr seg) (cddr seg)))))
+         (md (ekm:md-glyph nh (if down (cadar sym) (cddar sym)))))
    (ly:grob-set-property! nh 'stem-attachment
      (if down (second md) (third md)))
    (if down
-     (ly:grob-set-property! stem 'stem-begin-position
-      (+ (ly:grob-property stem 'stem-begin-position) (fifth sym))))
-   (if (not (eq? (first stems) (second stems)))
-     (ly:grob-set-property! ((if down second first) stems) 'transparent #t))
+     (ly:grob-set-property! (second stem) 'stem-begin-position
+      (+ (ly:grob-property (second stem) 'stem-begin-position) (second sym))))
    (for-each (lambda (nh)
      (ly:grob-set-property! nh 'transparent #t))
-     notes)
+     span)
    (ly:grob-set-property! cluster 'after-line-breaking
      (lambda (cluster)
       (ly:grob-set-property! cluster 'stencil ekm:cluster-bar)))))
@@ -1598,19 +1606,20 @@ ekmMakeClusters = #ekmCluster
     #t
   (if (and (pair? (cdr notes))
            (ekm:cluster? (first notes)))
-    (let* ((bot (first notes))
-           (top (second notes))
-           (cluster (ly:engraver-make-grob engraver 'NoteHead '()))
-           (stem (ly:grob-object bot 'stem)))
-     (ly:grob-set-property! top 'style
-       (ly:grob-property bot 'style '()))
-     (if (not (ekm:cluster? top)) (begin
-       (ly:grob-set-property! stem 'direction DOWN)
-       (ly:grob-set-property! (ly:grob-object top 'stem) 'direction UP)))
-     (ly:grob-set-property! stem 'note-collision-threshold 0)
-     (ly:grob-set-property! stem 'avoid-note-head #t)
-     (ly:grob-set-parent! cluster X bot)
-     (ly:grob-set-object! cluster 'notes (list bot top))
+    (let* ((span (list (first notes) (second notes)))
+           (stem (ekm:cluster-stem span #t))
+           (cluster (ly:engraver-make-grob engraver 'NoteHead '())))
+     (ly:grob-set-property! (second span) 'style
+       (ly:grob-property (first span) 'style '()))
+     (when (not (ekm:cluster? (second span))) ;; not chord
+       (ly:grob-set-property! (second stem) 'direction DOWN)
+       (ly:grob-set-property! (third stem) 'direction UP)
+       (ly:grob-set-property!
+        ((if (car stem) third second) stem) 'transparent #t))
+     (ly:grob-set-property! (second stem) 'note-collision-threshold 0)
+     (ly:grob-set-property! (second stem) 'avoid-note-head #t)
+     (ly:grob-set-parent! cluster X (first span))
+     (ly:grob-set-object! cluster 'notes span)
      (ly:grob-set-property! cluster 'stencil ekm:cluster-span)
      (ekm:make-cluster engraver (cddr notes)))
   (ekm:make-cluster engraver (cdr notes)))))
@@ -4245,18 +4254,19 @@ ekmMetronome =
 
   (cluster
   (default
-    (-1 (#xE0A0 #xE124 #xE128 (#xE12D #xE12E . #xE12C) 0))
-    (0 (#xE0A2 #xE125 #xE129 (#xE130 #xE131 . #xE12F) 0))
-    (1 (#xE0A3 #xE126 #xE12A (#xE133 #xE134 . #xE132) 0))
-    (2 (#xE0A4 #xE127 #xE12B (#xE136 #xE137 . #xE135) 0)))
+    (-1 ((#xE12D #xE12E . #xE12C) 0 #xE0A0 #xE124 #xE128))
+    (0 ((#xE130 #xE131 . #xE12F) 0 #xE0A2 #xE125 #xE129))
+    (1 ((#xE133 #xE134 . #xE132) 0 #xE0A3 #xE126 #xE12A))
+    (2 ((#xE136 #xE137 . #xE135) 0 #xE0A4 #xE127 #xE12B)))
   (harmonic
-    (0 (#xE0DD #xE138 #xE13A (#xE13D #xE13E . #xE13C) 0))
-    (1 (#xE0DD #xE138 #xE13A (#xE13D #xE13E . #xE13C) 0.5))
-    (2 (#xE0DB #xE139 #xE13B (#xE140 #xE141 . #xE13F) 0.4)))
+    (-1 ((#xE13D #xE13E . #xE13C) 0 #xE0DD #xE138 #xE13A))
+    (0 ((#xE13D #xE13E . #xE13C) 0 #xE0DD #xE138 #xE13A))
+    (1 ((#xE13D #xE13E . #xE13C) 0.5 #xE0DD #xE138 #xE13A))
+    (2 ((#xE140 #xE141 . #xE13F) 0.4 #xE0DB #xE139 #xE13B)))
   (square
-    (0 (#xE0B8 #f #f (#xE146 #xE147 . #xE145) 0))
-    (1 (#xE0B8 #f #f (#xE146 #xE147 . #xE145) -0.3))
-    (2 (#xE0B9 #f #f (#xE143 #xE144 . #xE142) -0.3)))
+    (0 ((#xE146 #xE147 . #xE145) 0 #xE0B8))
+    (1 ((#xE146 #xE147 . #xE145) -0.3 #xE0B8))
+    (2 ((#xE143 #xE144 . #xE142) -0.3 #xE0B9)))
   )
 
   (note
@@ -4854,7 +4864,6 @@ ekmSmuflOn =
       \override BarLine.segno-kern = #(* 10 (ekm:md 'barlineSeparation))
     #})
     (on 'clef #{
-      #(set! ekm:clef-on #t)
       \override Clef.stencil = #ekm-clef
       \override CueClef.stencil = #ekm-clef
       \override CueEndClef.stencil = #ekm-clef
@@ -4863,6 +4872,7 @@ ekmSmuflOn =
       \set clefTranspositionFormatter = #ekm-clef-mod
       \set cueClefTranspositionFormatter = #ekm-clef-mod
     #})
+    (on 'clef (lambda (t) (set! ekm:clef-on #t)))
     (on 'time #{
       \override Timing.TimeSignature.stencil =
         #(if (ly:version? < '(2 26)) ekm-timesig ekm-time-signature)
@@ -4979,7 +4989,6 @@ ekmSmuflOff =
       \revert BarLine.segno-kern
     #})
     (on 'clef #{
-      #(set! ekm:clef-on #f)
       \revert Clef.stencil
       \revert CueClef.stencil
       \revert CueEndClef.stencil
@@ -4988,6 +4997,7 @@ ekmSmuflOff =
       \unset clefTranspositionFormatter
       \unset cueClefTranspositionFormatter
     #})
+    (on 'clef (lambda (t) (set! ekm:clef-on #f)))
     (on 'time #{
       \revert Timing.TimeSignature.stencil
     #})
