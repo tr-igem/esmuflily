@@ -37,7 +37,8 @@ Esmuflily
     \ekmNameHeadsTi
     \ekmNameHeadsTiMinor
 
-    \ekmMakeClusters
+    \ekmCluster
+    \ekmCrossCluster
 
     \ekm-rest
     \ekm-rest-by-number
