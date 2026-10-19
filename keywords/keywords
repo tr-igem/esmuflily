@@ -2,9 +2,10 @@ ekmFont
 ekmMetadata
 \ekmSmuflOn
 \ekmSmuflOff
-\ekmLigaClefsOn
-\ekmLigaClefsOff
+\ekmClefMode
+\ekmClefNormal
 ekm:clef-change-font-size
+ekm:clef-modifier-font-size
 \ekm-clef
 \ekm-clef-modifier
 \ekm-compound-meter
@@ -21,6 +22,7 @@ ekm:clef-change-font-size
 \ekmNameHeadsTiMinor
 \ekmCluster
 \ekmCrossCluster
+Ekm_span_cluster_engraver
 \ekm-rest
 \ekm-rest-by-number
 \ekm-multi-measure-rest-by-number
@@ -96,6 +98,7 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-orient
 \ekm-script
 \ekm-toe-heel-tie
+\ekm-segment-bar
 \ekmMergeType
 
 \ekmStyle

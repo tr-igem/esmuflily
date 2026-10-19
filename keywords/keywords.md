@@ -16,9 +16,10 @@ Esmuflily
     \ekmSmuflOn
     \ekmSmuflOff
 
-    \ekmLigaClefsOn
-    \ekmLigaClefsOff
+    \ekmClefMode
+    \ekmClefNormal
     ekm:clef-change-font-size
+    ekm:clef-modifier-font-size
     \ekm-clef
     \ekm-clef-modifier
 
@@ -39,6 +40,7 @@ Esmuflily
 
     \ekmCluster
     \ekmCrossCluster
+    Ekm_span_cluster_engraver
 
     \ekm-rest
     \ekm-rest-by-number
@@ -134,6 +136,7 @@ Esmuflily
     \ekm-orient
     \ekm-script
     \ekm-toe-heel-tie
+    \ekm-segment-bar
 
     \ekmMergeType
 
