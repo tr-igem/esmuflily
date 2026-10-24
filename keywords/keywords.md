@@ -16,6 +16,9 @@ Esmuflily
     \ekmSmuflOn
     \ekmSmuflOff
 
+    \ekmStaffDivider
+    \ekmSlashSeparator
+
     \ekmClefMode
     \ekmClefNormal
     ekm:clef-change-font-size
@@ -27,8 +30,8 @@ Esmuflily
     \ekmCompoundMeter
     \ekmCadenzaOn
 
-    \ekmStaffDivider
-    \ekmSlashSeparator
+    \ekm-metronome
+    \ekmMetronome
 
     \ekm-note
     \ekm-note-by-number
@@ -54,6 +57,8 @@ Esmuflily
 
     \ekmScript
     \ekmScriptSmall
+    \ekm-fermata
+    \ekm-eyeglasses
 
     \ekmStartSpan
     \ekmStartSpanMusic
@@ -102,6 +107,7 @@ Esmuflily
 
     \ekm-analytics
     \ekm-func
+    \ekm-func-column
     \ekmFunc
     \ekmFuncList
 
@@ -111,11 +117,6 @@ Esmuflily
 
     \ekm-fader
     \ekm-midi
-
-    \ekm-fermata
-    \ekm-eyeglasses
-    \ekm-metronome
-    \ekmMetronome
 
     \ekm-str
     \ekm-char
@@ -137,6 +138,7 @@ Esmuflily
     \ekm-script
     \ekm-toe-heel-tie
     \ekm-segment-bar
+    \ekm-hspace
 
     \ekmMergeType
 

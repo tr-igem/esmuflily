@@ -2,6 +2,8 @@ ekmFont
 ekmMetadata
 \ekmSmuflOn
 \ekmSmuflOff
+\ekmStaffDivider
+\ekmSlashSeparator
 \ekmClefMode
 \ekmClefNormal
 ekm:clef-change-font-size
@@ -11,8 +13,8 @@ ekm:clef-modifier-font-size
 \ekm-compound-meter
 \ekmCompoundMeter
 \ekmCadenzaOn
-\ekmStaffDivider
-\ekmSlashSeparator
+\ekm-metronome
+\ekmMetronome
 \ekm-note
 \ekm-note-by-number
 \ekm-rhythm
@@ -32,6 +34,8 @@ Ekm_span_cluster_engraver
 \ekmParensHairpin
 \ekmScript
 \ekmScriptSmall
+\ekm-fermata
+\ekm-eyeglasses
 \ekmStartSpan
 \ekmStartSpanMusic
 \ekmStartTrillSpan
@@ -68,6 +72,7 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-tied-lyric
 \ekm-analytics
 \ekm-func
+\ekm-func-column
 \ekmFunc
 \ekmFuncList
 \ekm-arrow
@@ -75,10 +80,6 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-beater
 \ekm-fader
 \ekm-midi
-\ekm-fermata
-\ekm-eyeglasses
-\ekm-metronome
-\ekmMetronome
 \ekm-str
 \ekm-char
 \ekm-charf
@@ -99,6 +100,7 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-script
 \ekm-toe-heel-tie
 \ekm-segment-bar
+\ekm-hspace
 \ekmMergeType
 
 \ekmStyle

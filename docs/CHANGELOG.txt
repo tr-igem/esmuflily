@@ -878,3 +878,16 @@ January 2021 - May 2021:
   an entry for duration log -1.
 - Fix "ekm:make-cluster" and "ekm:cluster-span" for stem direction.
 - Add auxiliary procedure "ekm:cluster-stem".
+
+2026-10-25 (v2.7):
+- Add markup commands "\ekm-func-column" and "\ekm-func-pivot"
+  for pivot chord symbols (issue #77).
+- Add in "\ekmFunc" suffix "!" to draw a pivot, and "~" to start a pivot span.
+- Add in "\ekmFunc" support for symbol columns with "\ekm-func-column".
+- Add in type table "func" new style table "pivot" with segment bar of pivot.
+- Add in type table "func" new token ":".
+- Replace in type table "func" token "~" with "?".
+- Add markup command "\ekm-hspace".
+- Replace in type table "shared" markup "\hspace" with "\ekm-hspace".
+- Remove "\ekmLigaClefsOn", now "\ekmClefMode #'liga".
+- Remove "\ekmMakeClusters", now "\ekmCluster".
