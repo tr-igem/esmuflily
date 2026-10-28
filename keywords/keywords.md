@@ -110,6 +110,7 @@ Esmuflily
     \ekm-func-column
     \ekmFunc
     \ekmFuncList
+    ekm:func-size
 
     \ekm-arrow
     \ekm-arrow-head

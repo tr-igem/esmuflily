@@ -75,6 +75,7 @@ ekm-tuplet-number::fraction-with-notes
 \ekm-func-column
 \ekmFunc
 \ekmFuncList
+ekm:func-size
 \ekm-arrow
 \ekm-arrow-head
 \ekm-beater

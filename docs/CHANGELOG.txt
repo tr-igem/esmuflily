@@ -879,7 +879,7 @@ January 2021 - May 2021:
 - Fix "ekm:make-cluster" and "ekm:cluster-span" for stem direction.
 - Add auxiliary procedure "ekm:cluster-stem".
 
-2026-10-25 (v2.7):
+2026-10-25:
 - Add markup commands "\ekm-func-column" and "\ekm-func-pivot"
   for pivot chord symbols (issue #77).
 - Add in "\ekmFunc" suffix "!" to draw a pivot, and "~" to start a pivot span.
@@ -891,3 +891,16 @@ January 2021 - May 2021:
 - Replace in type table "shared" markup "\hspace" with "\ekm-hspace".
 - Remove "\ekmLigaClefsOn", now "\ekmClefMode #'liga".
 - Remove "\ekmMakeClusters", now "\ekmCluster".
+
+2026-10-28 (v2.7):
+- Add in "\ekm-func-column" separator ":" to draw with LP sans font.
+- "\ekm-func" with smaller defaults for property "func-size" and "func-skip".
+- Add in "\ekm-func" new property "func-raise".
+- "\ekm-func-column" can draw a single symbol.
+  Draws 2 symbols with "func-raise" 0.
+- Add predicate "ekm:func?".
+- Add public variable "ekm:func-size".
+- Fix font size in "\ekmFunc" and "\ekm-func-column".
+- Remove in type table "func" useless token ":".
+- Replace in "\ekm-segment-bar" property "padding" with "bar-padding".
+- Replace in "\ekm-func-column" property "padding" with "y-padding".
